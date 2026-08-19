@@ -5,3 +5,6 @@
 # which runs remote-add for each entry (idempotent). Servers only start once
 # `claude auth login` has been done; the clone and trust happen regardless.
 workbench https://github.com/msavdert/workbench.git
+ai-hub https://github.com/msavdert/ai-hub.git
+dba-to-dbre https://github.com/msavdert/dba-to-dbre.git
+suhuf https://github.com/msavdert/suhuf.git
