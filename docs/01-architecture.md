@@ -8,7 +8,7 @@ Status: target layout. `PLAN.md` says how much of it exists today.
 |---|---|---|---|
 | Client | `mac/` | the laptop | Brewfile, `setup.sh`, terminal and ssh client config, 1Password SSH agent |
 | Box | `box/` | inside the VM, as root | apt packages, Docker daemon, sysctl/limits/journald, sshd, sudoers, systemd units (Remote Control, prune timer), `/etc/claude-code/CLAUDE.md`, the plain agent bashrc guard |
-| Home | `home/` | inside the VM and on the laptop, as the user | mise config per profile, interactive shell (bash block, zsh, starship), git config, `opwith` + `op-env`, Claude Code settings, herdr / agy / omp config, aws config, statusline |
+| Home | `home/` | inside the VM and on the laptop, as the user | mise config per profile, interactive shell (bash block, zsh, starship), git config, `opwith` + `op-env`, Claude Code settings, herdr / agy / omp config, statusline |
 | Agents | `agents/` | linked into `~/.claude` | global CLAUDE.md, subagents, skills, hooks |
 
 Plus:
@@ -40,7 +40,7 @@ workbench/
     zsh/  starship.toml     rich interactive shell, both profiles
     git/  op-env/  bin/opwith
     claude/settings.base.json  settings.box.json  settings.mac.json  statusline.sh
-    herdr/  agy/  omp/  aws/  nvim/  zellij/
+    herdr/  agy/  omp/  nvim/  zellij/
   agents/
     CLAUDE.md  agents/  skills/  hooks/  templates/  overnight/
   providers/
@@ -52,10 +52,11 @@ workbench/
 
 | File on the machine | Origin in repo | Installed by |
 |---|---|---|
-| `/etc/apt`, `/etc/docker/daemon.json`, `/etc/sysctl.d/*`, `/etc/ssh/sshd_config.d/*`, `/etc/sudoers.d/*`, `/etc/terminfo` (Ghostty entry) | `box/files/` | `box/bootstrap.sh` |
-| `~/.config/systemd/user/claude-remote*.service`, `~/.local/bin/remote-*` | `box/files/` | `box/bootstrap.sh` |
+| `/etc/apt`, `/etc/docker/daemon.json`, `/etc/sysctl.d/*`, `/etc/ssh/sshd_config.d/*`, `/etc/sudoers.d/*`, `/etc/security/limits.d/*`, `/etc/needrestart/conf.d/*`, `/etc/systemd/journald.conf.d/*`, `/etc/terminfo` (Ghostty entry) | `box/files/` | `box/bootstrap.sh` |
+| `/etc/systemd/system/docker-prune.{service,timer}` | `box/files/` | `box/bootstrap.sh step_docker` |
+| `~/.config/systemd/user/claude-remote*.service`, `~/.local/bin/remote-*`, `~/.local/bin/agent-session` | `box/files/` | `box/bootstrap.sh` |
 | `/etc/claude-code/CLAUDE.md` | `box/files/machine-CLAUDE.md` | `box/bootstrap.sh` |
-| `~/.bashrc` (guard + non-interactive part) | `box/files/bashrc` | `box/bootstrap.sh` |
+| `~/.bashrc` (guard + non-interactive part), `~/.bash_profile`, `~/.tmux.conf` | `box/files/bashrc`, `bash_profile`, `tmux.conf` | `box/bootstrap.sh` |
 | `~/.config/bash/interactive.sh`, `~/.zshrc`, `~/.zshenv`, `~/.config/starship.toml` | `home/bash/`, `home/zsh/`, `home/starship.toml` | `home/install.sh` |
 | `~/.config/mise/config.toml`, `config.<profile>.toml` | `home/mise/` | `home/install.sh <profile>` |
 | `~/.config/workbench/env` (`MISE_ENV`, `WORKBENCH_PROFILE`; sourced by the box bashrc and by `.zshenv`) | generated | `home/install.sh <profile>` |
@@ -63,7 +64,7 @@ workbench/
 | `~/.gitconfig`, `~/.config/op-env/*`, `~/.local/bin/opwith` | `home/git/`, `home/op-env/`, `home/bin/` | `home/install.sh` |
 | `~/.claude/settings.json` | `home/claude/settings.base.json` + overlay | `home/install.sh` (jq merge) |
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
-| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`), `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
+| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`) | `home/herdr/ agy/ omp/` | `home/install.sh` |
 | `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/nvim`, `~/.config/zellij` (box only) | `home/nvim/`, `home/zellij/` | `home/install.sh box` |

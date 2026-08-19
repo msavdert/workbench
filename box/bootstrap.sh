@@ -32,12 +32,17 @@ as_agent() {
     XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
     PATH="$AGENT_HOME/.local/bin:$AGENT_HOME/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin" "$@"
 }
-# install(1) wrapper that only reports when the file actually changed
+# install(1) wrapper that only reports when the file actually changed.
+# Mode is converged even when content matches: a hand chmod on sudoers or
+# sshd drop-ins must not survive a re-run.
 put() { # put <mode> <src> <dst>
   local mode=$1 src=$2 dst=$3
   if [[ ! -f $dst ]] || ! cmp -s "$src" "$dst"; then
     install -D -m "$mode" "$src" "$dst"
     echo "  updated $dst"
+  elif ((8#$(stat -c %a "$dst") != 8#$mode)); then
+    chmod "$mode" "$dst"
+    echo "  mode $mode $dst"
   fi
 }
 

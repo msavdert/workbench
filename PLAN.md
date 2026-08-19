@@ -54,7 +54,10 @@ the mac since the devbox seat is gone.
 ## Next
 
 1. Pick from the backlog below; nothing else is scheduled.
-2. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
+2. agy: run the $HOME instruction-layer probe (does agy read ~/AGENTS.md or
+   ~/GEMINI.md?) and record the answer in docs/03-runbook.md; only workspace-
+   relative paths were confirmed during the agy review.
+3. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
    should be present on the box again.
 
 ## Open questions
@@ -72,156 +75,55 @@ the mac since the devbox seat is gone.
 
 ## Log
 
-- 2026-08-18: repo created locally; AGENTS.md, CLAUDE.md, PLAN.md, README,
-  docs 00-02 drafted from a survey of agent-vm, dotfiles, ai-hub. Decisions:
-  new repo `workbench`, box is VM-only (container target dropped), user
-  `agent`, bash, two profiles, settings composed by overlay, ai-hub keeps
-  only doctrine/lab/journal. mise researched; profiles = MISE_ENV +
-  config.<profile>.toml (verified on 2026.8.8). Review round 1: D1 clean
-  start, D5 zsh hand-off, documents rewritten for a public repository.
-- 2026-08-19: first commit, repository published (public), Remote Control
-  environment `workbench` added. Phase 0 done, phase 1 active.
-- 2026-08-19: phase 1 executed. Path changes: rsync staging dir on the box
-  is `~/workbench-box/` (was `~/agent-vm-provision/`), on the PVE host
-  `/root/workbench/providers/proxmox/` (was `/root/agent-vm/`), Makefile
-  gained `PROVIDER ?= proxmox` used only by `vm-create`; `create-vm.sh`
-  reads `user-data.yaml` from its own directory. `box/remotes.list` gained
-  `workbench` (already registered on the live box in phase 0, so
-  `remote-ls` is unchanged; a rebuild now reproduces it). SC2015 in
-  `step_system` (`pro config`) rewritten as `if`, same behaviour; it failed
-  `make lint` in agent-vm too with shellcheck 0.9.0. Acceptance: `make lint`
-  green; `bootstrap.sh user verify` run on the box itself (the session ran
-  inside the VM, where the `agent-vm-ssh` alias does not resolve, so the
-  rsync + sudo steps of `make provision` were executed by hand with the
-  same arguments) - output identical to agent-vm's run except the expected
-  `updated /etc/claude-code/CLAUDE.md`; `remote-ls` unchanged (6 units
-  active). Not done: `providers/proxmox/README.md` sizing notes from
-  agent-vm `docs/design.md` (source map row, not a phase 1 step).
-- 2026-08-19: phase 1 committed and pushed (5f47c7e). Operator seat moves
-  to devbox (has Proxmox ssh); the in-box session ends here.
-- 2026-08-19: phase 1 literal acceptance from devbox: `make provision
-  STEPS="user verify"` green, `remote-ls` 6 units; snapshot `pre-phase2`
-  (VM 105). Phase 2 executed in eleven commits (8325835..aaa5925): step 1
-  install.sh; step 2 merges (mise, git, opwith/op-env, Claude settings,
-  statusline, shell layer, herdr/agy/omp/nvim/zellij); step 3 bootstrap
-  `step_home`; step 4 mac/. Decisions taken in passing: pull.ff=only over
-  pull.rebase; core.pager and color.ui=never dropped from the shared
-  gitconfig (env handles the agent path); node pinned to major 24; uv
-  backend pin dropped (registry fixed); nvim/zellij box-only; agy settings
-  composed with `~` expansion in path lists; MISE_ENV via generated
-  `~/.config/workbench/env`. Two live findings fixed in step 3: mise must
-  run under the agent's login shell (else only the base 18 tools install)
-  and needs GITHUB_TOKEN (anonymous API limit hit at 49 tools) - both in
-  `step_tools` now. Box acceptance green; mac acceptance pending.
-- 2026-08-19: phase 2 mac acceptance from the laptop. Three fixes: mise
-  `bun` moved from config.box.toml to config.toml (the npm backend is set
-  to bun in the base settings and omp is a base tool, so the mac install
-  of omp failed without it); `home/install.sh log()` printed `\~/` instead
-  of `~/`; `BACKUP_DIR` is now shared between mac/setup.sh and
-  home/install.sh (was two dirs one second apart). Findings: `brew bundle
-  cleanup` proposed only cache files, no packages (fd/fzf/gh/... brew
-  copies were already gone); Apple bash 3.2 runs the scripts fine. Phase 2
-  done, phase 3 active.
-- 2026-08-19: phase 3 executed from the mac in one workbench commit
-  (c14838c) plus ai-hub fc2e4e2. `home/install.sh` grew `link_agents` and
-  `verify_gate` (the gate blocked this session's own edit command because
-  the literal forced-push string appeared in it - the check works). Also:
-  AGENTS.md now states bash 3.2 compatibility for scripts shared with the
-  mac (macOS updates never move Apple's bash; no brew bash added);
-  `mac/setup.sh` runs `mise self-update --yes`; the `1password-cli` cask
-  left the Brewfile and the laptop; `autoMode` block kept in
-  settings.mac.json. Phase 3 done, phase 4 active.
-- 2026-08-19: phase 4 executed from the mac (9ecfd4c..5315e16). Commit
-  split note: 9ecfd4c carries all three new mise tasks (zsh:plugins,
-  claude:plugins, herdr:integrations rewrite) because the hunks were
-  adjacent; 2545a93 is the D12 text only. Phase 4 done, phase 5 active.
-- 2026-08-19: session end. omp:auth verified on the box after the Synthetic
-  item was recreated as an API Credential in the dotfiles vault (op item
-  move refused the original: unsupported SSO field type); merged
-  ~/.claude.json installed on the mac. Next session starts phase 5.
-- 2026-08-19: phase 5 step 1 (OrbStack) executed from the mac. Machine
-  created, deleted, recreated with `make bootstrap-all PROVIDER=orbstack`:
-  verify green in about 3 minutes. Three bootstrap.sh bugs only a fresh
-  machine shows (chown before home, unguarded sshd -t, unconditional
-  qemu-guest-agent) fixed and re-verified on Proxmox too. Remaining
-  acceptance item: manual `claude auth login` + `make claude-remote
-  PROVIDER=orbstack`. Uncommitted.
-- 2026-08-19: operator closed phase 5 (OrbStack done, cloud skipped, RC
-  login open) and set phase 6 active. Token item created in 1Password,
-  OrbStack machine deleted, work pushed.
-- 2026-08-19: phase 6 step 1 executed from the mac: agent-vm and dotfiles
-  archived on GitHub with a README notice pointing here, agent-vm removed
-  from remotes.list, remote-rm + clone deletion on the box, provision
-  re-applied green (bb56517). Step 2 repository side: devbox wording and
-  the two omp skills rewritten for the box, devbox.lua -> box.lua,
-  provision re-applied (c227908). VPS container deferred by the operator.
-- 2026-08-19: phase 6 step 2 machine side and acceptance: operator chose
-  stop + delete all volumes; compose down -v on the VPS, orphan devbox_*
-  volumes and image removed, /home/opc/dotfiles deleted (/home/opc/devbox
-  deletion blocked, left to the operator). AGENTS.md migration section,
-  README, 02-migration, 03-runbook, PLAN updated: migration complete.
-- 2026-08-19: operator finished the hand items (VPS ~/devbox, service
-  account rotated, mac ssh entries, ghcr package) and skipped the OrbStack
-  Remote Control login for good. Migration record closed.
-- 2026-08-19: rebuild test: snapshot from the mac ok, VM 105 destroyed
-  with snapshots, bootstrap-all green from scratch in 3m14s after fixing
-  vm-create's missing staging dir on the PVE host. Manual logins pending.
-- 2026-08-19: rebuild test closed: logins done by the operator, all RC
-  servers up, no drift, clean snapshot. Fixed on the way: claude-remote
-  template-instance start, agy settings drift (base + JSON-aware check),
-  ssh-master docker gotcha documented.
-- 2026-08-19: Remote Control cut to the single `work` server (D11);
-  `remote-add --clone-only`, remotes.list entries switched, four project
-  servers disabled on the box. Ghostty terminfo compiled by step_system
-  (doubled keystrokes over ssh). Repo audit by subagents; doc cleanups.
-- 2026-08-19: docs/01 operator surface corrected: it listed `mac-setup` and
-  `mac-sync` make targets that never existed. The client is driven by
-  `mac/setup.sh` and `mise run mac:sync`; `claude-remote` and `vm-destroy`
-  added to the Makefile list.
-- 2026-08-19: omp's config.yml is generated, not symlinked. An omp 17 schema
-  migration (advisor.subagents -> task.agentAdvisor) had rewritten the tracked
-  file through the link and stripped its comments; the arrangement now matches
-  agy's, with a YAML branch in install.sh's content comparison. Acceptance run
-  on the box: `omp config set` leaves the repo clean, `--check` reports the
-  drift and exits 1, `install.sh box` reverts it. Settings changed with it:
-  modelRoles.default -> gemini-3.7-flash:high, advisor.enabled -> false.
-  Applied on both machines, `--check` clean on both. `install.sh mac` also
-  reverted ~/.claude/settings.json `model` from a runtime `opus[1m]` back to
-  the repo's `claude-fable-5[1m]`; the operator chose to let the repo win
-  rather than encode the runtime value, so `/model` in a session is an
-  experiment there too, not a setting.
-- 2026-08-19: omp config reviewed against `omp models` and the omp-fleet
-  benchmark notes. Key fact recovered: Synthetic aliases resolve to concrete
-  models (syn:large:text = GLM-5.2, syn:large:vision = Kimi-K3), so `slow`/
-  `plan` share a slot with audit/security-reviewer and were NOT moved to the
-  vision alias to regain snapcompact - that would queue them in front of
-  librarian and docs. Changed: `tiny` :high -> :minimal (comment and suffix
-  disagreed), and the `default` fallback chain, whose second rung was the
-  primary itself and which no longer crossed providers. Corrected claims in
-  config.yml and AGENTS.md: no model here has an `xhigh` rung, snapcompact
-  never worked on the main session before the move to flash, the reviewer's
-  stated reason, "no subagent sits on the session's model", and a hook said to
-  deploy "via the Dockerfile COPY". Also: the `work` Remote Control server was
-  stopped, disabled and re-enabled; it came back with the same environment id,
-  which is the runbook's point that registrations cannot be removed.
-- 2026-08-19: policy, operator decision - no Antigravity gemini reference runs
-  below `:high` (that quota is not the constraint; `:high` is the top of both
-  gemini ladders). Six bare references were resolving through
-  `defaultThinkingLevel: auto` and could land on `low`: four fallback-chain
-  rungs, the `task` subagent override, and `tiny`, whose `:minimal` from the
-  review earlier the same day is reversed. `providers.webSearchGeminiModel`
-  stays bare - it is a Google Search grounding model ID, not a role pattern.
-  `slow`/`plan` confirmed staying on syn:large:text.
-- 2026-08-19: agy reviewed. Found and fixed: herdr's three integration hooks
-  (claude, omp, agy) were absent on the box - `mise run herdr:integrations` is
-  manual and was never run after the rebuild, and every hook fails open so
-  nothing reported it. `box/bootstrap.sh` step_tools calls the task now and
-  step_verify checks the three files; agy and herdr added to the PATH checks.
-  agy pinned to `gemini-3.7-flash-high` + `effort: high` (the omp gemini
-  policy; agy encodes the rung in the model id and had neither field set).
-  Negative result, documented in the runbook instead of shipped: agy's
-  `permissions` block is parsed but NOT enforced under `always-proceed`,
-  `permissions_v2` is inert, and `enableTerminalSandbox` fails OPEN (its
-  seccomp server does not answer and agy retries unsandboxed). Open: no
-  global instruction layer for agy - it reads AGENTS.md/GEMINI.md but only
-  workspace-relative paths were confirmed, and the $HOME probe was not run.
+One entry per session, two lines at most; details live in docs/ and git
+history.
+- 2026-08-18: repo created; AGENTS.md/CLAUDE.md/docs 00-02 drafted from
+  agent-vm, dotfiles, ai-hub. D1 clean start, D5 zsh hand-off.
+- 2026-08-19: first commit, repo published; RC env `workbench` added. Phase 0
+  done, phase 1 active.
+- 2026-08-19: phase 1 executed: staging-dir paths moved, remotes.list gained
+  workbench, SC2015 fixed. `make lint` green.
+- 2026-08-19: phase 1 committed and pushed (5f47c7e); seat moves to devbox.
+- 2026-08-19: phase 1 acceptance green from devbox; phase 2 executed
+  (8325835..aaa5925). Box acceptance green, mac pending.
+- 2026-08-19: phase 2 mac acceptance: three fixes (mise `bun` placement,
+  install.sh log(), shared BACKUP_DIR). Phase 2 done, phase 3 active.
+- 2026-08-19: phase 3 executed (c14838c, ai-hub fc2e4e2): `link_agents` and
+  `verify_gate` added. Phase 3 done, phase 4 active.
+- 2026-08-19: phase 4 executed (9ecfd4c..5315e16): mise tasks, D12 text. Phase
+  4 done, phase 5 active.
+- 2026-08-19: session end: omp:auth verified on box; merged ~/.claude.json
+  installed on mac. Next session starts phase 5.
+- 2026-08-19: phase 5 step 1 (OrbStack): bootstrap-all green in ~3 min;
+  fresh-machine bugs fixed. RC login item remains, uncommitted.
+- 2026-08-19: operator closed phase 5 (OrbStack done, cloud skipped, RC login
+  open); phase 6 active.
+- 2026-08-19: phase 6 step 1: agent-vm/dotfiles archived, remotes.list updated
+  (bb56517), devbox renamed to box (c227908).
+- 2026-08-19: phase 6 step 2: VPS volumes/compose torn down; docs/PLAN updated
+  - migration complete.
+- 2026-08-19: operator finished hand items (VPS devbox, service account, mac
+  ssh, ghcr); OrbStack RC login skipped for good.
+- 2026-08-19: rebuild test: VM 105 destroyed, bootstrap-all green from scratch
+  in 3m14s (vm-create staging-dir fix). Logins pending.
+- 2026-08-19: rebuild test closed: logins done, all RC servers up, no drift,
+  clean snapshot; agy settings drift check added.
+- 2026-08-19: RC cut to single `work` server (D11); four project servers
+  disabled. Ghostty terminfo fix applied.
+- 2026-08-19: docs/01 corrected: removed nonexistent mac-setup/mac-sync
+  targets, added claude-remote and vm-destroy.
+- 2026-08-19: omp's config.yml made generated, not symlinked;
+  modelRoles.default -> gemini-3.7-flash:high, advisor disabled.
+- 2026-08-19: omp config reviewed against `omp models`/benchmarks: `tiny` fixed
+  to :minimal, default fallback chain now crosses providers.
+- 2026-08-19: policy: no Antigravity gemini reference runs below `:high` (six
+  bare refs fixed). webSearchGeminiModel stays bare.
+- 2026-08-19: agy reviewed: herdr hooks absent, bootstrap now fixes it; pinned
+  gemini-3.7-flash-high effort high; sandbox gap noted; item -> Next.
+- 2026-08-19: drift sweep after a full repo review: omp-run.sh default model
+  aligned with the omp-fleet policy (3.7-flash:high), box ssh:sync got the
+  mac's empty-hostname guard, bootstrap put() converges file mode, ownership
+  table gained the missing box/files rows and lost the phantom home/aws, mise
+  reference doc matches inline tasks, PLAN log condensed. Non-finding: the
+  smol chain's gemini-3.5-flash is real (`omp models` on the box lists 3.5,
+  3.6, 3.7-flash); config.yml's fingerprint table now says so.

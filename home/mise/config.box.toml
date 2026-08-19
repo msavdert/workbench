@@ -116,9 +116,10 @@ awk -v b="$BEGIN_MARK" -v e="$END_MARK" '
     | while read -r id; do
         item=$(op item get "$id" --vault dotfiles --format json)
         title=$(printf '%s' "$item" | jq -r '.title')
-        host=$(printf '%s' "$item" | jq -r '.fields[] | select(.label=="hostname") | .value')
-        user=$(printf '%s' "$item" | jq -r '.fields[] | select(.label=="user") | .value')
+        host=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="hostname") | .value] | first // empty')
+        user=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="user") | .value] | first // empty')
         port=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="port") | .value] | first // "22"')
+        [ -n "$host" ] || continue
         op read "op://dotfiles/$id/private key?ssh-format=openssh" | ssh-add -q -
         op read "op://dotfiles/$id/public key" > ~/.ssh/1p-hosts/"$title".pub
         printf 'Host %s\\n    HostName %s\\n    User %s\\n    Port %s\\n    IdentityFile ~/.ssh/1p-hosts/%s.pub\\n    IdentitiesOnly yes\\n\\n' \

@@ -103,7 +103,7 @@ esac
 
 TOPIC="${1:?usage: omp-run.sh <topic> <prompt-file> [model] [max-seconds]}"
 PROMPT="${2:?missing prompt file}"
-MODEL="${3:-google-antigravity/gemini-3.1-pro:high}"
+MODEL="${3:-google-antigravity/gemini-3.7-flash:high}"
 MAXTIME="${4:-900}"
 
 [ -f "$PROMPT" ] || { echo "prompt file not found: $PROMPT" >&2; exit 2; }
