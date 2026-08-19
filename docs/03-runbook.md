@@ -125,6 +125,16 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
   the service account in 1Password and run `make secrets` to push the new
   token to `~/.config/op/env` on the box.
 
+## Operator seat
+
+Sessions run from the mac (`~/work/workbench`). The mac reaches the box
+directly (`agent-vm-ssh` in `~/.ssh/config.local`, 1Password SSH agent),
+so `make provision`, `make ssh` and `home/install.sh --check` over ssh
+work from the laptop; `make lint` works there (shellcheck, shfmt from
+mise). Snapshots and rollbacks need `pve-vm-ssh` (a 1Password `ssh-host`
+item; `mise run ssh:sync` on the mac installs it) - not yet exercised from
+the mac since the devbox seat is gone.
+
 ## Updating
 
 | What | How |
@@ -258,6 +268,9 @@ The first `claude auth login` on it is manual, as on every substrate.
   future agy fixes the sandbox or enforces deny under `always-proceed`.
 
 ## Verification checklist (what `bootstrap.sh verify` covers)
+
+A captured run is kept in `docs/reference/verify-2026-08-19.md`; regenerate
+with `make provision STEPS=verify > docs/reference/verify-<date>.md`.
 
 docker active and usable by `agent`, sshd active (or socket-activated),
 qemu-guest-agent active where its virtio port exists, `mise node gh op

@@ -1,0 +1,25 @@
+# Runs the same `make lint` the operator runs before every commit, so the
+# badge on README.md is evidence rather than a promise. Tools come from mise,
+# the same way they do on the mac (home/mise/config.toml), so the CI and
+# local toolchains cannot diverge.
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with:
+          install: false
+      - name: Install shellcheck and shfmt
+        run: mise use -g shellcheck@latest shfmt@latest
+      - run: make lint

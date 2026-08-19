@@ -41,16 +41,6 @@ four per-project servers were disabled on the box (D11 updated). Ghostty
 terminfo shipped in `box/files/` after ssh sessions from the mac echoed
 every keystroke twice. No active phase; work is backlog-driven.
 
-## Operator seat
-
-Sessions run from the mac (`~/work/workbench`). The mac reaches the box
-directly (`agent-vm-ssh` in `~/.ssh/config.local`, 1Password SSH agent),
-so `make provision`, `make ssh` and `home/install.sh --check` over ssh
-work from the laptop; `make lint` works there (shellcheck, shfmt from
-mise). Snapshots and rollbacks need `pve-vm-ssh` (a 1Password `ssh-host`
-item; `mise run ssh:sync` on the mac installs it) - not yet exercised from
-the mac since the devbox seat is gone.
-
 ## Next
 
 1. Pick from the backlog below; nothing else is scheduled.
@@ -76,80 +66,20 @@ the mac since the devbox seat is gone.
 ## Log
 
 One entry per session, two lines at most; details live in docs/ and git
-history.
-- 2026-08-18: repo created; AGENTS.md/CLAUDE.md/docs 00-02 drafted from
-  agent-vm, dotfiles, ai-hub. D1 clean start, D5 zsh hand-off.
-- 2026-08-19: first commit, repo published; RC env `workbench` added. Phase 0
-  done, phase 1 active.
-- 2026-08-19: phase 1 executed: staging-dir paths moved, remotes.list gained
-  workbench, SC2015 fixed. `make lint` green.
-- 2026-08-19: phase 1 committed and pushed (5f47c7e); seat moves to devbox.
-- 2026-08-19: phase 1 acceptance green from devbox; phase 2 executed
-  (8325835..aaa5925). Box acceptance green, mac pending.
-- 2026-08-19: phase 2 mac acceptance: three fixes (mise `bun` placement,
-  install.sh log(), shared BACKUP_DIR). Phase 2 done, phase 3 active.
-- 2026-08-19: phase 3 executed (c14838c, ai-hub fc2e4e2): `link_agents` and
-  `verify_gate` added. Phase 3 done, phase 4 active.
-- 2026-08-19: phase 4 executed (9ecfd4c..5315e16): mise tasks, D12 text. Phase
-  4 done, phase 5 active.
-- 2026-08-19: session end: omp:auth verified on box; merged ~/.claude.json
-  installed on mac. Next session starts phase 5.
-- 2026-08-19: phase 5 step 1 (OrbStack): bootstrap-all green in ~3 min;
-  fresh-machine bugs fixed. RC login item remains, uncommitted.
-- 2026-08-19: operator closed phase 5 (OrbStack done, cloud skipped, RC login
-  open); phase 6 active.
-- 2026-08-19: phase 6 step 1: agent-vm/dotfiles archived, remotes.list updated
-  (bb56517), devbox renamed to box (c227908).
-- 2026-08-19: phase 6 step 2: VPS volumes/compose torn down; docs/PLAN updated
-  - migration complete.
-- 2026-08-19: operator finished hand items (VPS devbox, service account, mac
-  ssh, ghcr); OrbStack RC login skipped for good.
-- 2026-08-19: rebuild test: VM 105 destroyed, bootstrap-all green from scratch
-  in 3m14s (vm-create staging-dir fix). Logins pending.
-- 2026-08-19: rebuild test closed: logins done, all RC servers up, no drift,
-  clean snapshot; agy settings drift check added.
-- 2026-08-19: RC cut to single `work` server (D11); four project servers
-  disabled. Ghostty terminfo fix applied.
-- 2026-08-19: docs/01 corrected: removed nonexistent mac-setup/mac-sync
-  targets, added claude-remote and vm-destroy.
-- 2026-08-19: omp's config.yml made generated, not symlinked;
-  modelRoles.default -> gemini-3.7-flash:high, advisor disabled.
-- 2026-08-19: omp config reviewed against `omp models`/benchmarks: `tiny` fixed
-  to :minimal, default fallback chain now crosses providers.
-- 2026-08-19: policy: no Antigravity gemini reference runs below `:high` (six
-  bare refs fixed). webSearchGeminiModel stays bare.
-- 2026-08-19: agy reviewed: herdr hooks absent, bootstrap now fixes it; pinned
-  gemini-3.7-flash-high effort high; sandbox gap noted; item -> Next.
-- 2026-08-19: drift sweep after a full repo review: omp-run.sh default model
-  aligned with the omp-fleet policy (3.7-flash:high), box ssh:sync got the
-  mac's empty-hostname guard, bootstrap put() converges file mode, ownership
-  table gained the missing box/files rows and lost the phantom home/aws, mise
-  reference doc matches inline tasks, PLAN log condensed. Non-finding: the
-  smol chain's gemini-3.5-flash is real (`omp models` on the box lists 3.5,
-  3.6, 3.7-flash); config.yml's fingerprint table now says so.
-- 2026-08-19: review low-priority follow-ups: docker restarts only when
-  daemon.json changed, omp WATCHDOG/models/keybindings lost their container
-  wording (VM + install.sh), herdr:integrations guards WORKBENCH_PROFILE,
-  transcribe.py skips malformed yt-dlp lines. omp 17.3.5 source confirms the
-  read tool field is `path` (delegation.ts hook is correct). Open for the
-  operator: statusline glyphs vs the no-emoji rule.
-- 2026-08-19: operator decisions: statusline glyphs are an explicit exception
-  to the no-emoji rule (AGENTS.md 7); agy $HOME probe stays in Next. Signing
-  key registered on GitHub as a signing key, commits show verified. Public
-  key shipped as home/git/allowed_signers so `git log --show-signature`
-  verifies on every machine (signing itself stays in ~/.gitconfig.local).
-- 2026-08-19: agents/ dissolved: Claude's CLAUDE.md, subagents, omp-fleet,
-  boundary gate moved to home/claude/ (D9 updated); oss-project-eval,
-  youtube-whisper-transcriber, quant-research templates and overnight
-  PROTOCOL handed back to ai-hub (staged in the box clone, ai-hub commit
-  pending operator).
-- 2026-08-19: ai-hub side done (ai-hub c4de199, pushed from the box with the
-  operator's one-time authorization): project skills under .claude/skills/,
-  templates and overnight protocol under lab/, all references repointed.
-- 2026-08-19: starship.toml rewritten for both profiles (Nerd Font glyphs,
-  palette, right prompt with status/time, os/hostname/sudo/direnv modules,
-  git_status ignore_submodules); the ttyd constraint it carried was stale.
-- 2026-08-19: review follow-ups: omp skills add-secret/omp-tuning removed
-  (unused, stale references), secret-leak procedure in runbook; agy
-  `model`/`trustedWorkspaces` are seed keys (D8) so in-session changes are
-  neither drift nor reset; hooks merge deduplicates.
+history. Older entries are condensed; `git log` has the full trail.
+- 2026-08-18/19: phases 0-6 executed in sequence (founding docs, agent-vm
+  moved in, home/ and mac/, ai-hub runtime, harnesses, OrbStack proof,
+  predecessors retired); migration complete, see docs/02-migration.md.
+- 2026-08-19: from-scratch rebuild proven (3m14s, 47 ok / 0 fail), four
+  fresh-path bugs fixed; RC reduced to one `work` server (D11); omp/agy
+  configs reviewed against the live tools; ownership table completed.
+- 2026-08-19: agents/ dissolved into home/claude/, ai-hub material handed
+  back (ai-hub c4de199); statusline glyph exception and signing key
+  recorded.
+- 2026-08-19: starship.toml rewritten for both profiles; review follow-ups:
+  unused omp skills removed, leak procedure in runbook, agy seed keys (D8),
+  hooks merge deduplicated.
+- 2026-08-19: README rewritten for an outside reader (prerequisites,
+  quickstart, diagram, highlights), docs/glossary.md, lint workflow and
+  badge, verify transcript under docs/reference/, PLAN log condensed,
+  operator seat moved to the runbook.

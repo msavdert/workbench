@@ -16,9 +16,10 @@ Plus:
 |---|---|
 | `providers/proxmox/` | `create-vm.sh`, `vm.env`, cloud-init: create the box on the Proxmox host |
 | `providers/orbstack/` | create the box as an OrbStack Linux VM on the laptop |
-| `providers/cloud/` | generic cloud-init user-data for any Ubuntu cloud image |
-| `docs/` | 00 vision, 01 architecture, 02 migration, 03 runbook |
+| `providers/cloud/` | backlog (PLAN.md): generic cloud-init user-data for any Ubuntu cloud image; not present yet |
+| `docs/` | 00 vision, 01 architecture, 02 migration, 03 runbook, glossary, `reference/` (tool notes, captured transcripts) |
 | `Makefile` | operator surface (run from the laptop) |
+| `.github/workflows/lint.yml` | CI: `make lint` on every push, the badge in README.md |
 | `PLAN.md` | live state of the migration and the handoff between sessions |
 
 ## Layout
@@ -43,7 +44,7 @@ workbench/
       statusline.sh  agents/  skills/  hooks/
     herdr/  agy/  omp/  nvim/  zellij/
   providers/
-    proxmox/  orbstack/  cloud/
+    proxmox/  orbstack/        (cloud/ is backlog)
   docs/
 ```
 
