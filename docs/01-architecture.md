@@ -136,5 +136,12 @@ installs `rsync` and removes that file before `openssh-server` lands.
 
 Carried over from agent-vm and generalised by `PROVIDER=proxmox|orbstack|cloud`:
 `vm-create`, `vm-wait`, `vm-status`, `secrets`, `provision [STEPS=...]`,
-`bootstrap-all`, `remote-add/ls/rm`, `snapshot`/`rollback`/`snapshots`
-(Proxmox only), `ssh`, `lint`, and `mac-setup` / `mac-sync` for the client.
+`bootstrap-all`, `claude-remote`, `remote-add/ls/rm`, `snapshot`/`rollback`/
+`snapshots` (Proxmox only), `vm-destroy`, `ssh`, `lint`.
+
+The client is not driven from the Makefile: it has no VM to reach and no
+provider to select. `mac/setup.sh` provisions the laptop (`--links-only` to
+refresh links only, `DRY_RUN=1` to preview, `CLEANUP=1` to let
+`brew bundle cleanup` uninstall what the Brewfile does not list), and
+`mise run mac:sync` pulls this repository and re-runs it with
+`--links-only`.

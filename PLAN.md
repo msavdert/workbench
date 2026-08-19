@@ -174,3 +174,7 @@ the mac since the devbox seat is gone.
   `remote-add --clone-only`, remotes.list entries switched, four project
   servers disabled on the box. Ghostty terminfo compiled by step_system
   (doubled keystrokes over ssh). Repo audit by subagents; doc cleanups.
+- 2026-08-19: docs/01 operator surface corrected: it listed `mac-setup` and
+  `mac-sync` make targets that never existed. The client is driven by
+  `mac/setup.sh` and `mise run mac:sync`; `claude-remote` and `vm-destroy`
+  added to the Makefile list.
