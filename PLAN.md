@@ -83,3 +83,7 @@ history. Older entries are condensed; `git log` has the full trail.
   quickstart, diagram, highlights), docs/glossary.md, lint workflow and
   badge, verify transcript under docs/reference/, PLAN log condensed,
   operator seat moved to the runbook.
+- 2026-08-19: herdr 0.8.0 leaves SGR mouse reporting and the kitty keyboard
+  protocol on after prefix+q detach (raw "35;64;25M" bytes at the prompt);
+  .zshrc now wraps herdr and resets both modes on exit. Revisit when a
+  herdr release fixes detach.
