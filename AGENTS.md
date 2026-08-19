@@ -46,8 +46,11 @@ current state of work and the handoff between sessions.
 
 ## Conventions
 
-- Bash 5, `set -euo pipefail`, functions over inline blocks, 2-space
-  indent, shellcheck and shfmt clean.
+- Bash 5 on the box; scripts that also run on the mac (`home/install.sh`,
+  `home/bin/*`, `mac/setup.sh`) stay bash 3.2 compatible because macOS ships
+  Apple's frozen 3.2 and this repository does not install another bash
+  (no associative arrays, `mapfile`, `${x,,}`). `set -euo pipefail`,
+  functions over inline blocks, 2-space indent, shellcheck and shfmt clean.
 - OS packages: apt, in `box/bootstrap.sh` `step_apt`. User tools: mise, in
   `home/mise/`. Claude Code: native installer. See `docs/00-vision.md` D7
   before moving a tool between layers.
