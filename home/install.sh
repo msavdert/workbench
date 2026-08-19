@@ -39,7 +39,12 @@ usage() {
   exit "${1:-2}"
 }
 
-log() { printf '  %-6s %s\n' "$1" "${2//$HOME/\~}"; }
+# The replacement is a variable: a bare ~ would tilde-expand and \~ stays a
+# literal backslash.
+log() {
+  local tilde='~'
+  printf '  %-6s %s\n' "$1" "${2//$HOME/$tilde}"
+}
 
 # ---------------------------------------------------------------------------
 # link <src-relative-to-home/> <dst-absolute>
