@@ -17,9 +17,11 @@ return {
   { "MagicDuck/grug-far.nvim", enabled = false },
   { "folke/noice.nvim", enabled = false },
   { "windwp/nvim-ts-autotag", enabled = false },
-  -- One theme (tokyonight, matching the shell/statusline HUD); nui.nvim only
+  -- One theme family everywhere (docs/00-vision.md D16): catppuccin, which
+  -- picks latte or mocha from 'background'; nvim 0.10+ sets that from the
+  -- terminal (OSC 11), so the editor follows Ghostty light/dark. nui.nvim only
   -- served noice.
-  { "catppuccin/nvim", name = "catppuccin", enabled = false },
+  { "LazyVim/LazyVim", opts = { colorscheme = "catppuccin" } },
   { "MunifTanjim/nui.nvim", enabled = false },
 
   -- Servers installed by mise. lua_ls is LazyVim's default and stays.

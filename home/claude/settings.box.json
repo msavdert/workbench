@@ -8,5 +8,5 @@
     "defaultMode": "bypassPermissions"
   },
   "remoteControlAtStartup": true,
-  "theme": "dark"
+  "theme": "auto"
 }

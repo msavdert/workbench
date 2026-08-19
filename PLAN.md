@@ -121,3 +121,6 @@ history. Older entries are condensed; `git log` has the full trail.
   main) as the everyday entry; `make ssh` stays as the tmux fallback. Box
   herdr server 0.8.0 runs sessions default and main; box agy model fixed
   to the display name in the live seed key.
+- 2026-08-19: colour audit (D16): Ghostty moved to Catppuccin Latte/Mocha
+  auto pair; status lines dropped hardcoded 256-colour codes for the 16
+  ANSI slots; Claude box theme auto; omp/nvim on the catppuccin pair.

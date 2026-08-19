@@ -48,21 +48,26 @@ input=$(cat)
 [ -z "$input" ] && exit 0
 
 # ------------------------------------------------------------------------------
-# 3. ANSI Color Palette (Tokyo Night / Catppuccin Inspired)
+# 3. ANSI Color Palette (16-colour, inherited from the terminal theme)
 # ------------------------------------------------------------------------------
 ESC=$'\033'
-R="${ESC}[0m" # Reset
-B="${ESC}[1m" # Bold
-D="${ESC}[2m" # Dimmed / Subdued
+R="${ESC}[0m"  # Reset
+B="${ESC}[1m"  # Bold
+D="${ESC}[90m" # Subdued: bright black instead of SGR 2, which is too faint on light themes
 
-CY="${ESC}[38;5;117m"   # Soft Cyan / Sky (Model name, PR badges, untracked flags)
-BL="${ESC}[38;5;75m"    # Soft Blue (Directory, worktree, agent badges)
-MG="${ESC}[38;5;176m"   # Lavender / Magenta (Thinking mode, branch name, cache hit)
-GR="${ESC}[38;5;114m"   # Mint Green (Healthy status, staged files, added lines)
-YE="${ESC}[38;5;221m"   # Warm Amber / Gold (Medium threshold warning, cost, dirty files)
-RD="${ESC}[38;5;203m"   # Coral Red (High threshold alerts, removed lines)
-WH="${ESC}[38;5;253m"   # Clean White (Emphasized text, values)
-GRAY="${ESC}[38;5;242m" # Slate Gray (Neutral dividers)
+# Only the 16 basic SGR colours and the default foreground are used, never
+# 256-colour or truecolor codes: the terminal theme (Ghostty, light or dark)
+# supplies the actual values, so the bar stays readable under both
+# appearances and never hardcodes a palette (docs/00-vision.md D16).
+
+CY="${ESC}[36m"   # Cyan (Model name, PR badges, untracked flags)
+BL="${ESC}[34m"   # Blue (Directory, worktree, agent badges)
+MG="${ESC}[35m"   # Magenta (Thinking mode, branch name, cache hit)
+GR="${ESC}[32m"   # Green (Healthy status, staged files, added lines)
+YE="${ESC}[33m"   # Yellow (Medium threshold warning, cost, dirty files)
+RD="${ESC}[31m"   # Red (High threshold alerts, removed lines)
+WH="${ESC}[39m"   # Default foreground (Emphasized text, values)
+GRAY="${ESC}[90m" # Bright black (Neutral dividers)
 
 SEP=" ${GRAY}│${R} " # Major segment separator
 DOT=" ${GRAY}·${R} " # Minor segment separator

@@ -20,7 +20,7 @@ require("lazy").setup({
     lazy = false,
     version = false, -- lazy-lock.json is the pin, not semver tags
   },
-  install = { colorscheme = { "tokyonight", "habamax" } },
+  install = { colorscheme = { "catppuccin", "habamax" } },
   -- No update checks: versions change only when lazy-lock.json is updated
   -- deliberately and committed; an unprompted upgrade on the box would be
   -- drift this repo cannot see.

@@ -196,6 +196,23 @@ therefore read in local time. Time sync stays on Ubuntu's
 because a VM client needs nothing more. `tzdata` comes from the distro and
 is refreshed by the normal apt passes (D14).
 
+D16 One colour family, terminal-owned, light and dark. Ghostty on the mac is
+the single place that defines colours: `theme = light:Catppuccin
+Latte,dark:Catppuccin Mocha`, switching with macOS appearance. Everything
+that runs inside it, on the mac or over ssh on the box, either inherits the
+16 ANSI colours (status lines use only SGR 30-37/90-97 and the default
+foreground, never 256-colour or truecolor codes) or follows the terminal
+background it detects through OSC 11 and picks the matching Catppuccin
+variant (Claude Code `theme: auto` on both profiles, herdr `auto_switch`
+with catppuccin/catppuccin-latte, omp dark-catppuccin/light-catppuccin,
+nvim catppuccin). Catppuccin was chosen over Modus/Selenized because it is
+the only pair every tool ships natively; its bright-black slot stays
+readable on both variants, which is what made the old 256-colour status
+bars unreadable by day. The font is JetBrainsMono Nerd Font 13.5 on the
+mac only; the box renders nothing. To try another scheme change the Ghostty
+line and the three per-tool pairs named here; nothing else carries colour.
+tmux and zellij are not used interactively and keep their defaults.
+
 ## Known differences between substrates (accepted, documented)
 
 - Snapshots: Proxmox has ZFS snapshots and `make snapshot` / `make rollback`;

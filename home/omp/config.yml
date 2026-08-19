@@ -743,14 +743,14 @@ magicKeywords:
 
 # --- Appearance --------------------------------------------------------------
 # The box installs a Nerd Font and the rest of the shell (starship, eza,
-# yazi) already assumes one, so glyphs are safe. titanium/light matches the
-# terminal theme used everywhere else in this repo.
+# yazi) already assumes one, so glyphs are safe. The catppuccin pair matches the
+# terminal theme used everywhere else in this repo (docs/00-vision.md D16).
 statusLine:
   preset: nerd
 symbolPreset: nerd
 theme:
-  dark: titanium
-  light: light
+  dark: dark-catppuccin
+  light: light-catppuccin
 
 # --- Autolearn ---------------------------------------------------------------
 # Off. Enabling it would (a) run an extra capture turn after the agent stops,
