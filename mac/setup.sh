@@ -84,7 +84,10 @@ install_mise() {
   # Standalone installer, not brew: no second brew-managed copy shadowing
   # ~/.local/bin/mise.
   if command -v mise >/dev/null 2>&1; then
-    info "already installed ($(mise --version))"
+    info "already installed ($(mise --version 2>/dev/null))"
+    # The standalone install has no package manager behind it: self-update is
+    # the only way it moves (the box gets mise from apt).
+    run mise self-update --yes
     return
   fi
   [[ -n $DRY_RUN ]] && {
