@@ -56,7 +56,10 @@ terraform = "latest"
 
 # --- databases ---
 usql = "latest"
-"http:sqlcl" = { version = "26.2.0.181.2110", url = "https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-26.2.0.181.2110.zip" }
+# Oracle publishes no release feed, so the version list is scraped from the
+# download page the same way the Homebrew cask's livecheck does. Without
+# version_list_url `mise up` cannot resolve "latest" and warns on every run.
+"http:sqlcl" = { version = "latest", url = "https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-{{version}}.zip", version_list_url = "https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/", version_regex = "sqlcl-(\\d+(?:\\.\\d+)+)\\.zip" }
 
 [tasks."kube:homelab"]
 description = "Pull kubeconfig + talosconfig from 1Password into ~/.kube and ~/.talos"

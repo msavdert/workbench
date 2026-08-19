@@ -89,3 +89,10 @@ history. Older entries are condensed; `git log` has the full trail.
   arriving in the latency window before the resets reach Ghostty. .zshrc
   wraps herdr and drains the tty for 0.2s of quiet when SSH_CONNECTION is
   set. zellij used to absorb this in the old container setup.
+- 2026-08-19: `mise up` on the box warned "no latest version for
+  http:sqlcl" because the pinned http tool had no version source (dotfiles
+  never ran `mise up`, only `mise install` in docker build, so it was never
+  visible). Fixed with version_list_url + version_regex scraping Oracle's
+  download page (the Homebrew cask livecheck approach); verified on the box:
+  ls-remote resolves 26.2.1.222.1617, install and `sql -V` work, warning
+  gone.
