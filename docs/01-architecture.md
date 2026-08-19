@@ -77,6 +77,16 @@ workbench/
 Rule of thumb: if root writes it, `box/`; if the user writes it and it is not
 agent behaviour, `home/`; if it changes how an agent thinks, `agents/`.
 
+One deliberate exception: omp and agy keep their behaviour files (omp's
+`agents/`, `skills/`, `AGENTS.md`, `RULES.md`, `WATCHDOG.md`, `hooks/`) next
+to their settings under `home/omp/` and `home/agy/`. Everything there is in
+a tool-specific format and lands in one dotdir (`~/.omp/agent/`,
+`~/.gemini/antigravity-cli/`), so splitting it across two repo trees would
+buy nothing. `agents/` holds what Claude Code loads (`~/.claude`) plus the
+tool-agnostic material (templates, overnight protocol) that was moved out of
+ai-hub's runtime; the `omp-fleet` skill lives there because it steers Claude,
+not omp.
+
 `home/install.sh` has two kinds of target: links (a `$HOME` path is a
 symlink into `home/`) and generated files (`~/.claude/settings.json`,
 `~/.gemini/antigravity-cli/settings.json`, `~/.omp/agent/config.yml`,
