@@ -17,37 +17,22 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 
 ## Now
 
-Phase 5 closed by operator decision on 2026-08-19 with two exceptions
-recorded in `docs/02-migration.md`: the Remote Control acceptance item on
-OrbStack waits for the manual `claude auth login`; `providers/cloud/` is
-skipped (no cloud account) and moved to the backlog. Everything else from
-step 1 is committed and pushed (cffaeee, b1333a4, 6519024): OrbStack
-provider, Makefile `PROVIDER=orbstack`, three bootstrap.sh fixes found by
-the from-scratch build, `make secrets` reading the token from 1Password
-(`dotfiles/agent-vm-op-service-account`). The OrbStack machine is deleted;
-`make bootstrap-all PROVIDER=orbstack` rebuilds it in about 3 minutes.
-`loginctl enable-linger` on OrbStack was not measured (systemd user units
-were listable; the "what could go wrong" note stays open).
-
-Phase 6 (retire) is active. Step 1 executed on 2026-08-19: archive notice
-committed to both READMEs (agent-vm 3f055ab, dotfiles 87a1c15) and both
-repositories archived on GitHub (`isArchived=true` verified); `agent-vm`
-removed from `box/remotes.list`; on the box `remote-rm agent-vm` run and
-the clean `~/work/agent-vm` clone deleted; `make provision STEPS="user
-remotes verify"` re-applied (27 ok, 0 fail; `/etc/claude-code/CLAUDE.md`
-carries the new Layout block; remotes step recreated only workbench).
-Nothing on the box or the mac reads from the old repos except session
-transcripts (grep on both). Step 2 findings: the devbox container
-(`ghcr.io/msavdert/devbox:latest`, from dotfiles `compose.yaml`) still runs
-on the OCI VPS `oci-aysesmenn-us-devenv` next to unrelated services
-(dokploy, suhuf, trader, dba-dbre); volumes `devbox_*` hold its state;
-the operator chose to leave it running for now. workbench has no
-`ghcr.io` reference; "devbox" survives only in comments (`home/omp/
-config.yml`, `home/mise/config.box.toml`, `home/nvim/lua/{plugins/
-devbox.lua,config/lazy.lua,config/options.lua}`, `home/zsh/.zshenv`,
-`Makefile`). GitHub: neither old repo had branch protection; agent-vm has
-no workflows; ghcr package listing needs the `read:packages` scope (not
-confirmed). Step 1 edits are uncommitted.
+Phase 6 (retire) is active. Step 1 done on 2026-08-19 (bb56517): agent-vm
+and dotfiles archived on GitHub with a README notice pointing here,
+`agent-vm` out of `box/remotes.list` and off the box (remote-rm, clone
+deleted, provision re-applied green). Step 2, repository side, done
+(c227908): every comment and the two omp skills (`add-secret`,
+`omp-tuning`) that still described the container workflow now describe
+the box; `home/nvim/lua/plugins/devbox.lua` is `box.lua`; a case-insensitive
+sweep of home/, Makefile, docs for devbox, docker build, VPS is empty
+(except the historical note in `home/zsh/.zshenv`); `make provision
+STEPS="home verify"` re-applied on the box. Step 2, machine side, is
+open by operator decision: the devbox container (`ghcr.io/msavdert/devbox:
+latest`, dotfiles `compose.yaml`) still runs on the OCI VPS
+`oci-aysesmenn-us-devenv` next to unrelated services (dokploy, suhuf,
+trader, dba-dbre); volumes `devbox_*` hold its state; the mac's untracked
+`~/.ssh/config.local` still has `Host dev`/`dev-sh` pointing at it. The
+ghcr package was not listed (`gh` lacks `read:packages`).
 
 ## Operator seat
 
@@ -60,24 +45,28 @@ has (`pve-vm-ssh`, Tailscale SSH).
 
 ## Next
 
-1. Commit the phase 6 step 1 edits (PLAN.md, README.md, box/remotes.list,
-   box/files/machine-CLAUDE.md) when the operator asks.
-2. Phase 6 step 2: `docker compose down` the devbox container on the VPS
-   (`ssh -o RemoteCommand=none opc@oci-aysesmenn-us-devenv`; the compose
-   project dir is not yet located), keep or remove `devbox_*` volumes
-   (operator decision, destructive), remove `Host dev`/`dev-sh` from the
-   mac's `~/.ssh/config.local`, and retire the "devbox" wording in the
-   comments listed under Now. Then acceptance: PLAN.md "migration
-   complete", AGENTS.md loses its migration section, README status.
+1. Phase 6 step 2, machine side (operator decision, destructive parts
+   marked): on the VPS `ssh -o RemoteCommand=none opc@oci-aysesmenn-us-devenv`,
+   locate the compose project (`docker inspect devbox --format
+   '{{index .Config.Labels "com.docker.compose.project.working_dir"}}'`),
+   `docker compose down` (keeps volumes) or `down -v` (destroys `devbox_*`,
+   irreversible); remove `Host dev`/`dev-sh` from the mac's
+   `~/.ssh/config.local`; optionally delete the ghcr package
+   `msavdert/devbox` (needs a token with `delete:packages`).
+2. Acceptance: PLAN.md says "migration complete", `AGENTS.md` loses its
+   migration section ("Related repositories" and the migration wording in
+   "Phase work protocol"), README status line, `docs/02-migration.md`
+   marked complete. Then archive `agent-vm`/`dotfiles` mentions stay only
+   as history.
 3. Open from phase 5: `ssh -t agent@agent-vm@orb claude auth login` then
    `make claude-remote PROVIDER=orbstack` (machine must be rebuilt first);
    `loginctl enable-linger` check on OrbStack.
 4. Leftovers, not blocking (unchanged): the mac's
    `~/Documents/all/github/knowledge/.claude/skills` link to a devbox
-   path; ai-hub `lab/` records say `runtime/`; omp prompts describe the
-   dotfiles/container workflow; `providers/proxmox/README.md` sizing
-   notes; `DRY_RUN=1 mac/setup.sh` output; phase 4 Remote Control item
-   measured by shape only.
+   path; ai-hub `lab/` records say `runtime/`; `providers/proxmox/README.md`
+   sizing notes; `DRY_RUN=1 mac/setup.sh` output; phase 4 Remote Control
+   item measured by shape only. PLAN "Operator seat" still lists devbox as
+   a seat; drop it with step 2.
 
 ## Open questions
 
@@ -174,5 +163,6 @@ has (`pve-vm-ssh`, Tailscale SSH).
 - 2026-08-19: phase 6 step 1 executed from the mac: agent-vm and dotfiles
   archived on GitHub with a README notice pointing here, agent-vm removed
   from remotes.list, remote-rm + clone deletion on the box, provision
-  re-applied green. Operator deferred the VPS devbox container (step 2).
-  Uncommitted.
+  re-applied green (bb56517). Step 2 repository side: devbox wording and
+  the two omp skills rewritten for the box, devbox.lua -> box.lua,
+  provision re-applied (c227908). VPS container deferred by the operator.
