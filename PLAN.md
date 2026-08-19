@@ -12,38 +12,24 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 | 2 | home/ and mac/ | done |
 | 3 | agents/ (from ai-hub runtime) | done |
 | 4 | Human layer, herdr/agy/aws-cli, plugins | done |
-| 5 | Portability proof (OrbStack, cloud) | active |
-| 6 | Retire agent-vm, dotfiles, devbox | not started |
+| 5 | Portability proof (OrbStack, cloud) | done (cloud skipped, RC login open) |
+| 6 | Retire agent-vm, dotfiles, devbox | active |
 
 ## Now
 
-Phase 5 step 1 executed from the mac on 2026-08-19: `providers/orbstack/`
-(`create-vm.sh`, `vm.env`, `user-data.yaml`), Makefile branches on
-`PROVIDER=orbstack` (`vm-create` runs locally, `VM_HOST=agent@agent-vm@orb`,
-`vm-destroy` = `orb delete`). `make bootstrap-all PROVIDER=orbstack` on a
-deleted-then-recreated machine: exit 0, `verify` 43 ok, about 3 minutes
-end to end (Ubuntu 24.04.4 arm64, `systemd-detect-virt` = lxc, uid 501).
-sshd on port 22 answers the 1Password key on the machine's LAN address.
+Phase 5 closed by operator decision on 2026-08-19 with two exceptions
+recorded in `docs/02-migration.md`: the Remote Control acceptance item on
+OrbStack waits for the manual `claude auth login`; `providers/cloud/` is
+skipped (no cloud account) and moved to the backlog. Everything else from
+step 1 is committed and pushed (cffaeee, b1333a4, 6519024): OrbStack
+provider, Makefile `PROVIDER=orbstack`, three bootstrap.sh fixes found by
+the from-scratch build, `make secrets` reading the token from 1Password
+(`dotfiles/agent-vm-op-service-account`). The OrbStack machine is deleted;
+`make bootstrap-all PROVIDER=orbstack` rebuilds it in about 3 minutes.
+`loginctl enable-linger` on OrbStack was not measured (systemd user units
+were listable; the "what could go wrong" note stays open).
 
-From-scratch findings, all fixed in `box/bootstrap.sh` and re-verified on
-both substrates (`make provision STEPS="system verify"` green on Proxmox
-and OrbStack): `chown -R` in step_user assumed `.gitconfig`/`.claude`
-that only step_home creates (hidden on Proxmox by prior runs); `sshd -t`
-ran unguarded (OrbStack image has no sshd; `openssh-server` is now in
-step_apt and the check tolerates an idle socket-activated sshd, missing
-`/run/sshd`); `verify` required qemu-guest-agent unconditionally (now only
-where `/dev/virtio-ports/org.qemu.guest_agent.0` exists) and had a
-duplicated check. Provider-side quirks stay in `providers/orbstack/`:
-image lacks `rsync`; OrbStack seeds a one-line `/etc/ssh/sshd_config`
-(no Include, `UsePAM no` -> "account is locked" for the passwordless
-user), removed by cloud-init `runcmd` before openssh-server lands.
-
-Not done: the "Remote Control environment works from it" acceptance
-item needs the manual OAuth login on the OrbStack machine
-(`claude auth status` there: loggedIn false; units and `remotes` clones
-are in place). Phase 5 step 2 (`providers/cloud/`) not started.
-Working tree uncommitted (5 files + providers/orbstack/), `make lint`
-green, no secrets in the diff.
+Phase 6 (retire) is active; nothing of it has started.
 
 ## Operator seat
 
@@ -56,24 +42,24 @@ has (`pve-vm-ssh`, Tailscale SSH).
 
 ## Next
 
-1. Operator, on the mac: `ssh -t agent@agent-vm@orb claude auth login`,
-   then `make claude-remote PROVIDER=orbstack` and open the environment
-   from claude.ai. That closes phase 5 step 1's acceptance; record the
-   result here.
-2. Commit the phase 5 step 1 work (operator decides; nothing committed).
-3. Phase 5 step 2: `providers/cloud/user-data.yaml` generic for any Ubuntu
-   cloud image (start from `providers/orbstack/user-data.yaml` minus the
-   OrbStack `runcmd`; add `qemu-guest-agent`, `rsync`) and one tested
-   provider (backlog says Hetzner). Then decide whether
-   `providers/orbstack/user-data.yaml` should include the cloud one
-   instead of duplicating the users block.
-4. Leftovers, not blocking (unchanged from phase 4):
-   `~/Documents/all/github/knowledge/.claude/skills` on the mac links to a
-   devbox path; ai-hub `lab/` records still say `runtime/`; omp prompts
-   still describe the dotfiles/container workflow;
-   `providers/proxmox/README.md` sizing notes; `DRY_RUN=1 mac/setup.sh`
-   does not say what is at each target; the phase 4 Remote Control item
-   was measured by shape only.
+1. Phase 6 step 1: archive `agent-vm` and `dotfiles` on GitHub (read-only,
+   README pointing here) and remove `~/work/agent-vm` from
+   `box/remotes.list`. Read `docs/02-migration.md` phase 6 and the
+   "Related repositories" note in `AGENTS.md` first; check nothing on the
+   box or the mac still reads from those repos (`grep -rn agent-vm
+   dotfiles` in home/, box/, mise tasks; the ai-hub runtime move was
+   phase 3). Archiving is outward-facing: confirm with the operator
+   before `gh repo archive`.
+2. Phase 6 step 2: devbox image references and the VPS container.
+3. Open from phase 5: `ssh -t agent@agent-vm@orb claude auth login` then
+   `make claude-remote PROVIDER=orbstack` (machine must be rebuilt first);
+   `loginctl enable-linger` check on OrbStack.
+4. Leftovers, not blocking (unchanged): the mac's
+   `~/Documents/all/github/knowledge/.claude/skills` link to a devbox
+   path; ai-hub `lab/` records say `runtime/`; omp prompts describe the
+   dotfiles/container workflow; `providers/proxmox/README.md` sizing
+   notes; `DRY_RUN=1 mac/setup.sh` output; phase 4 Remote Control item
+   measured by shape only.
 
 ## Open questions
 
@@ -85,7 +71,8 @@ has (`pve-vm-ssh`, Tailscale SSH).
 - `home/install.sh --check` as a `verify` sub-step on the box.
 - mise lockfile for the mac profile (see docs/reference/mise-2026.md).
 - Weekly `mise up` report as a systemd timer, opt-in.
-- Cloud provider test (Hetzner or equivalent) once phase 5 OrbStack passes.
+- `providers/cloud/`: generic cloud-init user-data plus one tested cloud
+  provider (Hetzner or equivalent). Skipped in phase 5: no cloud account.
 
 ## Log
 
@@ -163,3 +150,6 @@ has (`pve-vm-ssh`, Tailscale SSH).
   qemu-guest-agent) fixed and re-verified on Proxmox too. Remaining
   acceptance item: manual `claude auth login` + `make claude-remote
   PROVIDER=orbstack`. Uncommitted.
+- 2026-08-19: operator closed phase 5 (OrbStack done, cloud skipped, RC
+  login open) and set phase 6 active. Token item created in 1Password,
+  OrbStack machine deleted, work pushed.

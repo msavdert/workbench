@@ -136,6 +136,12 @@ runs two harnesses in parallel on a scratch repo; `mise ls` matches
 Acceptance: `bootstrap.sh verify` passes on OrbStack with no provider-
 specific step; a Remote Control environment works from it.
 
+Outcome (operator decision, 2026-08-19): step 1 done, `verify` green on a
+from-scratch OrbStack build; the Remote Control item stays open until the
+operator does the manual `claude auth login` there. Step 2 skipped: no
+cloud account available; `providers/cloud/` stays in the backlog. Phase
+closed with those two exceptions.
+
 ### Phase 6 - retire
 
 1. Archive `agent-vm` and `dotfiles` on GitHub (read-only, README pointing
