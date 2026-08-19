@@ -1,0 +1,92 @@
+# ~/.gitconfig - shared by the mac and the box (linked by home/install.sh).
+# Machine-specific settings (commit signing keys, credential helpers that only
+# exist on one platform) go in ~/.gitconfig.local, which is included at the
+# BOTTOM of this file so it wins.
+#
+# Nothing here changes output shape for an agent: no core.pager (the box
+# exports GIT_PAGER=cat on the non-interactive path, the mac keeps its
+# pager), no forced colour (color.ui defaults to auto, which is off without
+# a TTY - agent tool calls never have one).
+
+[user]
+    name = msavdert
+    # Keeps the real address out of every public commit. Override in
+    # ~/.gitconfig.local if a particular machine needs something else.
+    email = msavdert@users.noreply.github.com
+
+[init]
+    defaultBranch = main
+
+[github]
+    user = msavdert
+
+[protocol]
+    allow = always
+
+# --- Credentials -------------------------------------------------------------
+# HTTPS remotes authenticate straight from 1Password (op://dotfiles/GitHub/
+# admintoken), not through `gh auth login`'s OAuth session. That session lives
+# in ~/.config/gh/hosts.yml on ONE machine and does not exist on a rebuilt
+# box or in non-interactive agent shells (they don't source ~/.zshrc, so the
+# `opwith` wrapper isn't available either). A helper that resolves the token
+# itself needs nothing pre-set - it works the same in an interactive shell or
+# any headless agent process; on the box it needs OP_SERVICE_ACCOUNT_TOKEN in
+# the environment (D10). The empty first `helper` resets any helper inherited
+# from a system config.
+[credential "https://github.com"]
+    helper =
+    helper = "!f() { test \"$1\" = get && printf 'username=x-access-token\\npassword=%s\\n' \"$(op read op://dotfiles/GitHub/admintoken)\"; }; f"
+[credential "https://gist.github.com"]
+    helper =
+    helper = "!f() { test \"$1\" = get && printf 'username=x-access-token\\npassword=%s\\n' \"$(op read op://dotfiles/GitHub/admintoken)\"; }; f"
+
+# --- Transfer ----------------------------------------------------------------
+[http]
+    postBuffer = 52428800
+
+[core]
+    compression = 0
+    editor = vim
+    # Line endings are always LF in the repository; a Windows checkout is not
+    # a case here, but a stray CRLF pasted by an agent should not land either.
+    autocrlf = input
+
+# --- Quality of life ---------------------------------------------------------
+[pull]
+    # ff-only, not rebase: agents run `git pull` far more often than the
+    # human does, and a diverged branch should stop them with an error rather
+    # than rebase in the background. A human types `git pull --rebase`.
+    ff = only
+[push]
+    autoSetupRemote = true
+    default = current
+[fetch]
+    prune = true
+[diff]
+    algorithm = histogram
+[merge]
+    conflictstyle = zdiff3
+[rerere]
+    enabled = true
+[rebase]
+    autoStash = true
+[advice]
+    detachedHead = false
+[column]
+    ui = auto
+[branch]
+    sort = -committerdate
+
+# --- delta (box profile installs it) -----------------------------------------
+# Only wired into `git add -p`; core.pager is deliberately not set (see top).
+[interactive]
+    diffFilter = delta --color-only
+[delta]
+    navigate = true
+    line-numbers = true
+
+# --- Machine-specific overrides ----------------------------------------------
+# Last include wins. Holds commit signing (1Password op-ssh-sign on macOS) and
+# anything else that is not portable between the laptop and the box.
+[include]
+    path = ~/.gitconfig.local
