@@ -178,3 +178,13 @@ the mac since the devbox seat is gone.
   `mac-sync` make targets that never existed. The client is driven by
   `mac/setup.sh` and `mise run mac:sync`; `claude-remote` and `vm-destroy`
   added to the Makefile list.
+- 2026-08-19: omp's config.yml is generated, not symlinked. An omp 17 schema
+  migration (advisor.subagents -> task.agentAdvisor) had rewritten the tracked
+  file through the link and stripped its comments; the arrangement now matches
+  agy's, with a YAML branch in install.sh's content comparison. Acceptance run
+  on the box: `omp config set` leaves the repo clean, `--check` reports the
+  drift and exits 1, `install.sh box` reverts it. Settings changed with it:
+  modelRoles.default -> gemini-3.7-flash:high, advisor.enabled -> false.
+  Not done: the mac still has the old symlink, held because `install.sh mac`
+  would also revert ~/.claude/settings.json `model` (runtime `opus[1m]` vs
+  repo `claude-fable-5[1m]`, base layer, so it would move the box too).
