@@ -137,8 +137,10 @@ directory, `claude-remote@<name>`, managed by `remote-add` / `remote-rm` /
 D12 Parallel harnesses: herdr is installed by mise (D7), configured in
 `home/herdr/`, and its integrations are applied by a mise task
 (`mise run herdr:integrations`) so they are declarative and re-runnable.
-Claude Code plugins are declared in `settings.base.json` (key names to be
-verified in phase 4), not installed by hand.
+Claude Code plugins are declared in `settings.base.json` (`enabledPlugins`,
+`extraKnownMarketplaces`; verified 2026-08-19) and installed by `mise run
+claude:plugins`, not by hand; declaring alone does not install them. None
+is enabled today.
 
 D13 Repository language is English; commits are imperative, one topic
 each; no emoji; comments say why, not what.
