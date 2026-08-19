@@ -65,18 +65,10 @@ has (`pve-vm-ssh`, Tailscale SSH).
    `providers/proxmox/` first; the operator's question "is a from-scratch
    rebuild tested" is answered by this phase, not by destroying the
    Proxmox VM (rule 8; not planned).
-2. Operator decisions left from phase 4: (a) `home/mise/config.box.toml`
-   `omp:auth` reads `op://dotfiles/Synthetic/credential` but the item lives
-   in the Private vault (the box service account sees dotfiles); omp works
-   from its own agent.db today - move the item, change the reference, or
-   drop the task. (b) On the mac, Claude Code used
-   `~/.claude/.claude.json` from 2026-08-10 until now; with
-   CLAUDE_CONFIG_DIR gone it reads `~/.claude.json` again (older, 13
-   projects). A merged file (15 projects, same account) is at
-   `~/.config/workbench/backup-claudejson-20260819T012830Z/merged.json`
-   next to both originals; installing it over `~/.claude.json` was left
-   to the operator (`install -m 600 .../merged.json ~/.claude.json`) -
-   the session's tooling declined to overwrite that file.
+2. Nothing pending from phase 4: `omp:auth` works (Synthetic API
+   Credential created in the dotfiles vault; the mac's `~/.claude.json` is
+   the merged file, originals in
+   `~/.config/workbench/backup-claudejson-20260819T012830Z/`).
 3. Leftovers, not blocking: `~/Documents/all/github/knowledge/.claude/skills`
    on the mac links to a devbox path (repoint to
    `~/work/workbench/agents/skills`); ai-hub `lab/` records still say
@@ -164,3 +156,7 @@ has (`pve-vm-ssh`, Tailscale SSH).
   split note: 9ecfd4c carries all three new mise tasks (zsh:plugins,
   claude:plugins, herdr:integrations rewrite) because the hunks were
   adjacent; 2545a93 is the D12 text only. Phase 4 done, phase 5 active.
+- 2026-08-19: session end. omp:auth verified on the box after the Synthetic
+  item was recreated as an API Credential in the dotfiles vault (op item
+  move refused the original: unsupported SSO field type); merged
+  ~/.claude.json installed on the mac. Next session starts phase 5.

@@ -134,7 +134,9 @@ printf 'Synced. ssh-agent now holds:\\n'
 ssh-add -l || true
 """
 
-# The `Synthetic` item must exist in the `dotfiles` vault. ~/.omp/agent/.env is
+# The `Synthetic` item is an API Credential in the `dotfiles` vault (created
+# 2026-08-19; the Private-vault login item of the same name could not be moved,
+# it has an SSO field op cannot copy). ~/.omp/agent/.env is
 # part of OMP's native .env discovery chain, so the key never has to live in the
 # shell environment. The anthropic and google-antigravity providers are OAuth
 # backed and still need an interactive `/login` inside OMP - an OAuth session
