@@ -212,3 +212,16 @@ the mac since the devbox seat is gone.
   review earlier the same day is reversed. `providers.webSearchGeminiModel`
   stays bare - it is a Google Search grounding model ID, not a role pattern.
   `slow`/`plan` confirmed staying on syn:large:text.
+- 2026-08-19: agy reviewed. Found and fixed: herdr's three integration hooks
+  (claude, omp, agy) were absent on the box - `mise run herdr:integrations` is
+  manual and was never run after the rebuild, and every hook fails open so
+  nothing reported it. `box/bootstrap.sh` step_tools calls the task now and
+  step_verify checks the three files; agy and herdr added to the PATH checks.
+  agy pinned to `gemini-3.7-flash-high` + `effort: high` (the omp gemini
+  policy; agy encodes the rung in the model id and had neither field set).
+  Negative result, documented in the runbook instead of shipped: agy's
+  `permissions` block is parsed but NOT enforced under `always-proceed`,
+  `permissions_v2` is inert, and `enableTerminalSandbox` fails OPEN (its
+  seccomp server does not answer and agy retries unsandboxed). Open: no
+  global instruction layer for agy - it reads AGENTS.md/GEMINI.md but only
+  workspace-relative paths were confirmed, and the $HOME probe was not run.
