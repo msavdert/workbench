@@ -278,6 +278,20 @@ function ssh {
     [[ -n $host ]] && command ssh "$host"
 }
 
+# herdr 0.8.0 enables SGR mouse reporting (CSI ?1000/1002/1003/1006) and the
+# kitty keyboard protocol (CSI >u) on attach and leaves both on after
+# prefix+q detach, so the outer shell then receives raw "35;64;25M" /
+# "3;1:3u" bytes on every mouse move. Pop the keyboard stack and switch the
+# mouse modes off after every herdr exit; the sequences are no-ops on a
+# terminal that never had them on. Drop this once upstream restores the
+# terminal itself.
+function herdr {
+    command herdr "$@"
+    local rc=$?
+    [[ -t 1 ]] && printf '\e[<u\e[?1003l\e[?1002l\e[?1000l\e[?1006l'
+    return $rc
+}
+
 # zs -> pick a directory from zoxide's frecency list, attach/create a zellij
 # session named after it. This is the "resume where I left off" entry point.
 function zs {
