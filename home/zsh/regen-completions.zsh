@@ -2,8 +2,8 @@
 # =============================================================================
 # Pre-generate zsh completion files.
 # =============================================================================
-# Run by `mise run completions:regen`, and once during `docker build` so the
-# image ships with them.
+# Run by `mise run completions:regen`, by mac/setup.sh and by
+# box/bootstrap.sh step_tools after the mise install.
 #
 # Why this exists: the previous .zshrc ran `source <(kubectl completion zsh)`
 # and five more like it on every single shell start. That is one fork + one

@@ -175,6 +175,7 @@ manifest() {
   link zsh/.zshenv "$HOME/.zshenv"
   link zsh/.zshrc "$HOME/.zshrc"
   link zsh/regen-completions.zsh "$HOME/.config/zsh/regen-completions.zsh"
+  link zsh/install-plugins.sh "$HOME/.config/zsh/install-plugins.sh"
   link starship.toml "$HOME/.config/starship.toml"
 
   # tools (D6, D7)

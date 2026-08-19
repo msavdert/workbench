@@ -48,10 +48,38 @@ bun = "latest"
 description = "Regenerate the shell completion cache in ~/.local/share/zsh/completions"
 run = "~/.config/zsh/regen-completions.zsh"
 
-[tasks."herdr:integrations"]
-description = "Install and sync Herdr integrations for AI agents"
+[tasks."zsh:plugins"]
+description = "Clone or fast-forward zsh-autosuggestions and zsh-syntax-highlighting into ~/.local/share/zsh-plugins"
+run = "~/.config/zsh/install-plugins.sh"
+
+# herdr writes its hook scripts (~/.claude/hooks/herdr-agent-state.sh,
+# ~/.omp/agent/extensions/, ~/.gemini/config/hooks.json) and appends its own
+# SessionStart entry to ~/.claude/settings.json. That file is composed by
+# home/install.sh, whose base already registers the same script behind an
+# `[ -x ]` guard, so install.sh runs last to take the file back (herdr's
+# duplicate entry goes, the hook keeps firing). ~/.gemini/config is created
+# up front: herdr refuses without it and agy has not necessarily run yet on
+# a fresh box (assumption: agy reads hooks.json from there, as on the mac).
+# Claude Code plugins are declared in home/claude/settings.base.json under
+# enabledPlugins ({"name@marketplace": true}; extraKnownMarketplaces for
+# non-official sources) - key names verified against code.claude.com/docs
+# on 2026-08-19. Declaring alone does not install (documented, and issue
+# 32606), so this task installs whatever the composed settings enable.
+# Nothing is enabled today; the task is the path when something is.
+[tasks."claude:plugins"]
+description = "claude plugin install for every plugin enabled in ~/.claude/settings.json"
 run = """
-herdr integration install antigravity-cli
+jq -r '.enabledPlugins // {} | to_entries[] | select(.value) | .key' ~/.claude/settings.json |
+  while read -r p; do claude plugin install --scope user "$p"; done
+"""
+
+[tasks."herdr:integrations"]
+description = "Install herdr's hook scripts for claude, omp and agy, then re-run home/install.sh to keep settings.json composed"
+run = """
+set -euo pipefail
 herdr integration install claude
 herdr integration install omp
+mkdir -p ~/.gemini/config
+herdr integration install antigravity-cli
+"${WORKBENCH_DIR:-$HOME/work/workbench}/home/install.sh" "$WORKBENCH_PROFILE"
 """

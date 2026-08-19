@@ -156,6 +156,8 @@ regen_completions() {
   if command -v zsh >/dev/null 2>&1; then
     run zsh "$REPO_DIR/home/zsh/regen-completions.zsh"
   fi
+  step "zsh plugins (~/.local/share/zsh-plugins)"
+  run "$REPO_DIR/home/zsh/install-plugins.sh"
 }
 
 check_1password_agent() {

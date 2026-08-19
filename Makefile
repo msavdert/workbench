@@ -98,5 +98,5 @@ ssh: ## interactive shell on the VM (tmux session "main")
 	ssh -t $(VM_HOST) 'bash -lc agent-session'
 
 lint: ## shellcheck + shfmt check
-	shellcheck -e SC1091 providers/proxmox/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
-	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh box/bootstrap.sh home/install.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh
+	shellcheck -e SC1091 providers/proxmox/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
+	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh

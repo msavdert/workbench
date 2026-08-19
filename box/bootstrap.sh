@@ -228,6 +228,11 @@ step_tools() {
   # the login shell, `opwith git` injects GITHUB_TOKEN into this one process
   # (home/op-env/git.env); without it, plain mise for a fresh box.
   as_agent bash -lc 'if op whoami >/dev/null 2>&1; then opwith git mise install -y; else mise install -y; fi && mise reshim'
+  # the human shell's caches (home/zsh): completion files and init snippets
+  # for the tools just installed, and the two zsh plugins. Same two scripts
+  # mac/setup.sh runs; the login shell gives them the mise PATH.
+  log "tools: zsh completion cache and plugins (as $AGENT_USER)"
+  as_agent bash -lc 'zsh ~/.config/zsh/regen-completions.zsh && ~/.config/zsh/install-plugins.sh' | sed 's/^/  /'
   log "tools: Claude Code (native installer, self-updating)"
   if [[ ! -x $AGENT_HOME/.local/bin/claude ]]; then
     as_agent bash -c 'curl -fsSL https://claude.ai/install.sh | bash' >/dev/null
