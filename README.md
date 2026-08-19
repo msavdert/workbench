@@ -29,3 +29,5 @@ the current state, `AGENTS.md` if you are an agent working here.
 Status: migration complete (2026-08-19). The box and the mac are built from
 this repository alone; `agent-vm` and `dotfiles` are archived on GitHub,
 `ai-hub` keeps doctrine and journal only.
+
+License: MIT (`LICENSE`).

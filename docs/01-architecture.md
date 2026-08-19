@@ -32,7 +32,7 @@ workbench/
   box/
     bootstrap.sh            idempotent, root, step_<name> functions, STEPS list
     files/                  exact files that land on the box (put <mode> <src> <dst>)
-    remotes.list            Remote Control environments that survive a rebuild
+    remotes.list            repositories under ~/work that survive a rebuild
   home/
     install.sh <profile>    idempotent per-file symlinks + settings merge
     mise/config.toml  mise/config.mac.toml  mise/config.box.toml  (tasks inline)
@@ -52,7 +52,7 @@ workbench/
 
 | File on the machine | Origin in repo | Installed by |
 |---|---|---|
-| `/etc/apt`, `/etc/docker/daemon.json`, `/etc/sysctl.d/*`, `/etc/ssh/sshd_config.d/*`, `/etc/sudoers.d/*` | `box/files/` | `box/bootstrap.sh` |
+| `/etc/apt`, `/etc/docker/daemon.json`, `/etc/sysctl.d/*`, `/etc/ssh/sshd_config.d/*`, `/etc/sudoers.d/*`, `/etc/terminfo` (Ghostty entry) | `box/files/` | `box/bootstrap.sh` |
 | `~/.config/systemd/user/claude-remote*.service`, `~/.local/bin/remote-*` | `box/files/` | `box/bootstrap.sh` |
 | `/etc/claude-code/CLAUDE.md` | `box/files/machine-CLAUDE.md` | `box/bootstrap.sh` |
 | `~/.bashrc` (guard + non-interactive part) | `box/files/bashrc` | `box/bootstrap.sh` |

@@ -16,6 +16,11 @@
 # Escape hatch: the owner runs the command themselves (`! git push ...`).
 # There is deliberately no environment variable override — an override the
 # agent can set is not a gate.
+#
+# Non-goal: resisting a model that deliberately obfuscates the command
+# (`git $(echo push) --force`). The match is textual; a determined agent can
+# route around it, and the fix for that is the model's instructions, not a
+# shell parser here. The gate exists to catch the plain, accidental case.
 
 set -uo pipefail
 

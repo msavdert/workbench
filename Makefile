@@ -76,7 +76,7 @@ bootstrap-all: vm-create vm-wait secrets provision ## fresh VM end to end
 claude-remote: ## after `claude auth login`: start the generic `work` server and every enabled project server (list-unit-files does not list template instances, the wants/ symlinks do)
 	$(SSH) $(VM_HOST) 'test -f ~/.claude/.credentials.json || { echo "run: ssh $(VM_HOST) -t claude auth login"; exit 1; }; systemctl --user daemon-reload && systemctl --user enable --now claude-remote.service && for f in ~/.config/systemd/user/default.target.wants/claude-remote@*.service; do test -e "$$f" && systemctl --user start "$$(basename "$$f")"; done; sleep 3; bash -lc remote-ls'
 
-remote-add: ## per-project Remote Control server: NAME=<dir under ~/work> [URL=<git url>] [OPTS="--worktree"]; add it to box/remotes.list to survive a rebuild
+remote-add: ## optional per-project Remote Control server: NAME=<dir under ~/work> [URL=<git url>] [OPTS="--worktree|--clone-only"]; list it in box/remotes.list to survive a rebuild
 	$(need_name)
 	$(check_url_opts)
 	$(SSH) $(VM_HOST) "bash -lc 'remote-add $$NAME $$URL $$OPTS'"
@@ -116,4 +116,4 @@ ssh: ## interactive shell on the VM (tmux session "main")
 
 lint: ## shellcheck + shfmt check
 	shellcheck -e SC1091 providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
-	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh
+	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh home/bin/opwith box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls

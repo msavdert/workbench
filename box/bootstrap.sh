@@ -87,6 +87,10 @@ step_system() {
     sshd -t
     systemctl try-reload-or-restart ssh
   fi
+  # Terminals newer than the image's ncurses (Ghostty) have no terminfo entry
+  # here; without one zle redraws the whole line and every keystroke shows
+  # twice over ssh. tic overwrites in place, so re-runs are harmless.
+  tic -x -o /etc/terminfo "$files/xterm-ghostty.terminfo"
   timedatectl set-timezone Etc/UTC
 }
 
@@ -256,7 +260,7 @@ step_tools() {
 
 # ---------------------------------------------------------------------------
 step_remotes() {
-  log "remotes: Remote Control environments from box/remotes.list (as $AGENT_USER)"
+  log "remotes: repositories under ~/work from box/remotes.list (as $AGENT_USER)"
   local list="$here/remotes.list" line
   [[ -f $list ]] || {
     echo "  no remotes.list"

@@ -129,10 +129,14 @@ credential helper reading `op://`; `gh` runs as `opwith git gh`; other
 tools via `opwith <env> <cmd>` with `home/op-env/*.env`. Claude Code and
 agy use their own OAuth logins.
 
-D11 Remote Control (Claude app sessions): one systemd user unit per project
-directory, `claude-remote@<name>`, managed by `remote-add` / `remote-rm` /
-`remote-ls`; environments that must survive a rebuild are listed in
-`box/remotes.list`. Requires systemd - one more reason for D3.
+D11 Remote Control (Claude app sessions): one shared server, `work`
+(`claude-remote.service`, `~/work`, capacity 2). Sessions in it are steered
+from the operator's machine, which clones and switches projects on demand,
+so per-project servers are optional: `remote-add <name>` starts a
+`claude-remote@<name>` unit rooted in `~/work/<name>` when a project needs its
+own environment. Repositories that must be present after a rebuild are listed
+in `box/remotes.list` (`--clone-only` by default). Requires systemd - one more
+reason for D3.
 
 D12 Parallel harnesses: herdr is installed by mise (D7), configured in
 `home/herdr/`, and its integrations are applied by a mise task

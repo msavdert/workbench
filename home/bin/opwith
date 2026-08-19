@@ -6,7 +6,11 @@
 # The .env files contain only op:// references and are safe to version.
 set -euo pipefail
 OP_ENV_DIR="${OP_ENV_DIR:-$HOME/.config/op-env}"
-name="${1:?usage: opwith <env-name> <command...>}"; shift
+name="${1:?usage: opwith <env-name> <command...>}"
+shift
 env_file="$OP_ENV_DIR/$name.env"
-[[ -f $env_file ]] || { echo "opwith: no such env file: $env_file" >&2; exit 1; }
+[[ -f $env_file ]] || {
+  echo "opwith: no such env file: $env_file" >&2
+  exit 1
+}
 exec op run --no-masking --env-file="$env_file" -- "$@"

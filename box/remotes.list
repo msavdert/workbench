@@ -1,10 +1,12 @@
-# Remote Control environments to (re)create on every `make provision`.
+# Repositories (re)created under ~/work on every `make provision`.
 # One per line:  <name> [git-url] [remote-add options]
-# <name> becomes ~/work/<name> and the environment name in the Claude app.
-# Blank lines and # comments are ignored. Applied by bootstrap.sh step_remotes,
-# which runs remote-add for each entry (idempotent). Servers only start once
-# `claude auth login` has been done; the clone and trust happen regardless.
-workbench https://github.com/msavdert/workbench.git
-ai-hub https://github.com/msavdert/ai-hub.git
-dba-to-dbre https://github.com/msavdert/dba-to-dbre.git
-suhuf https://github.com/msavdert/suhuf.git
+# <name> becomes ~/work/<name>. Blank lines and # comments are ignored. Applied
+# by bootstrap.sh step_remotes, which runs remote-add for each entry
+# (idempotent). Policy: one Remote Control server, `work` (~/work, capacity 2,
+# claude-remote.service); sessions started there are steered from the
+# operator's machine, so the entries are `--clone-only`. Drop the flag on a
+# line to give that project its own server (claude-remote@<name>).
+workbench https://github.com/msavdert/workbench.git --clone-only
+ai-hub https://github.com/msavdert/ai-hub.git --clone-only
+dba-to-dbre https://github.com/msavdert/dba-to-dbre.git --clone-only
+suhuf https://github.com/msavdert/suhuf.git --clone-only

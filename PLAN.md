@@ -34,8 +34,12 @@ Claude-style `permissions` key and in its own key order, so the block is
 gone from `home/agy/settings.base.json` (eceeaf9) and `install.sh` compares
 JSON targets by content (0b44295); the mac's multiplexed ssh master
 predates the docker group after a rebuild (runbook note). `box/remotes.list`
-gained ai-hub, dba-to-dbre, suhuf so they survive rebuilds (188629c). No
-active phase; work is backlog-driven.
+gained ai-hub, dba-to-dbre, suhuf so they survive rebuilds (188629c).
+2026-08-19, later: Remote Control reduced to the single shared
+`work` server (capacity 2); `remotes.list` entries are `--clone-only`, the
+four per-project servers were disabled on the box (D11 updated). Ghostty
+terminfo shipped in `box/files/` after ssh sessions from the mac echoed
+every keystroke twice. No active phase; work is backlog-driven.
 
 ## Operator seat
 
@@ -50,13 +54,8 @@ the mac since the devbox seat is gone.
 ## Next
 
 1. Pick from the backlog below; nothing else is scheduled.
-2. Optional: add `knowledge` to `box/remotes.list` if the operator wants it
-   on the box again (it had no Remote Control server; not recreated).
-3. Leftovers, not blocking (unchanged): the mac's
-   `~/Documents/all/github/knowledge/.claude/skills` link to a devbox
-   path; ai-hub `lab/` records say `runtime/`; `providers/proxmox/README.md`
-   sizing notes; `DRY_RUN=1 mac/setup.sh` output; phase 4 Remote Control
-   item measured by shape only.
+2. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
+   should be present on the box again.
 
 ## Open questions
 
@@ -171,3 +170,7 @@ the mac since the devbox seat is gone.
   servers up, no drift, clean snapshot. Fixed on the way: claude-remote
   template-instance start, agy settings drift (base + JSON-aware check),
   ssh-master docker gotcha documented.
+- 2026-08-19: Remote Control cut to the single `work` server (D11);
+  `remote-add --clone-only`, remotes.list entries switched, four project
+  servers disabled on the box. Ghostty terminfo compiled by step_system
+  (doubled keystrokes over ssh). Repo audit by subagents; doc cleanups.

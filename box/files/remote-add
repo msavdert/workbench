@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# remote-add <name> [git-url] [--worktree] [--capacity N] [--permission-mode M] [--no-start]
+# remote-add <name> [git-url] [--clone-only] [--worktree] [--capacity N] [--permission-mode M] [--no-start]
 #
 # Make ~/work/<name> a Claude Code Remote Control environment: clone it if a
 # URL is given and the directory does not exist, pre-accept the workspace
@@ -9,26 +9,51 @@
 #   remote-add suhuf https://github.com/msavdert/suhuf.git
 #   remote-add suhuf --worktree          # each app session gets its own git worktree
 #   remote-add scratch                   # empty dir, no repo
+#   --clone-only: clone + trust only, no server; disables one if it exists.
+#     The default for box/remotes.list: one shared server (`work`) is enough
+#     when sessions are steered from the operator's machine.
 #   --no-start: clone + trust + enable only; do not (re)start the server now
 set -euo pipefail
 
-usage() { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
-name=""; url=""; spawn=""; capacity=""; pmode=""; start=1
+usage() {
+  sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+  exit 1
+}
+name=""
+url=""
+spawn=""
+capacity=""
+pmode=""
+start=1
+server=1
 while [[ $# -gt 0 ]]; do
   case $1 in
     --worktree) spawn=worktree ;;
     --same-dir) spawn=same-dir ;;
-    --capacity) capacity=${2:?}; shift ;;
-    --permission-mode) pmode=${2:?}; shift ;;
+    --capacity)
+      capacity=${2:?}
+      shift
+      ;;
+    --permission-mode)
+      pmode=${2:?}
+      shift
+      ;;
     --no-start) start=0 ;;
-    -h|--help) usage ;;
-    -*) echo "unknown option: $1" >&2; usage ;;
+    --clone-only) server=0 ;;
+    -h | --help) usage ;;
+    -*)
+      echo "unknown option: $1" >&2
+      usage
+      ;;
     *) if [[ -z $name ]]; then name=$1; elif [[ -z $url ]]; then url=$1; else usage; fi ;;
   esac
   shift
 done
 [[ -n $name ]] || usage
-[[ $name =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "name must match [A-Za-z0-9_.-]+" >&2; exit 1; }
+[[ $name =~ ^[A-Za-z0-9_.-]+$ ]] || {
+  echo "name must match [A-Za-z0-9_.-]+" >&2
+  exit 1
+}
 
 dir="$HOME/work/$name"
 if [[ ! -d $dir ]]; then
@@ -48,14 +73,37 @@ cj="$HOME/.claude.json"
 jq --arg d "$dir" '.projects[$d] = ((.projects[$d] // {}) + {hasTrustDialogAccepted: true}) | .remoteDialogSeen = true | .hasCompletedOnboarding = true' \
   "$cj" >"$cj.tmp" && mv "$cj.tmp" "$cj" && chmod 600 "$cj"
 
+if [[ $server == 0 ]]; then
+  if systemctl --user is-enabled --quiet "claude-remote@$name.service" 2>/dev/null ||
+    systemctl --user is-active --quiet "claude-remote@$name.service" 2>/dev/null; then
+    systemctl --user disable --now "claude-remote@$name.service" >/dev/null 2>&1
+    rm -f "$HOME/.config/claude-remote/$name.env"
+    echo "claude-remote@$name: disabled (--clone-only)"
+  fi
+  echo "$name: cloned + trusted, no server ($dir)"
+  exit 0
+fi
+
 # per-project overrides for the template unit
 if [[ -n $spawn || -n $capacity || -n $pmode ]]; then
   mkdir -p "$HOME/.config/claude-remote"
   envf="$HOME/.config/claude-remote/$name.env"
   touch "$envf"
-  [[ -n $spawn ]]    && { grep -v '^CLAUDE_REMOTE_SPAWN=' "$envf" >"$envf.tmp" || true; echo "CLAUDE_REMOTE_SPAWN=$spawn" >>"$envf.tmp"; mv "$envf.tmp" "$envf"; }
-  [[ -n $capacity ]] && { grep -v '^CLAUDE_REMOTE_CAPACITY=' "$envf" >"$envf.tmp" || true; echo "CLAUDE_REMOTE_CAPACITY=$capacity" >>"$envf.tmp"; mv "$envf.tmp" "$envf"; }
-  [[ -n $pmode ]]    && { grep -v '^CLAUDE_REMOTE_PERMISSION_MODE=' "$envf" >"$envf.tmp" || true; echo "CLAUDE_REMOTE_PERMISSION_MODE=$pmode" >>"$envf.tmp"; mv "$envf.tmp" "$envf"; }
+  [[ -n $spawn ]] && {
+    grep -v '^CLAUDE_REMOTE_SPAWN=' "$envf" >"$envf.tmp" || true
+    echo "CLAUDE_REMOTE_SPAWN=$spawn" >>"$envf.tmp"
+    mv "$envf.tmp" "$envf"
+  }
+  [[ -n $capacity ]] && {
+    grep -v '^CLAUDE_REMOTE_CAPACITY=' "$envf" >"$envf.tmp" || true
+    echo "CLAUDE_REMOTE_CAPACITY=$capacity" >>"$envf.tmp"
+    mv "$envf.tmp" "$envf"
+  }
+  [[ -n $pmode ]] && {
+    grep -v '^CLAUDE_REMOTE_PERMISSION_MODE=' "$envf" >"$envf.tmp" || true
+    echo "CLAUDE_REMOTE_PERMISSION_MODE=$pmode" >>"$envf.tmp"
+    mv "$envf.tmp" "$envf"
+  }
 fi
 
 systemctl --user daemon-reload

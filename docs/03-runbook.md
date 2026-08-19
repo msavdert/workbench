@@ -16,10 +16,10 @@ Then:
 make claude-remote
 ```
 
-which enables `claude-remote.service`, the generic `work` environment
-(`~/work`, `--name work`, capacity 2). Per-project environments come from
-`make remote-add`, next section. `claude-remote.service` (systemd user unit,
-`~/.config/systemd/user/claude-remote.service`). Two consents that Claude
+which enables `claude-remote.service`, the shared `work` environment
+(`~/work`, `--name work`, capacity 2) - the only server by default; see the
+next section for optional per-project ones. `claude-remote.service` is a
+systemd user unit (`~/.config/systemd/user/claude-remote.service`). Two consents that Claude
 normally asks for on a TTY - workspace trust for `~/work` and "Enable Remote
 Control? (y/n)" - are pre-seeded into `~/.claude.json` by `bootstrap.sh
 step_user`, so the service starts without a terminal. Check it:
@@ -34,14 +34,20 @@ named `agent-vm`. Working directory is `~/work`; clone projects there.
 To change the session name/capacity edit `box/files/claude-remote.service`
 and `make provision STEPS=user && ssh agent-vm-ssh 'systemctl --user daemon-reload && systemctl --user restart claude-remote'`.
 
-## Working on a project (per-project Remote Control servers)
+## Working on a project (optional per-project Remote Control servers)
+
+Default policy (D11): the shared `work` server is the only one running.
+Sessions started in it are steered from the operator's machine, which
+clones repositories and moves between them; `box/remotes.list` keeps those
+clones present after a rebuild (`--clone-only`, no server).
 
 A Remote Control server is bound to the directory it starts in and the app
-cannot pick a directory per session. So: **one server per project**, each a
-systemd user instance `claude-remote@<name>` rooted in `~/work/<name>` and
-shown in the Claude app as an environment called `<name>`. Sessions started
-there begin in that checkout and see its `CLAUDE.md`, `.claude/`, memory,
-hooks, exactly like a local `claude` run from that directory.
+cannot pick a directory per session. When a project deserves its own
+environment, `remote-add <name>` starts a systemd user instance
+`claude-remote@<name>` rooted in `~/work/<name>` and shown in the Claude app
+as an environment called `<name>`. Sessions started there begin in that
+checkout and see its `CLAUDE.md`, `.claude/`, memory, hooks, exactly like a
+local `claude` run from that directory.
 
 ```
 make remote-add NAME=suhuf URL=https://github.com/msavdert/suhuf.git   # clone + trust + start
@@ -67,8 +73,8 @@ Environments you will see in the app:
 
 | Environment | Directory | Purpose |
 |---|---|---|
-| `work` | `~/work` | generic scratch space; use it to clone repos and run `remote-add` |
-| `<name>` | `~/work/<name>` | one per project, created by `remote-add` |
+| `work` | `~/work` | the default and usually only environment; projects live in `~/work/<name>` |
+| `<name>` | `~/work/<name>` | optional, one per project, created by `remote-add` without `--clone-only` |
 
 Per-project knobs: `--capacity N` (concurrent sessions, default 4),
 `--permission-mode M` (default `bypassPermissions`; the `defaultMode` in
@@ -136,9 +142,9 @@ Full rebuild checklist (what is automated and what is not):
 |---|---|
 | `make vm-destroy` | asks for confirmation |
 | `ssh-keygen -R 10.0.0.11` on the operator machine (new host key) | manual, one command |
-| `make bootstrap-all` = vm-create, vm-wait, secrets, provision | yes; provision also clones every repo in `box/remotes.list` (servers enabled, not started) |
+| `make bootstrap-all` = vm-create, vm-wait, secrets, provision | yes; provision also clones every repo in `box/remotes.list` (`--clone-only`: no per-project servers) |
 | `ssh -t agent-vm-ssh claude auth login` | **manual** (OAuth code paste), unavoidable |
-| `make claude-remote` | starts `work` + all listed project servers |
+| `make claude-remote` | starts `work` (and any per-project server enabled by hand) |
 | `omp` provider logins (`omp` on the VM, interactive) | **manual**, only if you use omp there |
 | `make snapshot NAME=clean` | one command |
 
@@ -149,8 +155,9 @@ docker ...` fails with "permission denied" until the master is closed:
 `ssh -O exit agent-vm-ssh`. Provisioning itself is unaffected (`sudo -u`
 starts fresh sessions).
 
-Anything you `remote-add` by hand and do not put in `box/remotes.list`
-is lost on rebuild (the directory too, unless pushed). Anything under
+Anything you clone or `remote-add` by hand and do not put in
+`box/remotes.list` is lost on rebuild (the directory too, unless pushed);
+a per-project server is only recreated if its line has no `--clone-only`. Anything under
 `~/work/*` that is not pushed is lost on rebuild or rollback.
 
 After a rebuild the ssh host key changes; the operator's ssh config uses
@@ -199,6 +206,13 @@ The first `claude auth login` on it is manual, as on every substrate.
 - **"Remote Control requires feature-flag evaluation ... DO_NOT_TRACK"** -
   something exported `DO_NOT_TRACK`; it must stay unset for the agent user
   (removed from `bashrc` for this reason).
+- **Every keystroke shows twice over ssh (`a` becomes `aa`)** - the mac's
+  terminal reports a `TERM` the box has no terminfo entry for (Ghostty:
+  `xterm-ghostty`), so zsh's line editor cannot move the cursor and redraws.
+  `bootstrap.sh step_system` compiles `box/files/xterm-ghostty.terminfo`
+  into `/etc/terminfo`; for another terminal, export its entry the same way
+  (`infocmp -x $TERM`) and add it there. Quick check on the box: `infocmp
+  $TERM`.
 - **Remote Control session missing from the app** - `systemctl --user status
   claude-remote`; if it loops on auth, `claude auth login` again (token
   expired) and `systemctl --user restart claude-remote`.
@@ -208,7 +222,8 @@ The first `claude auth login` on it is manual, as on every substrate.
 docker active and usable by `agent`, sshd active (or socket-activated),
 qemu-guest-agent active where its virtio port exists, `mise node gh op
 uv go bun omp claude jq rg fd tmux` on PATH, passwordless sudo, swap on,
-needrestart non-interactive. Smoke tests done at build time:
-`docker run hello-world`, `opwith git gh auth status`, `git clone` of this
-private repo via the op credential helper, `omp --version`, `claude --version`, tmux session create,
-interactive `PS1`.
+needrestart non-interactive, `home/install.sh --check box` reporting no
+drift, `/etc/claude-code/CLAUDE.md` in place. Smoke tests that need the
+operator's logins (`docker run hello-world`, `opwith git gh api user`,
+`op whoami`, `claude --version`) are run by hand after `make claude-remote`;
+the rebuild checklist above lists them.
