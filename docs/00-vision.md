@@ -141,6 +141,10 @@ reason for D3.
 D12 Parallel harnesses: herdr is installed by mise (D7), configured in
 `home/herdr/`, and its integrations are applied by a mise task
 (`mise run herdr:integrations`) so they are declarative and re-runnable.
+`box/bootstrap.sh` `step_tools` calls that task, and `step_verify` checks the
+three hook files it writes: as a manual step it was silently skipped on the
+2026-08-19 rebuild, and every one of its hooks fails open, so nothing reported
+the gap. A step whose absence is invisible does not survive as a manual step.
 Claude Code plugins are declared in `settings.base.json` (`enabledPlugins`,
 `extraKnownMarketplaces`; verified 2026-08-19) and installed by `mise run
 claude:plugins`, not by hand; declaring alone does not install them. None

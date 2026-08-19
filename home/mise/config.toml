@@ -59,7 +59,12 @@ run = "~/.config/zsh/install-plugins.sh"
 # `[ -x ]` guard, so install.sh runs last to take the file back (herdr's
 # duplicate entry goes, the hook keeps firing). ~/.gemini/config is created
 # up front: herdr refuses without it and agy has not necessarily run yet on
-# a fresh box (assumption: agy reads hooks.json from there, as on the mac).
+# a fresh box. herdr 0.8.0 confirms the path it targets ("ensured
+# antigravity-cli hooks at ~/.gemini/config/hooks.json"); that agy READS it
+# is still an assumption, untested. Note `herdr integration list` advertises
+# `antigravity-cli` while `herdr integration install`'s usage line omits it -
+# the target works, the help text is wrong. This task is called by
+# box/bootstrap.sh step_tools; running it by hand is for the mac.
 # Claude Code plugins are declared in home/claude/settings.base.json under
 # enabledPlugins ({"name@marketplace": true}; extraKnownMarketplaces for
 # non-official sources) - key names verified against code.claude.com/docs

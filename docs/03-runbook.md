@@ -222,14 +222,42 @@ The first `claude auth login` on it is manual, as on every substrate.
 - **Remote Control session missing from the app** - `systemctl --user status
   claude-remote`; if it loops on auth, `claude auth login` again (token
   expired) and `systemctl --user restart claude-remote`.
+- **`mise ls agy` and `agy --version` disagree** - expected, not drift. The
+  agy backend replaces the binary inside the existing versioned install
+  directory instead of creating a new one, so the directory name (and what
+  `mise ls` reports from it) is whatever was first installed, while the
+  binary is whatever the last `mise up` fetched. Seen: `mise ls` 1.1.13
+  against a 1.1.15 binary. Trust `agy --version`. agy releases fast enough
+  that pinning it would cost more than it buys.
+- **agy runs unattended with no command guardrails, on purpose** - and the
+  two settings that look like they would provide some do not, verified on
+  2026-08-19 against agy 1.1.15:
+  - `permissions: {allow, deny, ask}` IS parsed (agy logs `CLI settings
+    initialized: permissions=&{Allow:[...] Deny:[...] Ask:[]}`) but is NOT
+    enforced while `toolPermission: always-proceed` - a denied command still
+    ran. agy also drops the key when it rewrites settings.json, so putting it
+    back would make `install.sh --check` report drift forever. This is why
+    it was removed in eceeaf9.
+  - `permissions_v2` round-trips in the file but is inert: with only that key
+    set, agy logs `permissions=<nil>` and runs the denied command.
+  - `enableTerminalSandbox: true` FAILS OPEN on this box. Its seccomp sandbox
+    server does not answer (`connecting to sandbox server: ... connection
+    reset by peer`) and agy retries the command unsandboxed, successfully. It
+    buys an error line per tool call and no containment.
+  What actually contains agy is the box itself: rebuildable from this
+  repository, projects in git, a `clean` Proxmox snapshot. Revisit if a
+  future agy fixes the sandbox or enforces deny under `always-proceed`.
 
 ## Verification checklist (what `bootstrap.sh verify` covers)
 
 docker active and usable by `agent`, sshd active (or socket-activated),
 qemu-guest-agent active where its virtio port exists, `mise node gh op
-uv go bun omp claude jq rg fd tmux` on PATH, passwordless sudo, swap on,
-needrestart non-interactive, `home/install.sh --check box` reporting no
-drift, `/etc/claude-code/CLAUDE.md` in place. Smoke tests that need the
+uv go bun omp agy herdr claude jq rg fd tmux` on PATH, passwordless sudo,
+swap on, needrestart non-interactive, `home/install.sh --check box` reporting
+no drift, `/etc/claude-code/CLAUDE.md` in place, and herdr's three integration
+hooks (`~/.claude/hooks/herdr-agent-state.sh`, `~/.omp/agent/extensions/`,
+`~/.gemini/config/hooks.json`) present - each fails open on its own, so only
+this check makes their absence visible. Smoke tests that need the
 operator's logins (`docker run hello-world`, `opwith git gh api user`,
 `op whoami`, `claude --version`) are run by hand after `make claude-remote`;
 the rebuild checklist above lists them.

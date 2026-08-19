@@ -254,6 +254,17 @@ step_tools() {
   if [[ ! -x $AGENT_HOME/.local/bin/claude ]]; then
     as_agent bash -c 'curl -fsSL https://claude.ai/install.sh | bash' >/dev/null
   fi
+  # herdr's hooks are NOT part of `mise install`: each harness needs its own
+  # `herdr integration install`, and until 2026-08-19 that lived only in a
+  # manual `mise run herdr:integrations` that nobody ran after a rebuild - the
+  # box rebuilt that morning had none of the three. Nothing complained: the
+  # Claude hook is registered behind an `[ -x ]` guard, so its absence fails
+  # silently, and `install.sh --check` cannot see it either because those files
+  # belong to herdr rather than to this repository. Calling the repo's own task
+  # keeps one definition of the step; it re-runs home/install.sh last, which is
+  # how settings.json is taken back from herdr's edit.
+  log "tools: herdr integrations for claude, omp and agy (as $AGENT_USER)"
+  as_agent bash -lc 'mise run herdr:integrations' | sed 's/^/  /'
   as_agent bash -lc 'mise ls --current' 2>/dev/null | awk '{printf "  %-40s %s\n", $1, $2}'
   printf '  claude %s\n' "$(as_agent "$AGENT_HOME/.local/bin/claude" --version 2>/dev/null || echo '(not installed)')"
 }
@@ -288,7 +299,7 @@ step_verify() {
   check bash -c 'test ! -e /dev/virtio-ports/org.qemu.guest_agent.0 || systemctl is-active qemu-guest-agent'
   check as_agent docker ps
   # one command per check: `command -v a b` succeeds if ANY resolves
-  for c in mise node gh op uv go bun omp claude jq rg fd tmux docker; do
+  for c in mise node gh op uv go bun omp agy herdr claude jq rg fd tmux docker; do
     check as_agent bash -lc "command -v $c"
   done
   check as_agent bash -lc 'sudo -n true'
@@ -296,6 +307,11 @@ step_verify() {
   check test -f /etc/needrestart/conf.d/99-agent.conf
   check test -L "$AGENT_HOME/.claude/CLAUDE.md"
   check grep -q boundary-gate.sh "$AGENT_HOME/.claude/settings.json"
+  # the three herdr integration hooks; each fails open on its own, so without
+  # a check here their absence after a rebuild is invisible (it was, once)
+  check test -x "$AGENT_HOME/.claude/hooks/herdr-agent-state.sh"
+  check test -d "$AGENT_HOME/.omp/agent/extensions"
+  check test -f "$AGENT_HOME/.gemini/config/hooks.json"
   check as_agent bash -lc "'$AGENT_HOME/work/workbench/home/install.sh' --check box"
   # shellcheck disable=SC2016 # MISE_ENV must expand in the agent's login shell
   check as_agent bash -lc 'test "$MISE_ENV" = box'

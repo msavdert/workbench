@@ -70,7 +70,8 @@ workbench/
 | `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/boundary-gate.sh` | `agents/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
 | `~/.ssh/config`, `~/.ssh/config.macos`, `~/.config/ghostty/config` (mac only) | `mac/ssh/`, `mac/ghostty/` | `mac/setup.sh` |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |
-| `~/.claude.json`, `~/.claude/*.jsonl`, sessions, credentials | runtime state, not in repo | the tools themselves |
+| `~/.claude/hooks/herdr-agent-state.sh`, `~/.omp/agent/extensions/`, `~/.gemini/config/hooks.json` | not in repo; herdr generates them | `mise run herdr:integrations`, called by `box/bootstrap.sh` `step_tools` |
+| `~/.gemini/config/config.json` (agy's `remoteControlHostname`), `~/.claude.json`, `~/.claude/*.jsonl`, sessions, credentials | runtime state, not in repo | the tools themselves |
 
 Rule of thumb: if root writes it, `box/`; if the user writes it and it is not
 agent behaviour, `home/`; if it changes how an agent thinks, `agents/`.

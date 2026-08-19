@@ -1,4 +1,6 @@
 {
+  "effort": "high",
+  "model": "gemini-3.7-flash-high",
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/.gemini/antigravity-cli/statusline.sh",
