@@ -93,9 +93,12 @@ native     Claude Code                                        self-updating
 `case $- in *i*) ;; *) return` guard: `PAGER=cat`, `NO_COLOR`,
 `DEBIAN_FRONTEND=noninteractive`, mise shims on PATH. Below the guard, one
 line: source `~/.config/bash/interactive.sh` if present. That file comes from
-`home/`; it enables colour and, when a TTY is attached, `TERM` is not `dumb`
-and `WORKBENCH_PLAIN` is unset, hands off to zsh (`home/zsh/`) with starship,
-eza, fzf and zoxide. An agent-spawned shell returns at the guard and sees
+`home/`; it enables colour and, when a TTY is attached, `TERM` is not `dumb`,
+bash was not given a `-c` command and `WORKBENCH_PLAIN` is unset, hands off
+to zsh (`home/zsh/`) with starship, eza, fzf and zoxide, lifting `NO_COLOR`
+and the `cat` pagers first. Both halves source `~/.config/workbench/env`
+(`MISE_ENV`): bash above the guard, zsh in `.zshenv`, so agents and humans
+get the same mise profile. An agent-spawned shell returns at the guard and sees
 none of it; `$SHELL` stays `/bin/bash` (D5). `docker exec` and captured
 output stay clean because they have no TTY or run with `TERM=dumb`.
 
