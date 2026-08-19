@@ -29,7 +29,25 @@ the from-scratch build, `make secrets` reading the token from 1Password
 `loginctl enable-linger` on OrbStack was not measured (systemd user units
 were listable; the "what could go wrong" note stays open).
 
-Phase 6 (retire) is active; nothing of it has started.
+Phase 6 (retire) is active. Step 1 executed on 2026-08-19: archive notice
+committed to both READMEs (agent-vm 3f055ab, dotfiles 87a1c15) and both
+repositories archived on GitHub (`isArchived=true` verified); `agent-vm`
+removed from `box/remotes.list`; on the box `remote-rm agent-vm` run and
+the clean `~/work/agent-vm` clone deleted; `make provision STEPS="user
+remotes verify"` re-applied (27 ok, 0 fail; `/etc/claude-code/CLAUDE.md`
+carries the new Layout block; remotes step recreated only workbench).
+Nothing on the box or the mac reads from the old repos except session
+transcripts (grep on both). Step 2 findings: the devbox container
+(`ghcr.io/msavdert/devbox:latest`, from dotfiles `compose.yaml`) still runs
+on the OCI VPS `oci-aysesmenn-us-devenv` next to unrelated services
+(dokploy, suhuf, trader, dba-dbre); volumes `devbox_*` hold its state;
+the operator chose to leave it running for now. workbench has no
+`ghcr.io` reference; "devbox" survives only in comments (`home/omp/
+config.yml`, `home/mise/config.box.toml`, `home/nvim/lua/{plugins/
+devbox.lua,config/lazy.lua,config/options.lua}`, `home/zsh/.zshenv`,
+`Makefile`). GitHub: neither old repo had branch protection; agent-vm has
+no workflows; ghcr package listing needs the `read:packages` scope (not
+confirmed). Step 1 edits are uncommitted.
 
 ## Operator seat
 
@@ -42,15 +60,15 @@ has (`pve-vm-ssh`, Tailscale SSH).
 
 ## Next
 
-1. Phase 6 step 1: archive `agent-vm` and `dotfiles` on GitHub (read-only,
-   README pointing here) and remove `~/work/agent-vm` from
-   `box/remotes.list`. Read `docs/02-migration.md` phase 6 and the
-   "Related repositories" note in `AGENTS.md` first; check nothing on the
-   box or the mac still reads from those repos (`grep -rn agent-vm
-   dotfiles` in home/, box/, mise tasks; the ai-hub runtime move was
-   phase 3). Archiving is outward-facing: confirm with the operator
-   before `gh repo archive`.
-2. Phase 6 step 2: devbox image references and the VPS container.
+1. Commit the phase 6 step 1 edits (PLAN.md, README.md, box/remotes.list,
+   box/files/machine-CLAUDE.md) when the operator asks.
+2. Phase 6 step 2: `docker compose down` the devbox container on the VPS
+   (`ssh -o RemoteCommand=none opc@oci-aysesmenn-us-devenv`; the compose
+   project dir is not yet located), keep or remove `devbox_*` volumes
+   (operator decision, destructive), remove `Host dev`/`dev-sh` from the
+   mac's `~/.ssh/config.local`, and retire the "devbox" wording in the
+   comments listed under Now. Then acceptance: PLAN.md "migration
+   complete", AGENTS.md loses its migration section, README status.
 3. Open from phase 5: `ssh -t agent@agent-vm@orb claude auth login` then
    `make claude-remote PROVIDER=orbstack` (machine must be rebuilt first);
    `loginctl enable-linger` check on OrbStack.
@@ -153,3 +171,8 @@ has (`pve-vm-ssh`, Tailscale SSH).
 - 2026-08-19: operator closed phase 5 (OrbStack done, cloud skipped, RC
   login open) and set phase 6 active. Token item created in 1Password,
   OrbStack machine deleted, work pushed.
+- 2026-08-19: phase 6 step 1 executed from the mac: agent-vm and dotfiles
+  archived on GitHub with a README notice pointing here, agent-vm removed
+  from remotes.list, remote-rm + clone deletion on the box, provision
+  re-applied green. Operator deferred the VPS devbox container (step 2).
+  Uncommitted.

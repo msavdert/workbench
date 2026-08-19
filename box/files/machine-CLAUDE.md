@@ -17,13 +17,12 @@ docs/03-runbook.md).
 Layout:
 - `~/work/<name>` one checkout per project; sessions from the Claude app start
   in one of these.
-- `~/work/workbench` how this machine is built and, once the migration is
-  through, how the operator's environment and agents are configured.
-- `~/work/ai-hub` how agents behave today (global CLAUDE.md, subagents,
-  skills, hooks) - installed into `~/.claude` by its `install.sh` until
-  workbench phase 3 moves that into `~/work/workbench/agents/`.
-- `~/work/agent-vm` the predecessor of workbench; read-only reference during
-  the migration.
+- `~/work/workbench` how this machine is built and how the operator's
+  environment and agents are configured (`home/`, `agents/`).
+- `~/work/ai-hub` doctrine, experiments and journal about working with AI;
+  it holds no configuration since workbench phase 3.
+- `agent-vm` and `dotfiles`, the predecessors of workbench, are archived on
+  GitHub and are not checked out here.
 
 ## Secrets and auth
 

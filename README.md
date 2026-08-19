@@ -26,6 +26,6 @@ touch disk except one 1Password service-account token; everything else is an
 Read `docs/00-vision.md` for the decisions and their reasons, `PLAN.md` for
 the current state, `AGENTS.md` if you are an agent working here.
 
-Status: phase 0 of the migration from three predecessor repositories. The
-live box is still built by `agent-vm`; this repository grows phase by phase
-without breaking it.
+Status: phase 6 (retire) of the migration from three predecessor
+repositories. The box is built by this repository since phase 1; the
+predecessors are being archived.
