@@ -39,8 +39,9 @@ current state of work and the handoff between sessions.
    `make lint` must pass.
 7. No emoji anywhere in the repository. Comments explain why, not what.
    One exception: the status-line scripts (`home/claude/statusline.sh`,
-   `home/agy/statusline.sh`) may use symbol glyphs as indicators; they are
-   rendered in the operator's terminal, not in code or prose.
+   `home/agy/statusline.sh`) and the prompt config (`home/starship.toml`)
+   may use symbol and Nerd Font glyphs as indicators; they are rendered in
+   the operator's terminal, not in code or prose.
 8. Reboots, VM resizes, snapshots, rollbacks and anything on a hypervisor
    host require explicit approval.
 9. Nothing from the interactive human shell (zsh, starship, eza, fzf, ...)
