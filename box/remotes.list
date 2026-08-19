@@ -1,0 +1,8 @@
+# Remote Control environments to (re)create on every `make provision`.
+# One per line:  <name> [git-url] [remote-add options]
+# <name> becomes ~/work/<name> and the environment name in the Claude app.
+# Blank lines and # comments are ignored. Applied by bootstrap.sh step_remotes,
+# which runs remote-add for each entry (idempotent). Servers only start once
+# `claude auth login` has been done; the clone and trust happen regardless.
+agent-vm https://github.com/msavdert/agent-vm.git
+workbench https://github.com/msavdert/workbench.git

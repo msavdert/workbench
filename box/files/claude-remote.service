@@ -1,0 +1,24 @@
+# systemd --user unit: the generic "work" environment (~/work, no repo). Use it
+# from the app to clone repos and run `remote-add <name>`, which starts a
+# per-project server (claude-remote@<name>) rooted in ~/work/<name>. Enable with:
+#   make claude-remote      (after `claude auth login` once, interactively)
+[Unit]
+Description=Claude Code Remote Control server
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/work
+ExecStart=%h/.local/bin/claude remote-control --name work --capacity 2 --permission-mode bypassPermissions
+Restart=always
+RestartSec=10
+EnvironmentFile=-%h/.config/op/env
+Environment=OP_ENV_DIR=%h/.config/op-env
+Environment=DEBIAN_FRONTEND=noninteractive
+Environment=NO_COLOR=1
+Environment=PAGER=cat
+Environment=GIT_PAGER=cat
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# remote-rm <name>   stop + disable claude-remote@<name>. Never touches ~/work/<name>.
+set -euo pipefail
+name="${1:?usage: remote-rm <name>}"
+systemctl --user disable --now "claude-remote@$name.service"
+rm -f "$HOME/.config/claude-remote/$name.env"
+echo "claude-remote@$name: removed (directory ~/work/$name kept)"

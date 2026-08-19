@@ -1,0 +1,4 @@
+# Keep the non-interactive apt/debconf environment across sudo so an agent's
+# `sudo apt-get install` never opens a dialog.
+Defaults env_keep += "DEBIAN_FRONTEND NEEDRESTART_MODE NEEDRESTART_SUSPEND"
+Defaults:agent !requiretty

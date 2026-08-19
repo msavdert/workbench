@@ -1,0 +1,36 @@
+#cloud-config
+# Minimal first-boot config for the agent VM. Deliberately small: it only has to
+# get the machine to a state where `make provision` can SSH in. Everything else
+# (packages, Docker, mise, tooling) lives in box/bootstrap.sh so it can be
+# re-run and versioned without rebuilding the VM.
+hostname: agent-vm
+manage_etc_hosts: true
+timezone: Etc/UTC
+locale: C.UTF-8
+
+users:
+  - name: agent
+    gecos: AI agent runtime user
+    shell: /bin/bash
+    groups: [sudo, adm]
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      # 1Password item dotfiles/agent-vm-ssh (op ssh:sync host "agent-vm-ssh")
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMOw7Wg55Am1Pu6iO3ycaRPudjSDrW/frLjHBJzR2or+
+
+ssh_pwauth: false
+disable_root: true
+
+package_update: true
+packages:
+  - qemu-guest-agent
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  # Single static NIC on a NAT vnet: nothing to wait for, and this unit adds
+  # up to 2 minutes to boot when it decides otherwise.
+  - systemctl disable --now systemd-networkd-wait-online.service
+  - systemctl mask systemd-networkd-wait-online.service
+
+final_message: "agent-vm cloud-init finished after $UPTIME seconds"

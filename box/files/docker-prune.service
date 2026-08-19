@@ -1,0 +1,8 @@
+[Unit]
+Description=Reclaim docker build cache and dangling images
+
+[Service]
+Type=oneshot
+# Volumes and named images are never touched: agents may rely on them.
+ExecStart=/usr/bin/docker builder prune -af --filter until=168h
+ExecStart=/usr/bin/docker image prune -f

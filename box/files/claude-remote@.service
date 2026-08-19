@@ -1,0 +1,34 @@
+# systemd --user template: one Claude Code Remote Control server per project.
+#   claude-remote@myrepo  ->  ~/work/myrepo, shown as "myrepo" in the Claude app
+# Managed by `remote-add` / `remote-rm` (provision/files) or `make remote-add`.
+# The server is bound to the directory it starts in; sessions created from the
+# app start there and pick up that project's CLAUDE.md, .claude/, memory.
+[Unit]
+Description=Claude Code Remote Control server for ~/work/%i
+After=network-online.target
+ConditionPathIsDirectory=%h/work/%i
+
+[Service]
+Type=simple
+WorkingDirectory=%h/work/%i
+# --spawn same-dir: every session runs in this checkout (default, shares state).
+# Switch to worktree mode with `remote-add --worktree`, see runbook.
+# --permission-mode applies to the sessions this server spawns; the defaultMode
+# in ~/.claude/settings.json does not reach them.
+ExecStart=%h/.local/bin/claude remote-control --name %i --capacity ${CLAUDE_REMOTE_CAPACITY} --spawn ${CLAUDE_REMOTE_SPAWN} --permission-mode ${CLAUDE_REMOTE_PERMISSION_MODE}
+Restart=always
+RestartSec=10
+EnvironmentFile=-%h/.config/op/env
+EnvironmentFile=-%h/.config/claude-remote/%i.env
+Environment=CLAUDE_REMOTE_CAPACITY=4
+Environment=CLAUDE_REMOTE_SPAWN=same-dir
+Environment=CLAUDE_REMOTE_PERMISSION_MODE=bypassPermissions
+Environment=OP_ENV_DIR=%h/.config/op-env
+Environment=DEBIAN_FRONTEND=noninteractive
+Environment=NO_COLOR=1
+Environment=PAGER=cat
+Environment=GIT_PAGER=cat
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=default.target

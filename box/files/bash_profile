@@ -1,0 +1,2 @@
+# Login shells (ssh, tmux default-command) just use .bashrc.
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"

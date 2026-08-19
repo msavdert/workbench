@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# agent-session [name]
+# Attach to (or create) the long-lived tmux session agents run in. Human entry
+# point after `ssh agent-vm-ssh`; the Claude Remote Control server runs as a
+# systemd user service instead (see claude-remote.service).
+set -euo pipefail
+name="${1:-main}"
+if tmux has-session -t "$name" 2>/dev/null; then
+  exec tmux attach-session -t "$name"
+fi
+exec tmux new-session -s "$name" -c "$HOME/work"
