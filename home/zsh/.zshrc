@@ -278,17 +278,20 @@ function ssh {
     [[ -n $host ]] && command ssh "$host"
 }
 
-# herdr 0.8.0 enables SGR mouse reporting (CSI ?1000/1002/1003/1006) and the
-# kitty keyboard protocol (CSI >u) on attach and leaves both on after
-# prefix+q detach, so the outer shell then receives raw "35;64;25M" /
-# "3;1:3u" bytes on every mouse move. Pop the keyboard stack and switch the
-# mouse modes off after every herdr exit; the sequences are no-ops on a
-# terminal that never had them on. Drop this once upstream restores the
-# terminal itself.
+# herdr restores the tty and sends its mode resets (CSI ?1003l, CSI <u)
+# correctly on prefix+q detach, but over ssh those resets reach Ghostty a few
+# tens of milliseconds later. In that window the release of the "q" key
+# (kitty protocol: ESC[113;1:3u) and any mouse motion still arrive as raw
+# bytes at a tty nobody reads, get echoed, and land on the next command line
+# as "3;1:3u" / "35;64;25M". Drain the tty until it has been quiet for 0.2s
+# (capped at 2s) before zle takes over. Local terminals and zellij do not
+# show this, and on macOS `read -k` can block on a pending partial line, so
+# the drain runs only on the remote path.
 function herdr {
     command herdr "$@"
-    local rc=$?
-    [[ -t 1 ]] && printf '\e[<u\e[?1003l\e[?1002l\e[?1000l\e[?1006l'
+    local rc=$? junk end=$((SECONDS + 2))
+    [[ -n ${SSH_CONNECTION:-} ]] || return $rc
+    while (( SECONDS < end )) && read -s -t 0.2 -k 1 junk; do :; done
     return $rc
 }
 
