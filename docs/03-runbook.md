@@ -119,7 +119,7 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
 | This repo's config | `make provision`; `box/` only: `STEPS=user`; `home/` only: `STEPS=home` (pulls `~/work/workbench` on the box and re-runs `home/install.sh box`) |
 | The laptop | `mise run mac:sync` (pulls `~/work/workbench`, `mac/setup.sh --links-only`); full run `mac/setup.sh`, `CLEANUP=1` to also remove brew packages not in `mac/Brewfile` |
 | Drift check of `home/` on the box | `ssh agent-vm-ssh 'bash -lc "~/work/workbench/home/install.sh --check box"'` (also part of `verify`) |
-| ai-hub (global CLAUDE.md, agents, skills, hooks) | `make provision STEPS=aihub` or on the VM `git -C ~/work/ai-hub pull && bash ~/work/ai-hub/install.sh` |
+| Agent behaviour (`agents/`: global CLAUDE.md, subagents, omp-fleet, boundary gate) | same as `home/`: `STEPS=home` on the box, `mise run mac:sync` on the laptop; `home/install.sh` also self-checks the gate |
 
 ## Rollback / rebuild
 
@@ -134,7 +134,7 @@ Full rebuild checklist (what is automated and what is not):
 |---|---|
 | `make vm-destroy` | asks for confirmation |
 | `ssh-keygen -R 10.0.0.11` on the operator machine (new host key) | manual, one command |
-| `make bootstrap-all` = vm-create, vm-wait, secrets, provision | yes; provision also clones ai-hub, installs it, and clones every repo in `box/remotes.list` (servers enabled, not started) |
+| `make bootstrap-all` = vm-create, vm-wait, secrets, provision | yes; provision also clones every repo in `box/remotes.list` (servers enabled, not started) |
 | `ssh -t agent-vm-ssh claude auth login` | **manual** (OAuth code paste), unavoidable |
 | `make claude-remote` | starts `work` + all listed project servers |
 | `omp` provider logins (`omp` on the VM, interactive) | **manual**, only if you use omp there |

@@ -54,7 +54,7 @@ provision: ## rsync box/ to the VM and run bootstrap.sh (all steps, or STEPS="ap
 	$(RSYNC) box/ $(VM_HOST):~/workbench-box/
 	$(SSH) -t $(VM_HOST) "sudo ~/workbench-box/bootstrap.sh $$STEPS"
 
-secrets: ## push OP_SERVICE_ACCOUNT_TOKEN from this shell to ~/.config/op/env on the VM (before provision: step_aihub clones a private repo)
+secrets: ## push OP_SERVICE_ACCOUNT_TOKEN from this shell to ~/.config/op/env on the VM (before provision: step_tools needs it for the GitHub API)
 	@test -n "$$OP_SERVICE_ACCOUNT_TOKEN" || { echo "OP_SERVICE_ACCOUNT_TOKEN is not set in this shell"; exit 1; }
 	@$(SSH) $(VM_HOST) 'umask 077; mkdir -p ~/.config/op; cat > ~/.config/op/env' <<< "OP_SERVICE_ACCOUNT_TOKEN=$$OP_SERVICE_ACCOUNT_TOKEN"
 	@$(SSH) $(VM_HOST) 'bash -lc "if command -v op >/dev/null; then op whoami >/dev/null && echo op: ok; else echo op: token written, op not installed yet; fi"'

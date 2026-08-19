@@ -10,9 +10,6 @@
 set -euo pipefail
 
 AGENT_USER="${AGENT_USER:-agent}"
-# ai-hub: the operator's agent-behaviour repo (global CLAUDE.md, subagents,
-# skills, hooks). It stays a separate repo; this VM only installs it.
-AIHUB_REPO="${AIHUB_REPO:-https://github.com/msavdert/ai-hub.git}"
 WORKBENCH_REPO="${WORKBENCH_REPO:-https://github.com/msavdert/workbench.git}"
 AGENT_HOME="$(getent passwd "$AGENT_USER" | cut -d: -f6)"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -240,21 +237,6 @@ step_tools() {
 }
 
 # ---------------------------------------------------------------------------
-step_aihub() {
-  log "ai-hub: clone/update $AIHUB_REPO and run its install.sh (as $AGENT_USER)"
-  local dir="$AGENT_HOME/work/ai-hub"
-  # login shell so ~/.bashrc loads the op token the git credential helper needs
-  if [[ -d $dir/.git ]]; then
-    as_agent bash -lc "git -C '$dir' pull -q --ff-only" || echo "  WARN: ai-hub pull failed (local changes?); using existing checkout"
-  else
-    as_agent bash -lc "git clone -q '$AIHUB_REPO' '$dir'"
-  fi
-  # install.sh links runtime/claude/* into ~/.claude and self-checks the gate;
-  # it prints its own OK/WARN lines.
-  as_agent bash -lc "cd '$dir' && bash install.sh" | sed 's/^/  /'
-}
-
-# ---------------------------------------------------------------------------
 step_remotes() {
   log "remotes: Remote Control environments from box/remotes.list (as $AGENT_USER)"
   local list="$here/remotes.list" line
@@ -298,7 +280,7 @@ step_verify() {
   [[ $ok == 1 ]] || die "verification failed"
 }
 
-STEPS=(system apt docker user home tools aihub remotes verify)
+STEPS=(system apt docker user home tools remotes verify)
 if [[ $# -gt 0 ]]; then STEPS=("$@"); fi
 for s in "${STEPS[@]}"; do
   declare -F "step_$s" >/dev/null || die "unknown step: $s"

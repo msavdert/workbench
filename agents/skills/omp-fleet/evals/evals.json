@@ -1,0 +1,33 @@
+{
+  "skill_name": "omp-fleet",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "prepare-research-delegation",
+      "prompt": "You are working in the repository at <TASKDIR> (treat it as the project root). I need a comparison of managed PostgreSQL pricing and SLA terms across AWS RDS, GCP Cloud SQL and Azure Database for PostgreSQL, drawing on 10-15 sources, with figures dated. This should be delegated to omp-fleet rather than done here. Prepare the delegated run completely: create the work directory, write the prompt file, and write the exact launch command(s) you would run into <TASKDIR>/LAUNCH.sh. IMPORTANT: omp is not available in this environment. Do NOT execute omp, omp-run.sh, or $OMP_RUN. Do not launch anything. Finish by replying in at most 8 lines: which model you chose and why, and what the operator must check after the run.",
+      "expected_output": "Work dir + prompt.txt following the template (web_search, no scrapers, no task/subagents, sourced claims, OUTPUT file, <=5-line reply). LAUNCH.sh uses $OMP_RUN wrapper (never raw omp), absolute prompt path, backgrounded. Model choice consistent with the skill's current policy. Post-run: read head first, spot-check numbers, treat output as claim.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "eval_name": "demand-research-source-rules",
+      "prompt": "You are working in the repository at <TASKDIR> (treat it as the project root). Find out what database administrators actually complain about when their employer moves them from self-hosted PostgreSQL to a managed cloud database - real voices, not vendor content. Delegate this to omp-fleet. Prepare the run: work directory, prompt file, and the launch command written to <TASKDIR>/LAUNCH.sh. IMPORTANT: omp is not available here. Do NOT execute omp, omp-run.sh, or $OMP_RUN. Reply in at most 5 lines when done.",
+      "expected_output": "Prompt file includes the demand-research SOURCE RULES block or an equivalent: acceptable sources are first-person forum posts; vendor blogs/landing pages/case studies/launch-thread comments banned; each quote states who is speaking and why; second-person copy discarded; under-delivering preferred to padding.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "eval_name": "judgment-stays-in-session",
+      "prompt": "You are working in the repository at <TASKDIR> (treat it as the project root). The file <TASKDIR>/research/segment-findings.md is a delegated omp-fleet research result about two candidate customer segments. Two things: (a) decide which segment we should target first and write the decision to <TASKDIR>/strategy/DECISION.md; (b) we also need 20 more primary-source quotes for whichever segment you pick - arrange for that. IMPORTANT: omp is not available here. Do NOT execute omp, omp-run.sh, or $OMP_RUN; write any launch command to <TASKDIR>/LAUNCH.sh instead. Reply in at most 6 lines.",
+      "expected_output": "The decision is made in-session (DECISION.md written by the agent, not delegated). The decision spot-checks or explicitly flags the delegate's numbers as unverified claims rather than accepting the self-rated confidence; it should notice the internal inconsistency planted in the file. Only the quote-gathering is delegated, with the SOURCE RULES block. Nothing tries to delegate the decision itself.",
+      "files": ["research/segment-findings.md"]
+    },
+    {
+      "id": 4,
+      "eval_name": "liveness-kill-or-wait",
+      "prompt": "You are working in the repository at <TASKDIR>. An omp-fleet delegated research run for topic 'rds-pricing' was launched about 6 minutes ago via $OMP_RUN. Current observations: <TASKDIR>/research/_work/rds-pricing/run.log is 11 bytes and contains 'Working...' and has not changed since launch; there is no output file yet; `ps -o pid,etime,pcpu,args` on the omp process shows etime 06:12 and %CPU 38.4; the Synthetic quota bar has not moved. Should I kill this run and relaunch, or wait? Answer in at most 6 lines with your reasoning, and say which single signal you are basing the call on. Do not run any commands.",
+      "expected_output": "Wait. Basis: non-zero CPU with growing etime. Explicitly says run.log size and quota bar are not liveness signals (log is written at exit; quota regenerates). Mentions the expected 100-700s window and that the wrapper timeout is the backstop.",
+      "files": []
+    }
+  ]
+}

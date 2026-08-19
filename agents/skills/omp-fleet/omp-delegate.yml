@@ -1,0 +1,7 @@
+# Config overlay for delegated omp runs. Loaded with --config.
+# Purpose: strip interactive/ambient features that cost latency and tokens
+# but add nothing to a headless one-shot research or extraction task.
+advisor:
+  enabled: false
+web_search:
+  enabled: true

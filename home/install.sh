@@ -13,7 +13,8 @@
 # must never end up in this repository's working tree.
 #
 # Two kinds of target:
-#   link      $HOME path is a symlink to a file or directory under home/
+#   link      $HOME path is a symlink to a file or directory under home/ or,
+#             for agent behaviour (D9), under agents/
 #   generated $HOME path is a regular file whose content is computed from
 #             home/ (Claude settings = base + profile overlay, merged with
 #             jq; the profile env file). Regenerated when the content differs.
@@ -28,6 +29,7 @@
 set -euo pipefail
 
 HOME_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_SRC="$(cd "$HOME_SRC/.." && pwd)"
 CHECK=0
 DRY=0
 PROFILE=""
@@ -49,10 +51,14 @@ log() {
 
 # ---------------------------------------------------------------------------
 # link <src-relative-to-home/> <dst-absolute>
-link() {
-  local src="$HOME_SRC/$1" dst="$2"
+# link <path-under-home/> <dst>; link_agents <path-under-agents/> <dst>
+link() { link_path "$HOME_SRC/$1" "home/$1" "$2"; }
+link_agents() { link_path "$REPO_SRC/agents/$1" "agents/$1" "$2"; }
+
+link_path() {
+  local src="$1" label="$2" dst="$3"
   if [[ ! -e $src ]]; then
-    log SKIP "$dst (source missing: home/$1)"
+    log SKIP "$dst (source missing: $label)"
     return 0
   fi
   if [[ -L $dst && "$(readlink "$dst")" == "$src" ]]; then
@@ -60,12 +66,12 @@ link() {
     return 0
   fi
   if ((CHECK)); then
-    log DRIFT "$dst (not a link to home/$1)"
+    log DRIFT "$dst (not a link to $label)"
     DRIFT=1
     return 0
   fi
   if ((DRY)); then
-    log would "link $dst -> home/$1"
+    log would "link $dst -> $label"
     return 0
   fi
   if [[ -e $dst || -L $dst ]]; then
@@ -75,7 +81,7 @@ link() {
   fi
   mkdir -p "$(dirname "$dst")"
   ln -sfn "$src" "$dst"
-  log link "$dst -> home/$1"
+  log link "$dst -> $label"
 }
 
 # generate <dst-absolute> <mode> ; expected content on stdin (redirected, not
@@ -182,6 +188,17 @@ manifest() {
   merge_settings claude "$HOME/.claude/settings.json"
   link claude/statusline.sh "$HOME/.claude/statusline.sh"
 
+  # agent behaviour (D9): global instructions, subagents, the one global
+  # skill and the boundary gate. ~/.claude/agents is linked as a directory
+  # (nothing else writes there); skills and hooks per entry, because other
+  # installers own siblings in those directories. omp-fleet's fallback config
+  # sits at ~/.claude/omp-delegate.yml, where omp-run.sh looks for it.
+  link_agents CLAUDE.md "$HOME/.claude/CLAUDE.md"
+  link_agents agents "$HOME/.claude/agents"
+  link_agents skills/omp-fleet "$HOME/.claude/skills/omp-fleet"
+  link_agents skills/omp-fleet/omp-delegate.yml "$HOME/.claude/omp-delegate.yml"
+  link_agents hooks/boundary-gate.sh "$HOME/.claude/hooks/boundary-gate.sh"
+
   # parallel harnesses (D12): config only, per file; agy composed like Claude
   link herdr/config.toml "$HOME/.config/herdr/config.toml"
   merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json"
@@ -199,6 +216,43 @@ manifest() {
   fi
 
   profile_env
+}
+
+# ---------------------------------------------------------------------------
+# The boundary gate is the one link whose absence fails silently: an agent
+# simply never sees a block. So the link is not the deliverable; the gate must
+# be registered (settings.base.json carries the PreToolUse entry) and must
+# behave. Fed the payload shape Claude Code sends, against the source file, so
+# it runs in every mode.
+verify_gate() {
+  local gate="$REPO_SRC/agents/hooks/boundary-gate.sh" failed=0
+  [[ -f $gate ]] || return 0
+  if grep -q 'boundary-gate.sh' "$HOME_SRC/claude/settings.base.json"; then
+    log ok "boundary-gate registered in home/claude/settings.base.json"
+  else
+    log FAIL "boundary-gate not registered in home/claude/settings.base.json"
+    failed=1
+  fi
+  local label cmd want got
+  while IFS='|' read -r label cmd want; do
+    got=0
+    printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$cmd" |
+      bash "$gate" >/dev/null 2>&1 || got=$?
+    if [[ $got == "$want" ]]; then
+      log ok "gate $label (exit $got)"
+    else
+      log FAIL "gate $label: expected exit $want, got $got"
+      failed=1
+    fi
+  done <<'EOT'
+blocks git push --force|git push --force origin main|2
+allows git push|git push origin main|0
+allows git status|git status|0
+EOT
+  if ((failed)); then
+    echo "boundary-gate self-check failed; the gate may be open" >&2
+    exit 1
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -230,6 +284,7 @@ main() {
   ((DRY)) && mode="dry-run"
   echo "home/install.sh: profile=$PROFILE mode=$mode source=$HOME_SRC"
   manifest
+  verify_gate
   if ((CHECK)); then
     if ((DRIFT)); then
       echo "drift detected"
