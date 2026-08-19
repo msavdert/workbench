@@ -102,8 +102,14 @@ provisioned).
 
 ## Interactive use
 
-`make ssh` attaches to (or creates) tmux session `main` in `~/work`. Other
-agents (`omp`, a second `claude`) run in further tmux windows or sessions.
+`box` (a mac-only zsh alias from `home/zsh/.zshrc`) is the everyday entry:
+`herdr --remote agent-vm-ssh --session main`, the mac herdr client attached
+over ssh to the herdr server on the box. The UI and keybindings are local,
+the session and every agent in it live on the box and survive the laptop
+closing. `make ssh` is the fallback below it: plain ssh into tmux session
+`main` in `~/work` (`agent-session`), for when herdr is not running or is
+being debugged. Other agents (`omp`, a second `claude`) run in further herdr
+tabs, or tmux windows on the fallback path.
 
 ## Secrets
 

@@ -114,3 +114,7 @@ history. Older entries are condensed; `git log` has the full trail.
   refresh failing on DNS (cli log 14:09), not provision; agy keeps its
   token in the Keychain, install.sh never touches it. Silenced the
   first-run model warning by seeding the display name in settings.base.
+- 2026-08-19: mac gets a `box` alias (herdr --remote agent-vm-ssh --session
+  main) as the everyday entry; `make ssh` stays as the tmux fallback. Box
+  herdr server 0.8.0 runs sessions default and main; box agy model fixed
+  to the display name in the live seed key.

@@ -225,6 +225,15 @@ fi
 alias ..='cd ..'
 alias ...='cd ../..'
 
+# The box from the mac: herdr's own remote attach (client UI and keybindings
+# stay local, the session lives in the box's herdr server), named like the
+# tmux session agent-session creates so there is one name to remember. Kept as
+# an alias, not a make target: it is an interactive entry point, not a repo
+# operation, and must not exist on the box itself.
+if [[ ${WORKBENCH_PROFILE:-} == mac ]] && (( $+commands[herdr] )); then
+    alias box='herdr --remote agent-vm-ssh --session main'
+fi
+
 # Modern tools get their OWN names. Shadowing grep/find/cat with rg/fd/bat
 # breaks every script and pasted command that relies on POSIX flags - and it
 # silently rewrites these very functions, because zsh expands aliases inside
