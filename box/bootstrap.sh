@@ -186,24 +186,6 @@ step_user() {
   # stdout from directly, never part of a shell an agent's Bash tool sees.
   # Safe to colour regardless of bashrc's NO_COLOR policy for agent shells.
   put 0755 "$files/claude-statusline.sh" "$AGENT_HOME/.claude/statusline.sh"
-  # Claude settings: seed once, never clobber a file the user/agent has edited.
-  # Two exceptions merged in independently if missing, each idempotent:
-  # - the boundary-gate PreToolUse hook from ai-hub (its install.sh
-  #   deliberately does not write settings.json);
-  # - the statusLine key, added after initial rollout on this VM.
-  local cs="$AGENT_HOME/.claude/settings.json"
-  if [[ ! -f $cs ]]; then
-    put 0644 "$files/claude-settings.json" "$cs"
-  else
-    if ! grep -q boundary-gate.sh "$cs"; then
-      jq -s '.[0] as $seed | .[1] | .hooks.PreToolUse = ((.hooks.PreToolUse // []) + $seed.hooks.PreToolUse)' \
-        "$files/claude-settings.json" "$cs" >"$cs.tmp" && mv "$cs.tmp" "$cs" && echo "  updated $cs (boundary-gate hook)"
-    fi
-    if ! jq -e '.statusLine' "$cs" >/dev/null 2>&1; then
-      jq -s '.[0].statusLine as $sl | .[1] + {statusLine: $sl}' \
-        "$files/claude-settings.json" "$cs" >"$cs.tmp" && mv "$cs.tmp" "$cs" && echo "  updated $cs (statusLine)"
-    fi
-  fi
   # ~/.claude.json holds two one-time consents that otherwise need a TTY and
   # would keep claude-remote.service from starting: workspace trust for
   # ~/work and the "Enable Remote Control? (y/n)" dialog. Merge them in,

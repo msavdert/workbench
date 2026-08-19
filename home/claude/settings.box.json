@@ -1,0 +1,10 @@
+{
+  "env": {
+    "GIT_PAGER": "cat",
+    "NO_COLOR": "1",
+    "PAGER": "cat"
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  }
+}

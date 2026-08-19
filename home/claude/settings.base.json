@@ -1,0 +1,40 @@
+{
+  "effortLevel": "high",
+  "env": {
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "8"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "h=$HOME/.claude/hooks/boundary-gate.sh; [ -x \"$h\" ] && exec bash \"$h\"; exit 0",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash|Write|Edit|NotebookEdit"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "h=$HOME/.claude/hooks/herdr-agent-state.sh; [ -x \"$h\" ] && exec bash \"$h\" session; exit 0",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ]
+  },
+  "model": "claude-fable-5[1m]",
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "command": "bash ~/.claude/statusline.sh",
+    "padding": 1,
+    "refreshInterval": 3,
+    "type": "command"
+  }
+}

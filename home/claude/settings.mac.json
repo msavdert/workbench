@@ -1,0 +1,8 @@
+{
+  "agentPushNotifEnabled": true,
+  "hasCompletedOnboarding": true,
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "theme": "auto"
+}
