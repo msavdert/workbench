@@ -51,6 +51,7 @@ vm-create: ## create/start the VM: PROVIDER=proxmox (default) on the PVE host, P
 ifeq ($(PROVIDER),orbstack)
 	bash providers/orbstack/create-vm.sh
 else
+	$(SSH) $(PVE_HOST) "mkdir -p /root/workbench/providers/$(PROVIDER)"
 	$(RSYNC) providers/$(PROVIDER)/ $(PVE_HOST):/root/workbench/providers/$(PROVIDER)/
 	$(SSH) $(PVE_HOST) "VMID=$$VMID bash /root/workbench/providers/$(PROVIDER)/create-vm.sh"
 endif

@@ -18,18 +18,20 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
-Migration complete (2026-08-19). Phase 6 executed: agent-vm and dotfiles
-archived on GitHub with a README notice; `agent-vm` off `box/remotes.list`
-and off the box; container wording gone from `home/`; on the VPS the
-devbox container, its `dotfiles_*` volumes, the orphan `devbox_*` volumes
-and the `ghcr.io/msavdert/devbox` image are removed and `/home/opc/dotfiles`
-deleted. `AGENTS.md`, `README.md`, `docs/02-migration.md`, `docs/03-runbook.md`
-no longer describe a migration in progress. The operator finished the
-hand items the same day (`/home/opc/devbox` deleted and its service
-account rotated, `Host dev`/`dev-sh` removed from the mac, ghcr package
-deleted). The OrbStack Remote Control login is skipped for good by operator
-decision; do not raise it again. There is no active phase; work is now
-backlog-driven.
+Migration complete (2026-08-19). From-scratch rebuild test of the Proxmox
+box in progress (2026-08-19, operator approved): `make snapshot` from the
+mac worked (Proxmox path proven without devbox), VM 105 destroyed with all
+snapshots (`make vm-destroy --purge`), `make bootstrap-all` green in 3m14s
+(47 ok, 0 fail; disk re-imported from the noble cloud image, all of
+`/home/agent` newer than boot). One bug only the fresh path shows, fixed:
+`vm-create` rsynced into a non-existent `/root/workbench/providers/` on the
+PVE host (now `mkdir -p` first). `box/remotes.list` gained ai-hub,
+dba-to-dbre, suhuf so the rebuild recreated them (enabled, not started).
+Waiting on the operator's manual logins (`claude auth login`, omp, agy);
+then `make claude-remote`, final checks, `make snapshot NAME=clean`.
+Note: the box's old op token had died ("Service Account Deleted") when
+the operator rotated the account for the devbox `.env`; the 1Password item
+already held the new token, `make secrets` installed it.
 
 ## Operator seat
 
@@ -43,9 +45,9 @@ the mac since the devbox seat is gone.
 
 ## Next
 
-1. Run `make snapshot` once from the mac to prove the Proxmox path
-   (`pve-vm-ssh` via `mise run ssh:sync`) works without the devbox seat.
-   Snapshots need explicit approval (AGENTS.md rule 8): ask first.
+1. After the operator's logins on the rebuilt box: `make claude-remote`,
+   `make remote-ls`, `home/install.sh --check box`, `omp`/`agy` smoke,
+   then `make snapshot NAME=clean` (approved as part of the rebuild test).
 2. Pick from the backlog below; nothing else is scheduled.
 3. Leftovers, not blocking (unchanged): the mac's
    `~/Documents/all/github/knowledge/.claude/skills` link to a devbox
@@ -159,3 +161,6 @@ the mac since the devbox seat is gone.
 - 2026-08-19: operator finished the hand items (VPS ~/devbox, service
   account rotated, mac ssh entries, ghcr package) and skipped the OrbStack
   Remote Control login for good. Migration record closed.
+- 2026-08-19: rebuild test: snapshot from the mac ok, VM 105 destroyed
+  with snapshots, bootstrap-all green from scratch in 3m14s after fixing
+  vm-create's missing staging dir on the PVE host. Manual logins pending.
