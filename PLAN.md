@@ -10,60 +10,65 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 | 0 | Founding documents | done |
 | 1 | Move agent-vm in, unchanged behaviour | done |
 | 2 | home/ and mac/ | done |
-| 3 | agents/ (from ai-hub runtime) | active |
-| 4 | Human layer, herdr/agy/aws-cli, plugins | not started |
+| 3 | agents/ (from ai-hub runtime) | done |
+| 4 | Human layer, herdr/agy/aws-cli, plugins | active |
 | 5 | Portability proof (OrbStack, cloud) | not started |
 | 6 | Retire agent-vm, dotfiles, devbox | not started |
 
 ## Now
 
-Phase 2 is done on both profiles. Box: `make provision STEPS="home tools
-verify"` green, `home/install.sh --check box` no drift. Mac (2026-08-19,
-session on the laptop): `mac/setup.sh` run three times - the first moved
-27 dotfiles links plus the agy settings file into
-`~/.config/workbench/backup-20260819T005304Z/` (and `...05Z/`, see the
-BACKUP_DIR fix), the second installed the tools after the bun fix, the
-third changed nothing (brew "Using ...", `mise all tools are installed`,
-every link `ok`). `home/install.sh --check mac` no drift;
-`~/.claude/settings.json` is a regular file equal to `base * mac` (jq);
-a fresh `zsh -il` has MISE_ENV=mac, starship, opwith, gh, shfmt, bun, omp,
-op from mise. `make lint` green on the mac. Snapshot `pre-phase2` still on
-the PVE host; the mac originals are the two backup dirs above.
+Phases 2 and 3 are done on both profiles. `agents/` holds what was ai-hub
+`runtime/` (CLAUDE.md, agents/, skills/, hooks/, templates/, overnight/);
+`home/install.sh` links `~/.claude/CLAUDE.md`, `~/.claude/agents`,
+`~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml` and
+`~/.claude/hooks/boundary-gate.sh` from it on both profiles and self-checks
+the gate in every mode (registered in settings.base.json, blocks a forced
+push, allows a plain push). `box/bootstrap.sh` has no `step_aihub` any
+more; the box got the links through `make provision STEPS="home verify"`
+(green, run from the mac on 2026-08-19; links resolve into
+`/home/agent/work/workbench/agents/`, `--check box` no drift). ai-hub
+(fc2e4e2) has no `runtime/`, `install.sh` or `.claude/skills`; its README,
+CLAUDE.md and two doctrine lines point at `workbench/agents/`.
 
-Phase 3 has not started; nothing under `agents/` yet.
+Mac state: `CLEANUP=1 mac/setup.sh` removed the `1password-cli` cask (op is
+mise's, Touch ID confirmed by the operator); mise 2026.8.8 via the new
+self-update step; `home/claude/settings.mac.json` carries the `autoMode`
+block that `/auto-mode-setup` had written into the live settings.json.
+Backups on the mac: `~/.config/workbench/backup-20260819T0053*Z/` (phase 2)
+and `backup-20260819T010842Z/` (phase 3); on the box
+`backup-20260819T011158Z/`.
+
+Phase 4 has not started.
 
 ## Operator seat
 
-Sessions run from `devbox` (the dotfiles container) or the mac; the mac now
-has shellcheck 0.11 and shfmt 3.13 from mise so `make lint` works there
-too. Box work (`provision`, `snapshot`, `rollback`) needs the Proxmox ssh
-that devbox has (`pve-vm-ssh`, Tailscale SSH); the mac reaches the box
-via `agent-vm-ssh` in `~/.ssh/config.local` once `mise run ssh:sync` has
-run.
+Sessions run from the mac (`~/work/workbench`) or devbox. The mac reaches
+the box directly (`agent-vm-ssh` in `~/.ssh/config.local`, 1Password SSH
+agent), so `make provision`, `make ssh` and `home/install.sh --check`
+over ssh work from the laptop; `make lint` works there (shellcheck, shfmt
+from mise). Snapshots and rollbacks still need the Proxmox ssh that devbox
+has (`pve-vm-ssh`, Tailscale SSH).
 
 ## Next
 
-1. Phase 3 step 1: move ai-hub `runtime/` into `agents/` and link it from
-   `home/install.sh` (`~/.claude/CLAUDE.md`, agents, skills, hooks resolve
-   into `~/work/workbench/agents/`; `step_aihub` in `box/bootstrap.sh`
-   becomes those links). Read ai-hub `install.sh` first to get the exact
-   target list, then `docs/02-migration.md` phase 3 acceptance.
-2. Decisions left from the mac acceptance, not blocking: `op` exists twice
-   on the mac (brew cask `1password-cli` from mac/Brewfile and mise
-   `1password-cli` from home/mise/config.toml; mise wins on PATH). Whether
-   the 1Password app integration (Touch ID) works with a non-brew `op` was
-   not verified - pick one owner. macOS runs the scripts under Apple's
-   bash 3.2 (no brew bash); they use no bash 4+ features today, AGENTS.md
-   says "Bash 5" - either add `brew "bash"` or note 3.2 compatibility as a
-   constraint. mise self-update on the mac (2026.7.18 vs 2026.8.8) is not
-   done by mac/setup.sh.
-3. Backlog from phase 2: zsh plugins (autosuggestions,
-   syntax-highlighting) are referenced by `.zshrc` but nothing installs
-   `~/.local/share/zsh-plugins` on either profile (phase 4); omp prompts
-   (WATCHDOG.md, skills) still describe the dotfiles/container workflow and
-   want a content pass in phase 4; `providers/proxmox/README.md` sizing
-   notes (phase 1 leftover); `DRY_RUN=1 mac/setup.sh` does not say what is
-   currently at each target (link, file, missing).
+1. Phase 4 step 1: `home/bash/interactive.sh` hand-off audit - confirm on
+   the box that `bash -c 'alias; echo $SHELL $PS1'`, an ssh command without
+   a TTY, `docker exec` and a Claude Code shell-tool call all see the plain
+   path, and an interactive `ssh` gets zsh + starship (D5). Then step 2:
+   `home/mise/config.box.toml` herdr/agy/aws-cli, `mise run
+   herdr:integrations`; step 3: plugins in `settings.base.json` (verify key
+   names first). Acceptance list in `docs/02-migration.md` phase 4.
+2. Leftovers, not blocking: `~/Documents/all/github/knowledge/.claude/skills`
+   on the mac links to `/home/dev/work/ai-hub/runtime/claude/skills` (a
+   devbox path, dangling since before this migration) - repoint to
+   `~/work/workbench/agents/skills` when the knowledge repo is next
+   touched; ai-hub `lab/` records still say `runtime/` (history, left as
+   is). Backlog from phase 2: zsh plugins (autosuggestions,
+   syntax-highlighting) referenced by `.zshrc` but installed by nothing
+   (phase 4); omp prompts (WATCHDOG.md, skills) still describe the
+   dotfiles/container workflow (phase 4); `providers/proxmox/README.md`
+   sizing notes; `DRY_RUN=1 mac/setup.sh` does not say what is currently
+   at each target.
 
 ## Open questions
 
@@ -129,3 +134,12 @@ run.
   cleanup` proposed only cache files, no packages (fd/fzf/gh/... brew
   copies were already gone); Apple bash 3.2 runs the scripts fine. Phase 2
   done, phase 3 active.
+- 2026-08-19: phase 3 executed from the mac in one workbench commit
+  (c14838c) plus ai-hub fc2e4e2. `home/install.sh` grew `link_agents` and
+  `verify_gate` (the gate blocked this session's own edit command because
+  the literal forced-push string appeared in it - the check works). Also:
+  AGENTS.md now states bash 3.2 compatibility for scripts shared with the
+  mac (macOS updates never move Apple's bash; no brew bash added);
+  `mac/setup.sh` runs `mise self-update --yes`; the `1password-cli` cask
+  left the Brewfile and the laptop; `autoMode` block kept in
+  settings.mac.json. Phase 3 done, phase 4 active.
