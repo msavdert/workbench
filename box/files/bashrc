@@ -1,4 +1,4 @@
-# ~/.bashrc for the agent user. Managed by agent-vm/provision - edit there.
+# ~/.bashrc for the agent user (box/files, installed by box/bootstrap.sh).
 #
 # Design: this shell is driven by AI agents far more often than by a human.
 # Everything that could inject noise into a tool's output (fancy prompts,
@@ -7,6 +7,9 @@
 
 # --- always (interactive or not) -------------------------------------------
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+# profile marker written by home/install.sh box: MISE_ENV=box makes mise load
+# config.box.toml next to the shared config.toml (D6), for agents too.
+[ -r "$HOME/.config/workbench/env" ] && . "$HOME/.config/workbench/env"
 # mise shims put every managed tool on PATH even for `ssh host cmd` and cron.
 command -v mise >/dev/null && eval "$(mise activate bash --shims)"
 
@@ -46,39 +49,9 @@ export HOMEBREW_NO_ANALYTICS=1
 # --- interactive only -------------------------------------------------------
 # Everything below this guard never runs for a non-interactive shell, which
 # is exactly how Claude Code's Bash tool, `ssh host cmd`, and cron invoke
-# bash. That is what makes the colour below safe: it exists only for a human
-# at a real terminal (SSH in as agent@agent-vm) and never reaches agent tool
-# output, which stays governed by NO_COLOR/CLICOLOR above.
+# bash. Everything a human wants (colour, prompt, aliases, the hand-off to
+# zsh) lives in home/bash/interactive.sh so that nothing rich is even
+# present in this file (D5). Agent shells return here.
 case $- in *i*) ;; *) return ;; esac
 
-# full mise activation (PATH updates on `cd`, per-project .mise.toml)
-command -v mise >/dev/null && eval "$(mise activate bash)"
-
-# badge in the Claude Code statusline (see home/claude/statusline.sh's SL_BADGE_CMD
-# knob), so a session started here is identifiable if this repo is ever
-# reused to stand up another VM.
-export SL_BADGE_CMD='hostname -s'
-
-# colour for human eyes only (see guard above); still single line, no git
-# status in the prompt itself - keep this cheap, it runs on every prompt.
-unset NO_COLOR
-export CLICOLOR=1
-PS1='\[\033[38;5;71m\]\u@\h\[\033[0m\]:\[\033[38;5;74m\]\w\[\033[0m\]\$ '
-alias ls='ls --color=auto'
-alias grep='grep --color=auto'
-
-HISTSIZE=100000
-HISTFILESIZE=200000
-HISTCONTROL=ignoredups
-HISTTIMEFORMAT='%F %T '
-shopt -s histappend checkwinsize
-PROMPT_COMMAND='history -a'
-
-alias ll='ls -la'
-alias la='ls -A'
-alias dc='docker compose'
-
-# bash completion is useful for humans, harmless for agents
-if ! shopt -oq posix && [ -f /usr/share/bash-completion/bash_completion ]; then
-  . /usr/share/bash-completion/bash_completion
-fi
+[ -r "$HOME/.config/bash/interactive.sh" ] && . "$HOME/.config/bash/interactive.sh"
