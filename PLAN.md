@@ -204,3 +204,11 @@ the mac since the devbox seat is gone.
   deploy "via the Dockerfile COPY". Also: the `work` Remote Control server was
   stopped, disabled and re-enabled; it came back with the same environment id,
   which is the runbook's point that registrations cannot be removed.
+- 2026-08-19: policy, operator decision - no Antigravity gemini reference runs
+  below `:high` (that quota is not the constraint; `:high` is the top of both
+  gemini ladders). Six bare references were resolving through
+  `defaultThinkingLevel: auto` and could land on `low`: four fallback-chain
+  rungs, the `task` subagent override, and `tiny`, whose `:minimal` from the
+  review earlier the same day is reversed. `providers.webSearchGeminiModel`
+  stays bare - it is a Google Search grounding model ID, not a role pattern.
+  `slow`/`plan` confirmed staying on syn:large:text.
