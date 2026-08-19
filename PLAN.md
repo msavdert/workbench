@@ -59,9 +59,6 @@ the mac since the devbox seat is gone.
    relative paths were confirmed during the agy review.
 3. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
    should be present on the box again.
-4. ai-hub: commit the returned skills/templates/protocol and update its
-   README/CLAUDE.md/doctrine references from workbench/agents/ to
-   workbench/home/claude/.
 
 ## Open questions
 
@@ -146,3 +143,6 @@ history.
   youtube-whisper-transcriber, quant-research templates and overnight
   PROTOCOL handed back to ai-hub (staged in the box clone, ai-hub commit
   pending operator).
+- 2026-08-19: ai-hub side done (ai-hub c4de199, pushed from the box with the
+  operator's one-time authorization): project skills under .claude/skills/,
+  templates and overnight protocol under lab/, all references repointed.
