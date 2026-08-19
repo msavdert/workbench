@@ -59,6 +59,9 @@ the mac since the devbox seat is gone.
    relative paths were confirmed during the agy review.
 3. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
    should be present on the box again.
+4. ai-hub: commit the returned skills/templates/protocol and update its
+   README/CLAUDE.md/doctrine references from workbench/agents/ to
+   workbench/home/claude/.
 
 ## Open questions
 
@@ -138,3 +141,8 @@ history.
   key registered on GitHub as a signing key, commits show verified. Public
   key shipped as home/git/allowed_signers so `git log --show-signature`
   verifies on every machine (signing itself stays in ~/.gitconfig.local).
+- 2026-08-19: agents/ dissolved: Claude's CLAUDE.md, subagents, omp-fleet,
+  boundary gate moved to home/claude/ (D9 updated); oss-project-eval,
+  youtube-whisper-transcriber, quant-research templates and overnight
+  PROTOCOL handed back to ai-hub (staged in the box clone, ai-hub commit
+  pending operator).

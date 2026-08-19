@@ -68,7 +68,7 @@ setupVersion: 1
 #     syn:small:vision      262K      66K  minimal,low,medium,high   yes
 #
 # And the Synthetic aliases are not variants of one model. Per
-# agents/skills/omp-fleet/references/benchmarks.md (alias resolution
+# home/claude/skills/omp-fleet/references/benchmarks.md (alias resolution
 # 2026-08-16), corroborated by the fingerprints above:
 #     syn:large:text = GLM-5.2       syn:large:vision = Kimi-K3
 #     syn:small:text = GLM-4.7-Flash syn:small:vision = Qwen3.6-27B
@@ -119,7 +119,7 @@ modelRoles:
   #
   # Left on the TEXT variant after considering the vision one, because the
   # aliases are not two flavours of one model - per
-  # agents/skills/omp-fleet/references/benchmarks.md (alias resolution
+  # home/claude/skills/omp-fleet/references/benchmarks.md (alias resolution
   # 2026-08-16, corroborated by the `omp models` fingerprints):
   #     syn:large:text = GLM-5.2      <- also audit, security-reviewer
   #     syn:large:vision = Kimi-K3    <- also librarian, docs

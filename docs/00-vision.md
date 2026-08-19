@@ -118,10 +118,13 @@ unattended box, Remote Control statusline; `settings.mac.json`: interactive
 mode) is merged with jq by `home/install.sh`. `~/.claude` is never
 symlinked wholesale: it holds runtime state and credentials.
 
-D9 Agent behaviour (global CLAUDE.md, subagents, skills, hooks) lives in
-`agents/` and is linked into `~/.claude` by `home/install.sh`. `ai-hub`
-keeps doctrine, lab and journal - text a person reads, not files a machine
-loads.
+D9 Claude behaviour (global CLAUDE.md, subagents, skills, hooks) lives in
+`home/claude/` next to its settings, the same way omp and agy keep their
+behaviour files under `home/omp/` and `home/agy/`, and is linked into
+`~/.claude` by `home/install.sh`. `ai-hub` keeps doctrine, lab and journal -
+text a person reads, not files a machine loads - plus its own project-level
+skills. Changed 2026-08-19: the top-level `agents/` tree was dissolved;
+see `docs/02-migration.md`.
 
 D10 Secrets: only the 1Password service-account token is on the box
 (`~/.config/op/env`, pushed by `make secrets`). git over HTTPS uses a

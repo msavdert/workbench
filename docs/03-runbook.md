@@ -127,7 +127,7 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
 | The laptop | `mise run mac:sync` (pulls `~/work/workbench`, `mac/setup.sh --links-only`); full run `mac/setup.sh`, `CLEANUP=1` to also remove brew packages not in `mac/Brewfile` |
 | zsh completion cache and plugins (both profiles) | `mise run completions:regen`, `mise run zsh:plugins`; also run by `mac/setup.sh` and `STEPS=tools` |
 | Drift check of `home/` on the box | `ssh agent-vm-ssh 'bash -lc "~/work/workbench/home/install.sh --check box"'` (also part of `verify`) |
-| Agent behaviour (`agents/`: global CLAUDE.md, subagents, omp-fleet, boundary gate) | same as `home/`: `STEPS=home` on the box, `mise run mac:sync` on the laptop; `home/install.sh` also self-checks the gate |
+| Agent behaviour (`home/claude/`: global CLAUDE.md, subagents, omp-fleet, boundary gate) | same as `home/`: `STEPS=home` on the box, `mise run mac:sync` on the laptop; `home/install.sh` also self-checks the gate |
 
 ## Rollback / rebuild
 

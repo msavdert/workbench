@@ -72,6 +72,7 @@ current state of work and the handoff between sessions.
 ## Related repositories
 
 - `ai-hub` - doctrine, experiments and journal about working with AI. It
-  holds no configuration; the runtime artifacts moved here (`agents/`).
+  holds no configuration; the runtime artifacts moved here (`home/claude/`);
+  ai-hub keeps its own project skills.
 - `agent-vm` and `dotfiles` - the archived predecessors (read-only on
   GitHub since 2026-08-19). `docs/02-migration.md` records what moved where.

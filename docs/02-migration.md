@@ -178,3 +178,14 @@ operator.
   (`loginctl enable-linger`) - check in phase 5, unverified today.
 - herdr and agy config formats change fast; keep them in `home/` and accept
   churn there rather than in `box/`.
+
+## 2026-08-19: agents/ dissolved
+
+The top-level `agents/` tree is gone. What Claude Code loads moved to
+`home/claude/` next to its settings: `CLAUDE.md`, `agents/`, the
+`omp-fleet` skill, `hooks/boundary-gate.sh`. Four items were ai-hub's, not
+workbench's, and went back to that repository (staged in the box clone,
+commit pending the operator): `skills/oss-project-eval` and
+`skills/youtube-whisper-transcriber` plus `skills/README.md` to
+`ai-hub/.claude/skills/`, `templates/quant-research` to
+`ai-hub/lab/templates/`, `overnight/PROTOCOL.md` to `ai-hub/lab/overnight/`.

@@ -8,8 +8,7 @@ Status: target layout. `PLAN.md` says how much of it exists today.
 |---|---|---|---|
 | Client | `mac/` | the laptop | Brewfile, `setup.sh`, terminal and ssh client config, 1Password SSH agent |
 | Box | `box/` | inside the VM, as root | apt packages, Docker daemon, sysctl/limits/journald, sshd, sudoers, systemd units (Remote Control, prune timer), `/etc/claude-code/CLAUDE.md`, the plain agent bashrc guard |
-| Home | `home/` | inside the VM and on the laptop, as the user | mise config per profile, interactive shell (bash block, zsh, starship), git config, `opwith` + `op-env`, Claude Code settings, herdr / agy / omp config, statusline |
-| Agents | `agents/` | linked into `~/.claude` | global CLAUDE.md, subagents, skills, hooks |
+| Home | `home/` | inside the VM and on the laptop, as the user | mise config per profile, interactive shell (bash block, zsh, starship), git config, `opwith` + `op-env`, Claude Code settings and behaviour (global CLAUDE.md, subagents, skills, hooks), herdr / agy / omp config, statusline |
 
 Plus:
 
@@ -39,10 +38,10 @@ workbench/
     bash/interactive.sh     interactive-only block sourced by the box bashrc; hands off to zsh
     zsh/  starship.toml     rich interactive shell, both profiles
     git/  op-env/  bin/opwith
-    claude/settings.base.json  settings.box.json  settings.mac.json  statusline.sh
+    claude/
+      CLAUDE.md  settings.base.json  settings.box.json  settings.mac.json
+      statusline.sh  agents/  skills/  hooks/
     herdr/  agy/  omp/  nvim/  zellij/
-  agents/
-    CLAUDE.md  agents/  skills/  hooks/  templates/  overnight/
   providers/
     proxmox/  orbstack/  cloud/
   docs/
@@ -68,24 +67,22 @@ workbench/
 | `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/nvim`, `~/.config/zellij` (box only) | `home/nvim/`, `home/zellij/` | `home/install.sh box` |
-| `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/boundary-gate.sh` | `agents/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
+| `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/boundary-gate.sh` | `home/claude/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
 | `~/.ssh/config`, `~/.ssh/config.macos`, `~/.config/ghostty/config` (mac only) | `mac/ssh/`, `mac/ghostty/` | `mac/setup.sh` |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |
 | `~/.claude/hooks/herdr-agent-state.sh`, `~/.omp/agent/extensions/`, `~/.gemini/config/hooks.json` | not in repo; herdr generates them | `mise run herdr:integrations`, called by `box/bootstrap.sh` `step_tools` |
 | `~/.gemini/config/config.json` (agy's `remoteControlHostname`), `~/.claude.json`, `~/.claude/*.jsonl`, sessions, credentials | runtime state, not in repo | the tools themselves |
 
-Rule of thumb: if root writes it, `box/`; if the user writes it and it is not
-agent behaviour, `home/`; if it changes how an agent thinks, `agents/`.
-
-One deliberate exception: omp and agy keep their behaviour files (omp's
-`agents/`, `skills/`, `AGENTS.md`, `RULES.md`, `WATCHDOG.md`, `hooks/`) next
-to their settings under `home/omp/` and `home/agy/`. Everything there is in
-a tool-specific format and lands in one dotdir (`~/.omp/agent/`,
-`~/.gemini/antigravity-cli/`), so splitting it across two repo trees would
-buy nothing. `agents/` holds what Claude Code loads (`~/.claude`) plus the
-tool-agnostic material (templates, overnight protocol) that was moved out of
-ai-hub's runtime; the `omp-fleet` skill lives there because it steers Claude,
-not omp.
+Rule of thumb: if root writes it, `box/`; if the user writes it, `home/`.
+Every tool keeps its behaviour files next to its settings, in one directory
+per tool: Claude Code's global CLAUDE.md, subagents, skills and hooks live
+in `home/claude/` alongside its `settings.*.json`; omp and agy do the same
+under `home/omp/` and `home/agy/` (omp's `agents/`, `skills/`, `AGENTS.md`,
+`RULES.md`, `WATCHDOG.md`, `hooks/`). Everything there is in a tool-specific
+format and lands in one dotdir (`~/.claude`, `~/.omp/agent/`,
+`~/.gemini/antigravity-cli/`), so splitting behaviour from settings across
+two repo trees would buy nothing. `ai-hub` owns its own project-level
+skills, templates and protocol docs; they do not live in workbench.
 
 `home/install.sh` has two kinds of target: links (a `$HOME` path is a
 symlink into `home/`) and generated files (`~/.claude/settings.json`,
@@ -142,8 +139,8 @@ A provider must deliver: Ubuntu 24.04 cloud image, user `agent` (uid 1000
 where the substrate allows it; OrbStack maps it to the mac uid, 501) with
 the operator's ssh key and passwordless sudo, ssh reachable, `rsync` present,
 hostname set. Nothing else. `make provision` then runs `box/bootstrap.sh`
-over ssh, which ends with `home/install.sh box` and the `agents/` links,
-then `verify`. `bootstrap.sh` itself has no provider branch: it installs
+over ssh, which ends with `home/install.sh box` and the `home/claude`
+links, then `verify`. `bootstrap.sh` itself has no provider branch: it installs
 `openssh-server` and `qemu-guest-agent` everywhere and `verify` requires
 the guest agent only where its virtio port exists.
 

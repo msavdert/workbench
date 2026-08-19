@@ -18,7 +18,7 @@ Layout:
 - `~/work/<name>` one checkout per project; sessions from the Claude app start
   in one of these.
 - `~/work/workbench` how this machine is built and how the operator's
-  environment and agents are configured (`home/`, `agents/`).
+  environment and agents are configured (`home/`).
 - `~/work/ai-hub` doctrine, experiments and journal about working with AI;
   it holds no configuration since workbench phase 3.
 - `agent-vm` and `dotfiles`, the predecessors of workbench, are archived on

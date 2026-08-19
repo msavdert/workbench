@@ -9,8 +9,8 @@ works in the same box over ssh. Every setting has exactly one source here.
 mac/         the laptop as a thin client: one script to set up, one task to sync
 box/         the VM: idempotent bootstrap, OS config, systemd units, plain agent shell
 home/        user configuration, two profiles (mac, box): mise, shell, git, 1Password
-             wrappers, Claude Code settings, herdr / agy / omp config
-agents/      how agents behave: global CLAUDE.md, subagents, skills, hooks
+             wrappers, Claude Code settings incl. its global CLAUDE.md,
+             subagents, skills, hooks, herdr / agy / omp config
 providers/   how to create the box on each substrate (proxmox, orbstack, cloud)
 docs/        00 vision and decisions, 01 architecture, 02 migration, 03 runbook
 ```
