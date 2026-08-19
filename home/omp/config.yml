@@ -1,24 +1,25 @@
 # =============================================================================
-# Oh My Pi (OMP) agent settings  ->  linked into ~/.omp/agent by home/install.sh
+# Oh My Pi (OMP) agent settings  ->  generated into ~/.omp/agent by home/install.sh
 # =============================================================================
-# This file is symlinked to ~/.omp/agent/config.yml on the box and on the
-# macOS thin client (`home/install.sh`, one source per setting). It is the
-# GLOBAL settings layer: built-in defaults <- THIS FILE <- <cwd>/.omp/config.yml
+# This file is COPIED to ~/.omp/agent/config.yml on the box and on the macOS
+# thin client (`home/install.sh`, one source per setting). It is the GLOBAL
+# settings layer: built-in defaults <- THIS FILE <- <cwd>/.omp/config.yml
 # <- `--config` overlays <- runtime flags.
 #
 # IMPORTANT — this file is the source of truth, not a snapshot:
-#   `omp config set`, `omp config reset` and the in-session `/settings` panel
-#   all write straight back into ~/.omp/agent/config.yml. What that means
-#   depends on where you are, and the two cases fail in opposite directions:
-#     - In the CONTAINER, that copy lives on the image layer, so a runtime tweak
-#       is silently DISCARDED on the next rebuild. Costs nothing, teaches you
-#       nothing.
-#     - On the macOS thin client, ~/.omp/agent/* are symlinks INTO this repo, so
-#       the same tweak silently EDITS A TRACKED FILE and shows up as an
-#       uncommitted diff you did not make deliberately. This is the dangerous
-#       one: it gets committed by accident.
-#   Treat interactive edits as experiments either way: once you like one, port
-#   it HERE deliberately. Nothing in this repo ever reads a mutated copy back.
+#   `omp config set`, `omp config reset`, the in-session `/settings` panel and
+#   a schema migration on upgrade all write straight back into
+#   ~/.omp/agent/config.yml. Nothing in this repo ever reads a mutated copy
+#   back, so treat every interactive edit as an experiment: once you like one,
+#   port it HERE deliberately and let install.sh push it out.
+#
+#   Until 2026-08-19 this file was SYMLINKED there, which made those writes
+#   land in a tracked file - and an omp 17 migration duly rewrote it in place,
+#   stripping all 500 lines of comments below. The destination is a generated
+#   regular file now: omp may write to it freely, `home/install.sh --check`
+#   reports the difference, and the next install.sh reverts it. The comparison
+#   is semantic (yq), so omp reserialising the same settings without comments
+#   is not reported as drift - only a different key or value is.
 #
 # Also note: everything OMP *generates* next to this file (agent.db, history.db,
 # sessions/, terminal-sessions/, last-changelog-version) is runtime state and is
@@ -53,12 +54,30 @@ setupVersion: 1
 #      context-full — lossy where snapcompact is not. The price is a
 #      `low,high,max` ladder instead of `minimal,high,max`, which costs nothing:
 #      no architect turn should be running at `minimal` anyway.
+#
+# 2026-08-19 — STALE ABOVE, read with care. `default` moved to Antigravity
+# flash, so the interactive session is no longer a large Synthetic model and
+# point 1's "only the architect roles sit there" now covers `slow` and `plan`
+# only. Point 2 was already describing an arrangement the values did not match:
+# it claims the architect is syn:large:VISION, while `default` had been
+# syn:large:TEXT for some time, which means `compaction.strategy: snapcompact`
+# on the main session was not getting the image input that paragraph says it
+# needs. Comments further down (memory mining, reviewer placement, tool budgets,
+# the thinking ladder) still argue from "the architect sits on Synthetic and is
+# expensive". They have not been rewritten, because doing so honestly needs a
+# decision about what the architect seat is now, not a search-and-replace.
 modelRoles:
-  # Interactive driver and architect. The ladder is `low,high,max` — no minimal
-  # or medium rung — so `defaultThinkingLevel: auto` has three stops here rather
-  # than six, and pinning `:high` costs nothing that auto would not have picked
-  # anyway on work worth giving to the architect.
-  default: "synthetic/syn:large:text:high"
+  # Interactive driver. Moved off Synthetic to Antigravity flash on 2026-08-19
+  # by operator decision; the reason is not recorded here because it was not
+  # given, and inventing one would be worse than the gap. What the move MEANS
+  # is recorded, because that part is mechanical: the interactive session no
+  # longer occupies a Synthetic in-flight slot on every turn, so nothing queues
+  # behind it there any more, and the "one large model is the architect on
+  # every turn" premise above no longer describes this role. `slow` and `plan`
+  # are the escalation when flash is not enough, and they are now the only
+  # Synthetic seats the interactive session takes.
+  # `:high` because flash's ladder is `low,high,max`.
+  default: "google-antigravity/gemini-3.7-flash:high"
   # `slow` is the explicit "I am stuck, think properly" escalation. Same model at
   # the top of its ladder: if you have already decided to pay for it, pay all the
   # way. It shares the model with `default`, which is free — they are the same
@@ -215,24 +234,35 @@ task:
   agentIdleTtlMs: 300000
 
 # --- Advisor -----------------------------------------------------------------
-# A second model watches every completed turn and injects notes. Worth it here
-# precisely because the primary is expensive: catching a wrong direction on turn
-# 2 costs one cheap call, catching it on turn 12 costs eleven architect turns.
-# See WATCHDOG.md for what it is told to look for.
+# A second model watches every completed turn and injects notes. See
+# WATCHDOG.md for what it is told to look for.
 #
-# Tradeoff, stated deliberately: the advisor runs on flash. WATCHDOG.md asks it
-# for reviewer-grade paranoia about secret leakage, volume shadowing and
-# unverified subagent claims, and that judgement is a cheap model's. This is a
-# quality-for-quota trade, made on purpose, not an assumption that coverage is
-# unchanged. If advisor notes visibly degrade, the fix is to move it up to
-# gemini-3.1-pro — not onto Synthetic, which would serialise it behind the
-# architect on every turn.
+# OFF since 2026-08-19, by operator decision. The case for it was written when
+# the primary was an expensive Synthetic model: "catching a wrong direction on
+# turn 2 costs one cheap call, catching it on turn 12 costs eleven architect
+# turns". With `default` on Antigravity flash the multiplier it was buying
+# insurance against is much smaller, while the advisor's own cost is unchanged
+# - it still reviews EVERY completed turn, so a 76-turn session is 76 extra
+# calls. The settings below are kept, not deleted: turning `enabled` back to
+# true restores the whole arrangement without re-deriving it.
+#
+# The old tradeoff note, still true if it comes back on: the advisor runs on
+# flash while WATCHDOG.md asks it for reviewer-grade paranoia about secret
+# leakage, volume shadowing and unverified subagent claims. That is a
+# quality-for-quota trade made on purpose. If advisor notes visibly degrade,
+# move it up to gemini-3.1-pro - not onto Synthetic, which would serialise it
+# behind whatever holds that model.
 advisor:
-  enabled: true
-  # NOT on subagents. Subagents are already cheap, short-lived, and reviewed by
-  # their parent; an advisor per spawn would multiply request count by ~2x for
-  # the exact population of agents that needs it least.
-  subagents: false
+  enabled: false
+  # `advisor.subagents: false` used to sit here, meaning "never advise spawned
+  # subagents: they are cheap, short-lived and reviewed by their parent, so an
+  # advisor per spawn doubles request count for the population that needs it
+  # least". omp 17 deleted that key and replaced it with the per-agent record
+  # `task.agentAdvisor` (agent name -> on|off|model), migrating the old boolean
+  # to a single `task: off` entry. Nothing is restated here because the new
+  # default already is the old intent: an agent with no entry and no `advisor`
+  # frontmatter resolves to unadvised, and none of home/omp/agents/ declares
+  # that frontmatter. Re-enabling the advisor above does NOT re-arm subagents.
   # Stall the primary (max 30s) only once the advisor is 3+ turns behind.
   # `off` lets advice arrive after the mistake has already compounded; `1`
   # serialises the session behind the advisor. 3 is the point where the advisor

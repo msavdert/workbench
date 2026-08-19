@@ -86,13 +86,23 @@ link_path() {
 
 # generate <dst-absolute> <mode> ; expected content on stdin (redirected, not
 # piped: DRIFT must be set in this shell, not in a subshell)
-# JSON targets compare by content, not bytes: agy rewrites its settings.json
-# in its own key order on every run, and that reformatting is not a change.
+# Structured targets compare by MEANING, not bytes: agy rewrites its
+# settings.json in its own key order on every run and omp reserialises its
+# config.yml without comments, and neither reformatting is a change. Only a
+# different key or value is drift. Without a parser (a stripped-down machine,
+# or the tool that provides it not installed yet) the comparison falls back to
+# bytes, which over-reports drift rather than under-reporting it.
 same_content() {
   local dst="$1" want="$2"
   [[ -f $dst && ! -L $dst ]] || return 1
   if [[ $dst == *.json ]] && command -v jq >/dev/null 2>&1; then
     [[ "$(jq -S . "$dst" 2>/dev/null)" == "$(printf '%s\n' "$want" | jq -S . 2>/dev/null)" ]]
+  elif [[ $dst == *.yml || $dst == *.yaml ]] &&
+    command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    local have_yaml want_yaml
+    have_yaml="$(yq -o=json "$dst" 2>/dev/null | jq -S . 2>/dev/null)"
+    want_yaml="$(printf '%s\n' "$want" | yq -o=json 2>/dev/null | jq -S . 2>/dev/null)"
+    [[ -n $have_yaml && "$have_yaml" == "$want_yaml" ]]
   else
     [[ "$(cat "$dst")" == "$want" ]]
   fi
@@ -216,8 +226,17 @@ manifest() {
   link herdr/config.toml "$HOME/.config/herdr/config.toml"
   merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json"
   link agy/statusline.sh "$HOME/.gemini/antigravity-cli/statusline.sh"
+  # config.yml is generated, not linked. omp writes to
+  # ~/.omp/agent/config.yml itself: `omp config set`, `omp config reset`, the
+  # in-session /settings panel, and - the case that actually bit - a schema
+  # migration on upgrade, which rewrites the whole file (omp 17 replaced
+  # advisor.subagents with task.agentAdvisor that way). Through a symlink every
+  # one of those writes lands in a tracked file and strips its comments. As a
+  # generated file they are drift that the next install.sh reverts, and `--check`
+  # names them. Same reasoning as agy above, one file format down.
+  generate "$HOME/.omp/agent/config.yml" 0644 <"$HOME_SRC/omp/config.yml"
   local f
-  for f in config.yml models.yml keybindings.yml lsp.json AGENTS.md RULES.md WATCHDOG.md APPEND_SYSTEM.md agents skills hooks; do
+  for f in models.yml keybindings.yml lsp.json AGENTS.md RULES.md WATCHDOG.md APPEND_SYSTEM.md agents skills hooks; do
     link "omp/$f" "$HOME/.omp/agent/$f"
   done
 

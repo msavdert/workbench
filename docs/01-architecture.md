@@ -63,7 +63,8 @@ workbench/
 | `~/.gitconfig`, `~/.config/op-env/*`, `~/.local/bin/opwith` | `home/git/`, `home/op-env/`, `home/bin/` | `home/install.sh` |
 | `~/.claude/settings.json` | `home/claude/settings.base.json` + overlay | `home/install.sh` (jq merge) |
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
-| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file), `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
+| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`), `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
+| `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/nvim`, `~/.config/zellij` (box only) | `home/nvim/`, `home/zellij/` | `home/install.sh box` |
 | `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/boundary-gate.sh` | `agents/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
@@ -76,7 +77,15 @@ agent behaviour, `home/`; if it changes how an agent thinks, `agents/`.
 
 `home/install.sh` has two kinds of target: links (a `$HOME` path is a
 symlink into `home/`) and generated files (`~/.claude/settings.json`,
-`~/.config/workbench/env`), rewritten only when their content differs. It
+`~/.gemini/antigravity-cli/settings.json`, `~/.omp/agent/config.yml`,
+`~/.config/workbench/env`), rewritten only when their content differs.
+A target is generated rather than linked whenever the tool that reads it also
+WRITES it: through a symlink such a write lands in a tracked file, which is
+how an omp 17 schema migration silently rewrote `home/omp/config.yml` on
+2026-08-19. Content comparison is by meaning for structured formats - `jq` for
+JSON, `yq` for YAML - so a tool reserialising the same settings in its own key
+order, or without the comments, is not reported as drift; only a different key
+or value is. It
 never links a whole dotdir (`~/.claude`, `~/.omp/agent`, `~/.gemini` hold
 runtime state). A regular file in the way is moved to
 `~/.config/workbench/backup-<utc>/`, never deleted. `--check` reports drift
