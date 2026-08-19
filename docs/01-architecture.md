@@ -57,17 +57,27 @@ workbench/
 | `/etc/claude-code/CLAUDE.md` | `box/files/machine-CLAUDE.md` | `box/bootstrap.sh` |
 | `~/.bashrc` (guard + non-interactive part) | `box/files/bashrc` | `box/bootstrap.sh` |
 | `~/.config/bash/interactive.sh`, `~/.zshrc`, `~/.zshenv`, `~/.config/starship.toml` | `home/bash/`, `home/zsh/`, `home/starship.toml` | `home/install.sh` |
-| `~/.config/mise/config.toml`, `config.<profile>.toml`, `MISE_ENV` export | `home/mise/` | `home/install.sh <profile>` |
+| `~/.config/mise/config.toml`, `config.<profile>.toml` | `home/mise/` | `home/install.sh <profile>` |
+| `~/.config/workbench/env` (`MISE_ENV`, `WORKBENCH_PROFILE`; sourced by the box bashrc and by `.zshenv`) | generated | `home/install.sh <profile>` |
 | `~/.gitconfig`, `~/.config/op-env/*`, `~/.local/bin/opwith` | `home/git/`, `home/op-env/`, `home/bin/` | `home/install.sh` |
 | `~/.claude/settings.json` | `home/claude/settings.base.json` + overlay | `home/install.sh` (jq merge) |
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
-| `~/.config/herdr/`, `~/.gemini/…/settings.json`, `~/.config/omp/`, `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
+| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/{settings.json,statusline.sh}`, `~/.omp/agent/*` (per file), `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
 | `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/*`, `~/.claude/hooks/*` | `agents/` | `home/install.sh` (links) |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |
 | `~/.claude.json`, `~/.claude/*.jsonl`, sessions, credentials | runtime state, not in repo | the tools themselves |
 
 Rule of thumb: if root writes it, `box/`; if the user writes it and it is not
 agent behaviour, `home/`; if it changes how an agent thinks, `agents/`.
+
+`home/install.sh` has two kinds of target: links (a `$HOME` path is a
+symlink into `home/`) and generated files (`~/.claude/settings.json`,
+`~/.config/workbench/env`), rewritten only when their content differs. It
+never links a whole dotdir (`~/.claude`, `~/.omp/agent`, `~/.gemini` hold
+runtime state). A regular file in the way is moved to
+`~/.config/workbench/backup-<utc>/`, never deleted. `--check` reports drift
+and exits 1; `--dry-run` prints without touching. Missing sources are
+reported and skipped, so the manifest can be ahead of the tree.
 
 ## Layering inside the box (D7)
 
