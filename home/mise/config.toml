@@ -1,0 +1,54 @@
+# ~/.config/mise/config.toml - shared base for both profiles (D6, D7).
+# The profile delta lives next to it as config.<MISE_ENV>.toml; MISE_ENV is
+# exported from ~/.config/workbench/env by home/install.sh <profile>.
+#
+# What belongs here: tools both the laptop and the box want. Runtimes, LSPs,
+# kubernetes tooling and the long tail go to config.box.toml; the laptop is
+# a client and stays short. `mise prune` removes anything no longer listed.
+#
+# Claude Code is not here on purpose: the box uses the native installer (D7);
+# the laptop lists it in config.mac.toml.
+
+[settings]
+# Agents cannot answer y/n prompts.
+yes = true
+not_found_auto_install = false
+npm.package_manager = "bun"
+task.source_freshness_hash_contents = true
+
+[tools]
+# --- shell experience: home/zsh/.zshrc references these on both profiles ---
+starship = "latest"
+zoxide = "latest"
+eza = "latest"
+bat = "latest"
+fzf = "latest"
+usage = "latest" # required by `mise completion zsh`
+
+# --- everyday CLI ---
+gh = "latest"
+jq = "latest"
+yq = "latest"
+ripgrep = "latest"
+fd = "latest"
+uv = "latest"
+"1password-cli" = "latest"
+shellcheck = "latest" # `make lint` in this repository
+shfmt = "latest"
+
+# --- AI harnesses (D12); omp is the npm package below ---
+herdr = "latest"
+agy = "latest"
+"npm:@oh-my-pi/pi-coding-agent" = "latest"
+
+[tasks."completions:regen"]
+description = "Regenerate the shell completion cache in ~/.local/share/zsh/completions"
+run = "~/.config/zsh/regen-completions.zsh"
+
+[tasks."herdr:integrations"]
+description = "Install and sync Herdr integrations for AI agents"
+run = """
+herdr integration install antigravity-cli
+herdr integration install claude
+herdr integration install omp
+"""

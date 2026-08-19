@@ -1,0 +1,51 @@
+# ~/.config/mise/config.mac.toml - laptop delta (MISE_ENV=mac).
+# The laptop opens a terminal, unlocks secrets and connects to the box.
+# Anything the code needs, rather than the host shell, goes to config.box.toml.
+
+[tools]
+claude-code = "latest" # on the box Claude Code comes from the native installer (D7)
+
+# Pulls SSH hosts tagged ssh-host from the 1Password dotfiles vault into
+# ~/.ssh/config.local. Keys stay in 1Password's native SSH agent; this task
+# only exports the public key per host and writes the matching Host block
+# with IdentityFile + IdentitiesOnly so ssh offers only that key.
+[tasks."ssh:sync"]
+description = "Pull SSH hosts tagged ssh-host from 1Password into ~/.ssh/config.local"
+run = """
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+touch ~/.ssh/config.local
+rm -rf ~/.ssh/1p-hosts && mkdir -p ~/.ssh/1p-hosts && chmod 700 ~/.ssh/1p-hosts
+
+BEGIN_MARK="# --- BEGIN op ssh:sync (managed, do not edit) ---"
+END_MARK="# --- END op ssh:sync ---"
+
+awk -v b="$BEGIN_MARK" -v e="$END_MARK" '
+  $0 == b { skip = 1 }
+  !skip   { print }
+  $0 == e { skip = 0 }
+' ~/.ssh/config.local > ~/.ssh/config.local.tmp
+
+{
+  cat ~/.ssh/config.local.tmp
+  echo "$BEGIN_MARK"
+  op item list --vault dotfiles --tags ssh-host --categories "SSH Key" --format json \
+    | jq -r '.[].id' \
+    | while read -r id; do
+        item=$(op item get "$id" --vault dotfiles --format json)
+        title=$(printf '%s' "$item" | jq -r '.title')
+        host=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="hostname") | .value] | first // empty')
+        user=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="user") | .value] | first // empty')
+        port=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="port") | .value] | first // "22"')
+        [ -n "$host" ] || continue
+        op read "op://dotfiles/$id/public key" > ~/.ssh/1p-hosts/"$title".pub
+        printf 'Host %s\\n    HostName %s\\n    User %s\\n    Port %s\\n    IdentityFile ~/.ssh/1p-hosts/%s.pub\\n    IdentitiesOnly yes\\n\\n' \
+          "$title" "$host" "$user" "$port" "$title"
+      done
+  echo "$END_MARK"
+} > ~/.ssh/config.local.new
+
+mv ~/.ssh/config.local.new ~/.ssh/config.local
+rm -f ~/.ssh/config.local.tmp
+chmod 600 ~/.ssh/config.local
+printf 'Synced %s host(s) from 1Password into ~/.ssh/config.local.\\n' "$(ls -1 ~/.ssh/1p-hosts/*.pub 2>/dev/null | wc -l | tr -d ' ')"
+"""

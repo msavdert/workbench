@@ -163,7 +163,7 @@ step_docker() {
 
 # ---------------------------------------------------------------------------
 step_user() {
-  log "user: shell environment, tmux, git, mise config, helper scripts"
+  log "user: shell environment, tmux, git, helper scripts"
   # lingering: user services (tmux/claude) survive logout and start at boot
   loginctl enable-linger "$AGENT_USER"
   install -d -o "$AGENT_USER" -g "$AGENT_USER" -m 0755 \
@@ -174,7 +174,6 @@ step_user() {
   put 0644 "$files/bash_profile" "$AGENT_HOME/.bash_profile"
   put 0644 "$files/tmux.conf" "$AGENT_HOME/.tmux.conf"
   put 0644 "$files/gitconfig" "$AGENT_HOME/.gitconfig"
-  put 0644 "$files/mise.toml" "$AGENT_HOME/.config/mise/config.toml"
   put 0755 "$files/opwith" "$AGENT_HOME/.local/bin/opwith"
   # op:// reference files for `opwith` (no secret values inside)
   for f in "$here"/op-env/*.env; do put 0644 "$f" "$AGENT_HOME/.config/op-env/$(basename "$f")"; done
