@@ -111,6 +111,9 @@ else
 	$(SSH) $(PVE_HOST) "qm stop $$VMID || true; qm destroy $$VMID --purge 1"
 endif
 
+maintain: ## routine box maintenance over ssh: apt full-upgrade, mise up + prune, docker usage, reboot-pending report (never reboots)
+	ssh $(VM_HOST) 'bash -lc "mise run box:maintain"'
+
 ssh: ## interactive shell on the VM (tmux session "main")
 	ssh -t $(VM_HOST) 'bash -lc agent-session'
 

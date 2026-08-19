@@ -61,6 +61,43 @@ usql = "latest"
 # version_list_url `mise up` cannot resolve "latest" and warns on every run.
 "http:sqlcl" = { version = "latest", url = "https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-{{version}}.zip", version_list_url = "https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/", version_regex = "sqlcl-(\\d+(?:\\.\\d+)+)\\.zip" }
 
+[tasks."box:maintain"]
+description = "Routine box maintenance: apt full-upgrade + autoremove, mise up + prune, docker usage, reboot-pending report (never reboots)"
+run = """
+set -eu
+# Everything here must survive being run unattended: apt and needrestart are
+# forced non-interactive even if the caller's env lost them (sudoers keeps
+# these three variables), and nothing below ever reboots or restarts the
+# machine - that is the owner's call (AGENTS.md rule 8).
+export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
+
+echo "== apt"
+sudo -E apt-get update -qq
+sudo -E apt-get full-upgrade -y -qq
+sudo -E apt-get autoremove -y -qq --purge
+sudo -E apt-get clean
+
+echo "== mise"
+mise up
+mise prune -y
+
+echo "== docker"
+docker system df
+
+echo "== disk"
+df -h / | tail -1
+
+echo "== reboot"
+# needrestart -b prints KSTA: 1 (none), 2 (ABI compatible upgrade), 3 (reboot
+# needed); 0 means it could not tell.
+ksta=$(sudo needrestart -b 2>/dev/null | sed -n 's/^NEEDRESTART-KSTA: *//p')
+if [ -f /var/run/reboot-required ] || [ "${ksta:-0}" = "3" ]; then
+  echo "reboot pending: yes (needrestart KSTA=${ksta:-?}); ask the owner before rebooting"
+else
+  echo "reboot pending: no (needrestart KSTA=${ksta:-?})"
+fi
+"""
+
 [tasks."kube:homelab"]
 description = "Pull kubeconfig + talosconfig from 1Password into ~/.kube and ~/.talos"
 run = """

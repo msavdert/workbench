@@ -139,8 +139,9 @@ the mac since the devbox seat is gone.
 
 | What | How |
 |---|---|
-| OS packages | `ssh agent-vm-ssh 'sudo apt update && sudo apt full-upgrade -y'`; `sudo needrestart -b` shows `KSTA: 3` if a reboot is pending |
-| mise tools | `ssh agent-vm-ssh 'mise up'` |
+| Routine maintenance (all of the below in one go) | `make maintain` (= `ssh agent-vm-ssh 'bash -lc "mise run box:maintain"'`): apt full-upgrade + autoremove, `mise up` + `mise prune`, `docker system df`, disk, and a final `reboot pending: yes/no` line. It never reboots; security patches also land daily on their own via `unattended-upgrades` (security pocket only), docker caches are pruned weekly by `docker-prune.timer` |
+| OS packages only | `ssh agent-vm-ssh 'sudo apt update && sudo apt full-upgrade -y'`; `sudo needrestart -b` shows `KSTA: 3` if a reboot is pending |
+| mise tools only | `ssh agent-vm-ssh 'mise up'`; `mise prune` drops versions no longer listed |
 | Claude Code | self-updates; `claude update` to force |
 | This repo's config | `make provision`; `box/` only: `STEPS=user`; `home/` only: `STEPS=home` (pulls `~/work/workbench` on the box and re-runs `home/install.sh box`) |
 | The laptop | `mise run mac:sync` (pulls `~/work/workbench`, `mac/setup.sh --links-only`); full run `mac/setup.sh`, `CLEANUP=1` to also remove brew packages not in `mac/Brewfile` |
