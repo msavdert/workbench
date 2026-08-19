@@ -56,8 +56,11 @@ apt owns the OS layer; mise owns user tools (`mise ls`, `mise up`); Claude Code
 updates itself. Docker is native (`docker`, `docker compose`). The shell is
 plain bash without colour or pagers on purpose - do not "improve" it. If you
 need a new tool permanently, add it to the mise config in `~/work/workbench`
-(`box/files/mise.toml` today, `home/mise/` after phase 2) or the apt list in
-`box/bootstrap.sh` rather than only installing it.
+(`home/mise/config.box.toml`) or the apt list in `box/bootstrap.sh` rather
+than only installing it. Routine updates are one command, `mise run
+box:maintain` (apt, mise up, mise prune, usage, reboot-pending report);
+security patches land daily on their own. The task never reboots; if it says
+a reboot is pending, tell the owner.
 
 ## Rules
 

@@ -167,6 +167,20 @@ each; no emoji; comments say why, not what. Terminal-rendered indicator
 glyphs (statusline scripts, `home/starship.toml`) are the one exception,
 see AGENTS.md rule 7.
 
+D14 Maintenance is split by blast radius. Unattended: Ubuntu's
+`unattended-upgrades` applies the security pocket daily (the distro
+default, kept on purpose: no service restarts beyond what needrestart
+does non-interactively, never a reboot), `docker-prune.timer` drops week-old
+build cache and dangling images on Sundays, journald is capped at 500 MB /
+one month. Everything else - the `-updates` pocket, `mise up`, `mise prune`
+- is one explicit, idempotent pass: `mise run box:maintain` on the box,
+`make maintain` from the mac (`docs/03-runbook.md` Updating). It reports
+whether a reboot is pending and never performs one; reboots, like snapshots
+and rollbacks, stay the owner's call (AGENTS.md rule 8). The reasons: an
+agent that finds a half-upgraded or unexpectedly rebooted box mid-task
+loses its session, and the box runs Remote Control servers that a reboot
+silently kills, so the owner picks the moment.
+
 ## Known differences between substrates (accepted, documented)
 
 - Snapshots: Proxmox has ZFS snapshots and `make snapshot` / `make rollback`;

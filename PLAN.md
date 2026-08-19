@@ -101,3 +101,8 @@ history. Older entries are condensed; `git log` has the full trail.
   usage, final reboot-pending line (never reboots). First run on the box:
   7 packages upgraded, old sqlcl pruned, reboot pending (kernel 6.8.0-137
   -> 138 installed, not booted) - the owner decides when.
+- 2026-08-19: box rebooted with approval (6.8.0-137 -> 138, KSTA back to 1,
+  claude-remote came back on its own via linger). Maintenance policy written
+  down as vision D14; README, runbook (reboot procedure), architecture
+  ownership table and the box CLAUDE.md updated, stale
+  `box/files/mise.toml` reference removed.

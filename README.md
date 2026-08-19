@@ -116,8 +116,10 @@ make snapshot NAME=clean          # Proxmox only
 ```
 
 Day to day: `make ssh` for a shell, `make provision STEPS=home` after a
-config change, `home/install.sh --check box` (part of `verify`) to prove
-there is no drift, `make rollback NAME=clean` to go back.
+config change, `make maintain` for OS and tool updates (it tells you if a
+reboot is pending, and leaves it to you), `home/install.sh --check box`
+(part of `verify`) to prove there is no drift, `make rollback NAME=clean`
+to go back.
 
 ## Repository layout
 

@@ -54,6 +54,7 @@ workbench/
 |---|---|---|
 | `/etc/apt`, `/etc/docker/daemon.json`, `/etc/sysctl.d/*`, `/etc/ssh/sshd_config.d/*`, `/etc/sudoers.d/*`, `/etc/security/limits.d/*`, `/etc/needrestart/conf.d/*`, `/etc/systemd/journald.conf.d/*`, `/etc/terminfo` (Ghostty entry) | `box/files/` | `box/bootstrap.sh` |
 | `/etc/systemd/system/docker-prune.{service,timer}` | `box/files/` | `box/bootstrap.sh step_docker` |
+| routine maintenance (`apt full-upgrade`, `mise up`, `mise prune`, usage, reboot-pending report) | task `box:maintain` in `home/mise/config.box.toml`; `make maintain` wraps it over ssh | run by the operator or an agent on demand, never by a timer (`docs/00-vision.md` D14) |
 | `~/.config/systemd/user/claude-remote*.service`, `~/.local/bin/remote-*`, `~/.local/bin/agent-session` | `box/files/` | `box/bootstrap.sh` |
 | `/etc/claude-code/CLAUDE.md` | `box/files/machine-CLAUDE.md` | `box/bootstrap.sh` |
 | `~/.bashrc` (guard + non-interactive part), `~/.bash_profile`, `~/.tmux.conf` | `box/files/bashrc`, `bash_profile`, `tmux.conf` | `box/bootstrap.sh` |

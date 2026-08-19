@@ -149,6 +149,26 @@ the mac since the devbox seat is gone.
 | Drift check of `home/` on the box | `ssh agent-vm-ssh 'bash -lc "~/work/workbench/home/install.sh --check box"'` (also part of `verify`) |
 | Agent behaviour (`home/claude/`: global CLAUDE.md, subagents, omp-fleet, boundary gate) | same as `home/`: `STEPS=home` on the box, `mise run mac:sync` on the laptop; `home/install.sh` also self-checks the gate |
 
+Why the split between unattended and `make maintain`, and why nothing
+reboots on its own: `docs/00-vision.md` D14.
+
+When `make maintain` ends with `reboot pending: yes` (a new kernel or libc
+is installed but not running), reboot at a moment of your choosing - every
+Remote Control server and tmux session on the box dies with it:
+
+```
+ssh agent-vm-ssh 'sudo systemctl reboot'
+# ~20 s later
+ssh -o ControlPath=none agent-vm-ssh 'uname -r; sudo needrestart -b | grep KSTA'
+# expect the new kernel and NEEDRESTART-KSTA: 1
+make claude-remote                # the Remote Control servers are enabled units
+                                  # and come back by themselves; this only
+                                  # confirms they did
+```
+
+`ControlPath=none` matters: the ssh ControlMaster socket from before the
+reboot may still be in place and answer with a stale connection.
+
 ## Rollback / rebuild
 
 ```
