@@ -11,34 +11,40 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 | 1 | Move agent-vm in, unchanged behaviour | done |
 | 2 | home/ and mac/ | done |
 | 3 | agents/ (from ai-hub runtime) | done |
-| 4 | Human layer, herdr/agy/aws-cli, plugins | active |
-| 5 | Portability proof (OrbStack, cloud) | not started |
+| 4 | Human layer, herdr/agy/aws-cli, plugins | done |
+| 5 | Portability proof (OrbStack, cloud) | active |
 | 6 | Retire agent-vm, dotfiles, devbox | not started |
 
 ## Now
 
-Phases 2 and 3 are done on both profiles. `agents/` holds what was ai-hub
-`runtime/` (CLAUDE.md, agents/, skills/, hooks/, templates/, overnight/);
-`home/install.sh` links `~/.claude/CLAUDE.md`, `~/.claude/agents`,
-`~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml` and
-`~/.claude/hooks/boundary-gate.sh` from it on both profiles and self-checks
-the gate in every mode (registered in settings.base.json, blocks a forced
-push, allows a plain push). `box/bootstrap.sh` has no `step_aihub` any
-more; the box got the links through `make provision STEPS="home verify"`
-(green, run from the mac on 2026-08-19; links resolve into
-`/home/agent/work/workbench/agents/`, `--check box` no drift). ai-hub
-(fc2e4e2) has no `runtime/`, `install.sh` or `.claude/skills`; its README,
-CLAUDE.md and two doctrine lines point at `workbench/agents/`.
+Phases 2-4 are done on both profiles. Phase 4 findings, all fixed and
+applied on the box (`make provision STEPS="home tools verify"` green,
+`--check box` no drift) and on the mac: the completion/init cache was
+never generated on the box and `~/.local/share/zsh-plugins` existed
+nowhere (`home/zsh/install-plugins.sh`, run by mac/setup.sh and
+step_tools, `mise run zsh:plugins`); `herdr integration install claude`
+appends its own SessionStart hook to the composed settings.json (the
+`herdr:integrations` task now ends with `home/install.sh <profile>`;
+mise tasks run under dash on the box, so `set -eu` only); Claude Code
+plugin keys verified (`enabledPlugins`, `extraKnownMarketplaces`),
+`mise run claude:plugins` installs what the settings enable (nothing
+today); `.zshenv` no longer exports `CLAUDE_CONFIG_DIR` (a devbox
+Docker-volume leftover that gave the box two Claude identities: bash saw
+`~/.claude.json`, zsh saw `~/.claude/.claude.json` and a login screen);
+`theme: dark` in the box overlay (Claude wrote it during that onboarding).
 
-Mac state: `CLEANUP=1 mac/setup.sh` removed the `1password-cli` cask (op is
-mise's, Touch ID confirmed by the operator); mise 2026.8.8 via the new
-self-update step; `home/claude/settings.mac.json` carries the `autoMode`
-block that `/auto-mode-setup` had written into the live settings.json.
-Backups on the mac: `~/.config/workbench/backup-20260819T0053*Z/` (phase 2)
-and `backup-20260819T010842Z/` (phase 3); on the box
-`backup-20260819T011158Z/`.
+Measured on the box: `ssh host cmd`, `bash -c`, `bash -lc`, `docker run`
+all plain (PS1 empty, 0 aliases, NO_COLOR=1); `bash -ic` stays bash; a TTY
+login is zsh 5.9 with starship, fzf widget, autosuggestions,
+syntax-highlighting, zoxide, `$SHELL` still `/bin/bash`. herdr (0.8.0,
+started headless in tmux, driven over its socket API: workspace create,
+pane split, agent start/prompt/wait/read) ran claude and omp in two panes
+on a scratch repo and both answered a prompt; omp's Synthetic key comes
+from its agent.db, `mise run omp:auth` was not needed. `mise ls
+--current --missing` empty on the box.
 
-Phase 4 has not started.
+Phase 5 has not started; `providers/orbstack/` and `providers/cloud/` do
+not exist yet.
 
 ## Operator seat
 
@@ -51,24 +57,35 @@ has (`pve-vm-ssh`, Tailscale SSH).
 
 ## Next
 
-1. Phase 4 step 1: `home/bash/interactive.sh` hand-off audit - confirm on
-   the box that `bash -c 'alias; echo $SHELL $PS1'`, an ssh command without
-   a TTY, `docker exec` and a Claude Code shell-tool call all see the plain
-   path, and an interactive `ssh` gets zsh + starship (D5). Then step 2:
-   `home/mise/config.box.toml` herdr/agy/aws-cli, `mise run
-   herdr:integrations`; step 3: plugins in `settings.base.json` (verify key
-   names first). Acceptance list in `docs/02-migration.md` phase 4.
-2. Leftovers, not blocking: `~/Documents/all/github/knowledge/.claude/skills`
-   on the mac links to `/home/dev/work/ai-hub/runtime/claude/skills` (a
-   devbox path, dangling since before this migration) - repoint to
-   `~/work/workbench/agents/skills` when the knowledge repo is next
-   touched; ai-hub `lab/` records still say `runtime/` (history, left as
-   is). Backlog from phase 2: zsh plugins (autosuggestions,
-   syntax-highlighting) referenced by `.zshrc` but installed by nothing
-   (phase 4); omp prompts (WATCHDOG.md, skills) still describe the
-   dotfiles/container workflow (phase 4); `providers/proxmox/README.md`
-   sizing notes; `DRY_RUN=1 mac/setup.sh` does not say what is currently
-   at each target.
+1. Phase 5 step 1: `providers/orbstack/` - create an OrbStack Ubuntu 24.04
+   VM on the mac (OrbStack is in mac/Brewfile), run `make bootstrap-all
+   PROVIDER=orbstack`, then `bootstrap.sh verify` with no provider-specific
+   step and a Remote Control environment from it. Read
+   `docs/01-architecture.md` "A provider must deliver" and
+   `providers/proxmox/` first; the operator's question "is a from-scratch
+   rebuild tested" is answered by this phase, not by destroying the
+   Proxmox VM (rule 8; not planned).
+2. Operator decisions left from phase 4: (a) `home/mise/config.box.toml`
+   `omp:auth` reads `op://dotfiles/Synthetic/credential` but the item lives
+   in the Private vault (the box service account sees dotfiles); omp works
+   from its own agent.db today - move the item, change the reference, or
+   drop the task. (b) On the mac, Claude Code used
+   `~/.claude/.claude.json` from 2026-08-10 until now; with
+   CLAUDE_CONFIG_DIR gone it reads `~/.claude.json` again (older, 13
+   projects). A merged file (15 projects, same account) is at
+   `~/.config/workbench/backup-claudejson-20260819T012830Z/merged.json`
+   next to both originals; installing it over `~/.claude.json` was left
+   to the operator (`install -m 600 .../merged.json ~/.claude.json`) -
+   the session's tooling declined to overwrite that file.
+3. Leftovers, not blocking: `~/Documents/all/github/knowledge/.claude/skills`
+   on the mac links to a devbox path (repoint to
+   `~/work/workbench/agents/skills`); ai-hub `lab/` records still say
+   `runtime/` (history); omp prompts (WATCHDOG.md, skills) still describe
+   the dotfiles/container workflow; `providers/proxmox/README.md` sizing
+   notes; `DRY_RUN=1 mac/setup.sh` does not say what is currently at each
+   target; the phase 4 "Remote Control session shows the plain shell"
+   item was measured by shape (`bash -c` under the agent's environment),
+   not from inside a live Remote Control session.
 
 ## Open questions
 
@@ -143,3 +160,7 @@ has (`pve-vm-ssh`, Tailscale SSH).
   `mac/setup.sh` runs `mise self-update --yes`; the `1password-cli` cask
   left the Brewfile and the laptop; `autoMode` block kept in
   settings.mac.json. Phase 3 done, phase 4 active.
+- 2026-08-19: phase 4 executed from the mac (9ecfd4c..5315e16). Commit
+  split note: 9ecfd4c carries all three new mise tasks (zsh:plugins,
+  claude:plugins, herdr:integrations rewrite) because the hunks were
+  adjacent; 2545a93 is the D12 text only. Phase 4 done, phase 5 active.
