@@ -78,7 +78,15 @@ step_system() {
   fi
   # ssh: keep sessions alive across mobile network hops.
   put 0644 "$files/sshd-agent.conf" /etc/ssh/sshd_config.d/90-agent.conf
-  sshd -t && systemctl reload ssh
+  # Images without openssh-server (OrbStack reaches the machine its own way)
+  # get it in step_apt; the config above is then read on first start.
+  # sshd -t wants the privsep dir, which a socket-activated (idle) sshd has not
+  # created yet; try-reload only touches a running service.
+  if command -v sshd >/dev/null; then
+    mkdir -p /run/sshd
+    sshd -t
+    systemctl try-reload-or-restart ssh
+  fi
   timedatectl set-timezone Etc/UTC
 }
 
@@ -135,7 +143,9 @@ step_apt() {
     # runtime managers / containers
     mise
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    # virtualization guest
+    # ssh on port 22 everywhere, even where the image relies on another path
+    openssh-server
+    # virtualization guest; the unit only starts where the virtio port exists
     qemu-guest-agent
   )
   apt-get install -y -qq --no-install-recommends "${pkgs[@]}"
@@ -195,8 +205,11 @@ step_user() {
   # Machine-level Claude memory: loaded in every session regardless of cwd.
   # Verified on 2026-08-17 that Claude Code reads /etc/claude-code/CLAUDE.md.
   put 0644 "$files/machine-CLAUDE.md" /etc/claude-code/CLAUDE.md
-  chown -R "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.bashrc" "$AGENT_HOME/.bash_profile" \
-    "$AGENT_HOME/.tmux.conf" "$AGENT_HOME/.gitconfig" "$AGENT_HOME/.config" "$AGENT_HOME/.local" "$AGENT_HOME/.claude"
+  # Only what exists: .gitconfig and .claude appear in step_home, which runs later.
+  local p
+  for p in .bashrc .bash_profile .tmux.conf .gitconfig .config .local .claude; do
+    if [[ -e "$AGENT_HOME/$p" ]]; then chown -R "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/$p"; fi
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -265,7 +278,10 @@ step_verify() {
     ok=0
   fi; }
   check systemctl is-active docker
-  check systemctl is-active qemu-guest-agent
+  # Ubuntu 24.04 socket-activates sshd: the service is dead until the first client
+  check bash -c 'systemctl is-active ssh || systemctl is-active ssh.socket'
+  # qemu-guest-agent's unit is conditioned on this port; OrbStack has none
+  check bash -c 'test ! -e /dev/virtio-ports/org.qemu.guest_agent.0 || systemctl is-active qemu-guest-agent'
   check as_agent docker ps
   # one command per check: `command -v a b` succeeds if ANY resolves
   for c in mise node gh op uv go bun omp claude jq rg fd tmux docker; do
@@ -280,7 +296,6 @@ step_verify() {
   # shellcheck disable=SC2016 # MISE_ENV must expand in the agent's login shell
   check as_agent bash -lc 'test "$MISE_ENV" = box'
   check command -v zsh
-  check test -f /etc/claude-code/CLAUDE.md
   check test -f /etc/claude-code/CLAUDE.md
   [[ $ok == 1 ]] || die "verification failed"
 }
