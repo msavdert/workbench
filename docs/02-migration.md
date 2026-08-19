@@ -138,10 +138,11 @@ Acceptance: `bootstrap.sh verify` passes on OrbStack with no provider-
 specific step; a Remote Control environment works from it.
 
 Outcome (operator decision, 2026-08-19): step 1 done, `verify` green on a
-from-scratch OrbStack build; the Remote Control item stays open until the
-operator does the manual `claude auth login` there. Step 2 skipped: no
-cloud account available; `providers/cloud/` stays in the backlog. Phase
-closed with those two exceptions.
+from-scratch OrbStack build; the Remote Control item on OrbStack was
+skipped by operator decision (2026-08-19, not to be re-asked): the login is
+manual and Remote Control is proven on Proxmox. Step 2 skipped: no cloud
+account available; `providers/cloud/` stays in the backlog. Phase closed
+with those two exceptions.
 
 ### Phase 6 - retire
 
@@ -159,11 +160,11 @@ container wording removed from `home/` (nvim `devbox.lua` is `box.lua`, omp
 skills rewritten); on the VPS the `dotfiles` compose project taken down
 with its volumes, the orphan `devbox_*` volumes and the
 `ghcr.io/msavdert/devbox` image removed, `/home/opc/dotfiles` deleted.
-Left on purpose or open: `/home/opc/devbox` (an older compose dir with a
-`.env` token, deletion was blocked in the session; the operator removes it
-by hand and rotates that service account), the mac's untracked
-`~/.ssh/config.local` `Host dev`/`dev-sh` entries, the ghcr package itself
-(needs a `delete:packages` token).
+Finished by the operator by hand the same day: `/home/opc/devbox` (an
+older compose dir with a `.env` token) deleted and that service account
+rotated in 1Password; `Host dev`/`dev-sh` removed from the mac's untracked
+`~/.ssh/config.local`; the ghcr package `msavdert/devbox` deleted by the
+operator.
 
 ## What could go wrong
 

@@ -13,7 +13,7 @@ definition and record is `docs/02-migration.md`.
 | 2 | home/ and mac/ | done |
 | 3 | agents/ (from ai-hub runtime) | done |
 | 4 | Human layer, herdr/agy/aws-cli, plugins | done |
-| 5 | Portability proof (OrbStack, cloud) | done (cloud skipped, RC login open) |
+| 5 | Portability proof (OrbStack, cloud) | done (cloud and OrbStack RC skipped) |
 | 6 | Retire agent-vm, dotfiles, devbox | done |
 
 ## Now
@@ -24,8 +24,11 @@ and off the box; container wording gone from `home/`; on the VPS the
 devbox container, its `dotfiles_*` volumes, the orphan `devbox_*` volumes
 and the `ghcr.io/msavdert/devbox` image are removed and `/home/opc/dotfiles`
 deleted. `AGENTS.md`, `README.md`, `docs/02-migration.md`, `docs/03-runbook.md`
-no longer describe a migration in progress. Three hand items remain for
-the operator, listed under Next. There is no active phase; work is now
+no longer describe a migration in progress. The operator finished the
+hand items the same day (`/home/opc/devbox` deleted and its service
+account rotated, `Host dev`/`dev-sh` removed from the mac, ghcr package
+deleted). The OrbStack Remote Control login is skipped for good by operator
+decision; do not raise it again. There is no active phase; work is now
 backlog-driven.
 
 ## Operator seat
@@ -40,15 +43,10 @@ the mac since the devbox seat is gone.
 
 ## Next
 
-1. Operator, by hand: delete `/home/opc/devbox` on the VPS (`.env` holds a
-   plaintext service-account token; rotate or revoke that account in
-   1Password), remove `Host dev`/`dev-sh` from the mac's
-   `~/.ssh/config.local`, optionally delete the ghcr package
-   `msavdert/devbox`. Then run `make snapshot` once from the mac to prove
-   the Proxmox path works without devbox.
-2. Open from phase 5: `ssh -t agent@agent-vm@orb claude auth login` then
-   `make claude-remote PROVIDER=orbstack` (machine must be rebuilt first);
-   `loginctl enable-linger` check on OrbStack.
+1. Run `make snapshot` once from the mac to prove the Proxmox path
+   (`pve-vm-ssh` via `mise run ssh:sync`) works without the devbox seat.
+   Snapshots need explicit approval (AGENTS.md rule 8): ask first.
+2. Pick from the backlog below; nothing else is scheduled.
 3. Leftovers, not blocking (unchanged): the mac's
    `~/Documents/all/github/knowledge/.claude/skills` link to a devbox
    path; ai-hub `lab/` records say `runtime/`; `providers/proxmox/README.md`
@@ -158,3 +156,6 @@ the mac since the devbox seat is gone.
   volumes and image removed, /home/opc/dotfiles deleted (/home/opc/devbox
   deletion blocked, left to the operator). AGENTS.md migration section,
   README, 02-migration, 03-runbook, PLAN updated: migration complete.
+- 2026-08-19: operator finished the hand items (VPS ~/devbox, service
+  account rotated, mac ssh entries, ghcr package) and skipped the OrbStack
+  Remote Control login for good. Migration record closed.
