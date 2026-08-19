@@ -2,14 +2,16 @@
 
 The Synthetic pack is the scarce resource here (500 requests / 5h, one in-flight
 request per model); the Antigravity OAuth quota is effectively unlimited by
-comparison. So judgment stays with `syn:large:text` and volume goes elsewhere:
-you scope the work, decide the contracts, and verify the result.
+comparison. Volume goes to Antigravity and the pack is spent only where depth
+is worth paying for: you scope the work, decide the contracts, and verify the
+result.
 
 ## Routing
 
 | Work | Agent | Model |
 |---|---|---|
-| Scope, decompose, decide contracts, verify | you (architect) | `syn:large:text:high` |
+| Scope, decompose, decide contracts, verify | you | `gemini-3.7-flash:high` |
+| Escalate when stuck, or plan mode | you, via `slow` / `plan` | `syn:large:text` (`:max` / `:high`) |
 | Find files, map unknown code, read-only search | `scout` | `gemini-3.7-flash:high` |
 | Mechanical rename/move/reformat across files | `sonic` | `gemini-3.7-flash:high` |
 | General multi-step implementation slice | `task` | `gemini-3.1-pro` |
@@ -20,18 +22,26 @@ you scope the work, decide the contracts, and verify the result.
 | Repository vulnerability discovery, read-only | `security-reviewer` | `GLM-5.2` |
 | UI/UX implementation and visual review | `designer` | `syn:small:vision` |
 
-Synthetic allows one concurrent request **per model**, so `audit` (GLM-5.2) runs
-in parallel with anything, but `librarian` and `docs` share the Kimi-K3 slot and
-serialize behind each other. Different models never contend; batch accordingly.
+Synthetic allows one concurrent request **per model**. Different models never
+contend; batch accordingly. Which ones are the same model is not obvious from
+the names, because the aliases resolve to concrete models
+(`references/benchmarks.md`, 2026-08-16): `syn:large:text` = GLM-5.2,
+`syn:large:vision` = Kimi-K3, `syn:small:vision` = Qwen3.6-27B. So the real
+contention map is:
 
-The architect itself now sits on Synthetic (`syn:large:text`), so a subagent
-placed on that same model would queue behind the session that spawned it. None
-is, deliberately. `designer` shares `syn:small:vision` with the `vision` role -
-the only contention left, and both are low-volume.
+- `librarian` and `docs` share the Kimi-K3 slot and serialize behind each other.
+- `audit` and `security-reviewer` share the GLM-5.2 slot **with your own `slow`
+  and `plan` roles**. An earlier version of this file claimed no subagent sits on
+  the session's model; that was never true. It stopped being a per-turn problem
+  on 2026-08-19, when the driver seat moved to Antigravity, but an audit fired
+  during an escalation still queues behind it.
+- `designer` shares `syn:small:vision` with the `vision` role. Both low-volume.
+
+Everything else is on Antigravity, which is where the parallel width lives.
 
 ## Enforcement layer
 
-`home/omp/hooks/pre/delegation.ts` hard-blocks the main session from network fetches and whole-file reads over 200 lines. It deploys to `~/.omp/agent/hooks/pre/` via the Dockerfile COPY of `home/omp/` and fails open. The ~50-line rule in the prose is the stricter judgement line the architect is expected to self-enforce well before the hook fires.
+`home/omp/hooks/pre/delegation.ts` hard-blocks the main session from network fetches and whole-file reads over 200 lines. It reaches `~/.omp/agent/hooks/pre/` because `home/install.sh` symlinks the whole `home/omp/hooks` directory there, and it fails open. (It used to say "via the Dockerfile COPY of `home/omp/`" - a leftover from the container predecessor; the box is a VM and nothing here is built into an image.) The ~50-line rule in the prose is the stricter judgement line the architect is expected to self-enforce well before the hook fires.
 
 ## The bright line
 

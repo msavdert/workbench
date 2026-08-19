@@ -47,48 +47,88 @@ setupVersion: 1
 #      in-flight request PER MODEL. Every extra role parked on syn:large:vision is
 #      a request that queues behind the main session, so only the architect roles
 #      sit there and no subagent does.
-#   2. The architect is syn:large:VISION, not syn:large:text. Same 524K window
-#      and same pack, but it accepts image input, which is what keeps
-#      `compaction.strategy: snapcompact` working on the main session. The text
-#      variant would have silently degraded every architect compaction to
-#      context-full — lossy where snapcompact is not. The price is a
-#      `low,high,max` ladder instead of `minimal,high,max`, which costs nothing:
-#      no architect turn should be running at `minimal` anyway.
+#   2. Any role that must survive a compaction wants syn:large:VISION, not
+#      syn:large:text. Same 524K window and same pack, but it accepts image
+#      input, which is what `compaction.strategy: snapcompact` requires. The
+#      text variant silently degrades a compaction to context-full — lossy
+#      where snapcompact is not.
 #
-# 2026-08-19 — STALE ABOVE, read with care. `default` moved to Antigravity
-# flash, so the interactive session is no longer a large Synthetic model and
-# point 1's "only the architect roles sit there" now covers `slow` and `plan`
-# only. Point 2 was already describing an arrangement the values did not match:
-# it claims the architect is syn:large:VISION, while `default` had been
-# syn:large:TEXT for some time, which means `compaction.strategy: snapcompact`
-# on the main session was not getting the image input that paragraph says it
-# needs. Comments further down (memory mining, reviewer placement, tool budgets,
-# the thinking ladder) still argue from "the architect sits on Synthetic and is
-# expensive". They have not been rewritten, because doing so honestly needs a
-# decision about what the architect seat is now, not a search-and-replace.
+# 2026-08-19 — the driver seat moved. `default` is Antigravity flash now, so
+# there is no longer one expensive model holding the session on every turn, and
+# the roles were re-read against `omp models` rather than against the prose
+# above. What that check actually returned, because several comments here had
+# been arguing from numbers that were never true:
+#
+#     model              context  max-out  thinking                  images
+#     gemini-3.7-flash        1M      66K  minimal,low,medium,high   yes
+#     gemini-3.1-pro          1M      66K  low,high                  yes
+#     syn:large:text        524K      66K  minimal,high,max          NO
+#     syn:large:vision      524K      66K  low,high,max              yes
+#     syn:small:vision      262K      66K  minimal,low,medium,high   yes
+#
+# And the Synthetic aliases are not variants of one model. Per
+# agents/skills/omp-fleet/references/benchmarks.md (alias resolution
+# 2026-08-16), corroborated by the fingerprints above:
+#     syn:large:text = GLM-5.2       syn:large:vision = Kimi-K3
+#     syn:small:text = GLM-4.7-Flash syn:small:vision = Qwen3.6-27B
+# which means `syn:large:text` is the SAME model as the audit and
+# security-reviewer subagents, and `syn:large:vision` is the same model as
+# librarian and docs. Point 1's "no subagent sits on the session's model" was
+# therefore never true. Aliases are the vendor's to repoint, so treat that
+# mapping as dated evidence, not a constant.
+#
+# Consequences, applied below:
+#   - NO model in this configuration has an `xhigh` rung. `high` is the top of
+#     both gemini ladders; only the two syn:large aliases go on to `max`.
+#   - snapcompact needs image input. It works on the gemini roles and on the
+#     vision aliases, and has never worked on syn:large:text - so every
+#     compaction on a `slow` or `plan` turn degrades to context-full and
+#     discards history. Known, priced, and left in place; the alternative is
+#     queueing behind librarian and docs instead. See `slow` below.
+#   - The architect seat is no longer a place. `default` is the cheap, always
+#     available driver; `slow` and `plan` are the expensive escalations and the
+#     only Synthetic seats the interactive session takes. Comments below say
+#     "the escalation" where they used to say "the architect".
 modelRoles:
   # Interactive driver. Moved off Synthetic to Antigravity flash on 2026-08-19
   # by operator decision; the reason is not recorded here because it was not
   # given, and inventing one would be worse than the gap. What the move MEANS
-  # is recorded, because that part is mechanical: the interactive session no
-  # longer occupies a Synthetic in-flight slot on every turn, so nothing queues
-  # behind it there any more, and the "one large model is the architect on
-  # every turn" premise above no longer describes this role. `slow` and `plan`
-  # are the escalation when flash is not enough, and they are now the only
-  # Synthetic seats the interactive session takes.
-  # `:high` because flash's ladder is `low,high,max`.
+  # is mechanical and is recorded: the session no longer holds a Synthetic
+  # in-flight slot on every turn, so nothing queues behind it there; it accepts
+  # image input, so snapcompact finally works on the main session; and the
+  # scarce pool is now spent only when `slow` or `plan` is asked for.
+  # `:high` is the TOP of this model's ladder (minimal,low,medium,high) — there
+  # is no `max` rung here, which is why `ultrathink` does nothing in the driver
+  # seat. See the autoThinkingMaxEffort note near the bottom.
   default: "google-antigravity/gemini-3.7-flash:high"
-  # `slow` is the explicit "I am stuck, think properly" escalation. Same model at
-  # the top of its ladder: if you have already decided to pay for it, pay all the
-  # way. It shares the model with `default`, which is free — they are the same
-  # session and never in flight at the same time.
+  # `slow` is the explicit "I am stuck, think properly" escalation, and since
+  # 2026-08-19 the first rung that costs metered tokens at all. At the top of
+  # its ladder: if you have already decided to pay for it, pay all the way.
+  #
+  # Left on the TEXT variant after considering the vision one, because the
+  # aliases are not two flavours of one model - per
+  # agents/skills/omp-fleet/references/benchmarks.md (alias resolution
+  # 2026-08-16, corroborated by the `omp models` fingerprints):
+  #     syn:large:text = GLM-5.2      <- also audit, security-reviewer
+  #     syn:large:vision = Kimi-K3    <- also librarian, docs
+  # So the choice is not "same model, plus image input". It is which pair of
+  # subagents this role queues behind, since Synthetic serialises per model.
+  # Staying on text costs the escalation turn its snapcompact (GLM-5.2 takes no
+  # image input, so a compaction there degrades to context-full and discards
+  # history); moving to vision would buy that back and put `slow` in front of
+  # librarian and docs instead. Text wins on frequency: an escalation turn
+  # rarely coincides with the audit gate, while plan-mode research spawning
+  # librarians is an ordinary pattern.
   slow: "synthetic/syn:large:text:max"
   # Plan mode is read-only exploration that produces a plan every later agent
   # follows, so a bad plan is the most expensive possible mistake — but it is
-  # still bounded work, so `high` rather than `max`.
+  # still bounded work, so `high` rather than `max`. Same model as `slow` and
+  # for the same reason; see the alias note there.
   plan: "synthetic/syn:large:text:high"
-  # Titles, classification, and cheap background chatter. Left bare: `smol` is
-  # also a cycleOrder stop (Ctrl+P), so it has to stay usable for real chat.
+  # Cheap background chatter and the prewalk hand-off target. `:high` rather
+  # than bare because `smol` is also a cycleOrder stop (Ctrl+P) and has to stay
+  # usable for real chat. Note this now resolves to the SAME model and rung as
+  # `default` — see the cycleOrder comment below.
   smol: "google-antigravity/gemini-3.7-flash:high"
   # Advisor reviews EVERY completed turn, so its cost is multiplied by turn
   # count: a 76-turn session is 76 extra calls. That multiplier must never land
@@ -114,10 +154,17 @@ modelRoles:
   # summarisation, auto-thinking classification, unexpected-stop detection). It
   # is invoked constantly and nobody reads its reasoning, hence `:minimal`.
   # Unset, this would fall back to `smol` and quietly cost more.
-  tiny: "google-antigravity/gemini-3.7-flash:high"
+  # 2026-08-19: it said `:minimal` here and billed `:high` — the suffix did not
+  # match the sentence above it, on the one role that fires most often. Fixed.
+  tiny: "google-antigravity/gemini-3.7-flash:minimal"
 
 # Ctrl+P / Shift+Ctrl+P walk this ladder. Ordered cheap -> capable so the first
 # press is always the de-escalation, which is the one you want under a quota wall.
+# Since `default` moved to flash, `smol` and `default` resolve to the same model
+# AND the same rung, so two of these four stops are indistinguishable. Left as
+# is rather than trimmed: the muscle memory is worth more than the tidy list,
+# and the stops that matter (`task` up, `slow` up again) still work. If `default`
+# ever moves back up, this becomes a real four-rung ladder again.
 cycleOrder:
   - smol
   - task
@@ -150,15 +197,17 @@ disabledProviders:
   - llama.cpp
   - lm-studio
 
-# The architect plans, a cheap model types. At the first edit/write after the todo list
-# exists, the session hands off from the active model to the `smol` role. This
-# is the structural version of the rule AGENTS.md states in prose: judgement is
-# the scarce thing, keystrokes are not.
-# It is deliberately a default rather than a per-run flag, because the failure
-# mode it corrects is the architect quietly doing the work itself — and that
-# decision is never made consciously enough to remember a flag. Opt out with
-# `--no-prewalk` when an edit genuinely needs the expensive model, or
-# `--prewalk-into @task` to hand off to gemini-3.1-pro instead of flash.
+# "The architect plans, a cheap model types": at the first edit/write after the
+# todo list exists, the session hands off from the active model to the `smol`
+# role. The prose above this key used to argue for that as a deliberate default
+# while the value said `false` - it has been `false` since the file arrived, so
+# the argument was aspirational, not a description.
+#
+# It stays off, and the 2026-08-19 driver change settles it: `smol` and
+# `default` are now the same model at the same rung, so the hand-off would hand
+# work from flash to flash and buy nothing. The setting only earns its keep when
+# the driver seat is expensive again - and then `--prewalk-into @task` (hand off
+# to gemini-3.1-pro) is the variant worth trying, not the `smol` default.
 prewalk:
   enabled: false
 
@@ -179,8 +228,12 @@ task:
     scout: google-antigravity/gemini-3.7-flash:high
     # Strictly mechanical edits. Same reasoning as scout.
     sonic: google-antigravity/gemini-3.7-flash:high
-    # General worker. Matches modelRoles.task; stated explicitly so a change to
-    # the interactive `task` role does not silently retune every subagent.
+    # General worker. Same model as modelRoles.task but deliberately WITHOUT the
+    # `:high` suffix that role carries: a spawned worker gets its depth from
+    # `defaultThinkingLevel: auto` per turn, while the interactive role is
+    # pinned. Stated explicitly so a change to the interactive `task` role does
+    # not silently retune every subagent. home/omp/AGENTS.md lists it bare too;
+    # the two must stay in sync.
     task: google-antigravity/gemini-3.1-pro
     # Docs/research. Kimi-K3 benchmarked as the best documentation writer of the
     # pool here (1946 chars in 5.3s). 524K context swallows whole doc trees.
@@ -188,12 +241,16 @@ task:
     docs: "synthetic/hf:moonshotai/Kimi-K3"
     audit: "synthetic/hf:zai-org/GLM-5.2"
     # Reviewer is a quality gate whose output gets acted on, so it wants the best
-    # judgement available — but NOT syn:large:vision, because the architect is
-    # sitting on that model and Synthetic serialises per model: a reviewer there
-    # would block the session it is reviewing for. gemini-3.1-pro at `:high` is
-    # the strongest model on this box that is genuinely parallel with the main
-    # session, and that availability is worth more here than a marginally better
-    # verdict that arrives after a stall.
+    # judgement available. It is on Antigravity anyway, and the reason given here
+    # used to be wrong: it said syn:large:vision was avoided "because the
+    # architect is sitting on that model", which was never so - the driver was on
+    # syn:large:TEXT then and is on flash now, while syn:large:vision is Kimi-K3,
+    # i.e. librarian's and docs' model. The correct reason survives the
+    # correction: every Synthetic seat serialises per model and is metered, so a
+    # reviewer there queues behind SOMETHING and spends the rationed pool.
+    # gemini-3.1-pro at `:high` is the strongest model here that is genuinely
+    # parallel with everything, and that availability is worth more than a
+    # marginally better verdict arriving after a stall.
     reviewer: "google-antigravity/gemini-3.1-pro:high"
     security-reviewer: "synthetic/hf:zai-org/GLM-5.2"
     # Design work is the one subagent role that routinely reads screenshots and
@@ -283,13 +340,23 @@ advisor:
 # Per omp://memory.md, the local backend's model selection is:
 #     Phase 1 (per-session extraction)  -> the `default` role
 #     Phase 2 (cross-session synthesis) -> the `smol` role
-# `default` is the architect. So this block, as previously written, mined up to
-# 32 session rollouts per launch using the single most expensive model in the
-# configuration — to produce a summary nobody had asked for, in the background,
-# on the one pool that is actually rationed. That is the exact failure this
-# whole setup exists to prevent, hiding inside a comment that said the opposite.
-# Since the architect now sits on Synthetic, which serialises per model, this
-# would additionally have queued the mining calls in front of the first prompt.
+# `default` was the architect when this was written. So this block, as
+# previously written, mined up to 32 session rollouts per launch using the
+# single most expensive model in the configuration — to produce a summary
+# nobody had asked for, in the background, on the one pool that is actually
+# rationed. That is the exact failure this whole setup exists to prevent,
+# hiding inside a comment that said the opposite.
+#
+# 2026-08-19: that argument is now much weaker and the decision is a closer
+# call than it reads. Phase 1 still rides the `default` role, but `default` is
+# Antigravity flash - off the metered pool, no per-model queue in front of the
+# first prompt, and the cheapest tier in the file. What is left against it is
+# smaller but not nothing: 32 extra flash calls of background work at every
+# launch, against an OAuth quota that is generous rather than infinite, for a
+# feature that had produced no artifacts. Kept off on that basis, and because
+# nobody has asked for it since. This is the paragraph to re-read if the
+# feature is ever wanted - the blocking objection is gone, only the price
+# remains.
 #
 # `providers.memoryModel` does offer on-device options, but omp://local-models.md
 # documents it as driving the Mnemopi backend, not this one. No way was found to
@@ -340,13 +407,22 @@ compaction:
   # paying for an LLM summarisation call: local, deterministic, no network, no
   # key, and therefore also safe as overflow recovery.
   # It requires the CURRENT model to accept image input (`model.input` includes
-  # "image"); otherwise the run falls back to context-full and warns. This
-  # requirement is why the architect roles are on syn:large:VISION rather than
-  # the text variant — the text model would have degraded every main-session
-  # compaction to context-full, which throws history away where snapcompact
-  # archives it. The gemini roles and syn:small:vision qualify too. The Synthetic
-  # text models (GLM-5.2, Kimi-K3) do not, so audit/librarian/docs subagents
-  # degrade automatically; that is fine, they are short-lived and rarely compact.
+  # "image"); otherwise the run falls back to context-full and warns.
+  #
+  # Verified against `omp models` on 2026-08-19, because the paragraph that used
+  # to sit here had it backwards. It claimed the main session was on
+  # syn:large:VISION so that this would work. It never was: the driver was
+  # syn:large:TEXT, which takes no image input, so every main-session compaction
+  # had been silently degrading to context-full - discarding history where
+  # snapcompact archives it. Moving `default` to gemini-3.7-flash (images: yes)
+  # is what actually turned this feature on for the main session, as a side
+  # effect rather than by design.
+  #
+  # Still degraded: `slow` and `plan` (syn:large:text = GLM-5.2, no images), so a
+  # compaction on an escalation turn is lossy. That is the priced trade recorded
+  # at `slow` above. Kimi-K3 (librarian, docs) does take images; GLM-5.2 (audit,
+  # security-reviewer) does not, and those subagents are short-lived and rarely
+  # compact, so their degradation is free.
   strategy: snapcompact
   # Compact at safe tool-loop boundaries mid-turn rather than only between
   # turns. Long agentic turns are exactly where this session blows its window.
@@ -355,9 +431,9 @@ compaction:
   # would interrupt a subagent fan-out for no reason.
   autoContinue: true
   # Headroom left for the turn that follows a compaction. Raised from 16384:
-  # syn:large:vision emits up to 66K output tokens and `slow` runs at `:max`
-  # thinking, so the default reserve is thin enough to trigger an immediate
-  # re-compaction.
+  # every model in the routing table emits up to 66K output tokens and `slow`
+  # runs at `:max` thinking, so the default reserve is thin enough to trigger an
+  # immediate re-compaction.
   reserveTokens: 32768
   # Recent history always preserved verbatim. Raised from 20000 because the
   # context windows in play are 1M — spending 32K on verbatim recency is
@@ -379,13 +455,22 @@ retry:
   fallbackRevertPolicy: cooldown-expiry
   fallbackChains:
     # Covers every assigned role without its own chain. Degrades along the axis
-    # that matters — capability — while crossing providers, so a Synthetic-wide
-    # outage or a spent pack still leaves a working session. This chain matters
-    # more than it used to: the architect now lives on the metered pool, and
-    # `500 requests / 5h` is a wall you can actually hit in a long day.
+    # that matters — capability — while CROSSING PROVIDERS, so an outage on
+    # either side still leaves a working session.
+    #
+    # Rebuilt 2026-08-19. It had stopped doing either job: the second rung was
+    # `gemini-3.7-flash:high`, which is what `default` already is, so it was a
+    # no-op that fell back to the model it was falling back from; and with the
+    # driver moved to Antigravity, every rung was Antigravity, so an Antigravity
+    # quota wall left the session with nowhere to go. The chain was written when
+    # the primary was Synthetic and crossing providers happened for free.
+    # syn:large:vision is the last rung on purpose: it is the metered pool, so it
+    # is reached only after Antigravity has actually failed, and it is the one
+    # Synthetic alias that takes image input, so snapcompact survives the
+    # failover instead of the session starting to discard history mid-outage.
     default:
       - google-antigravity/gemini-3.1-pro
-      - google-antigravity/gemini-3.7-flash:high
+      - synthetic/syn:large:vision:high
     advisor:
       - google-antigravity/gemini-3.7-flash:high
       - google-antigravity/gemini-3.1-pro
@@ -444,9 +529,10 @@ bash:
       approval: deny
     - match: "rm -fr /"
       approval: deny
-    # $HOME holds the one thing the image cannot rebuild: ~/.omp/agent/agent.db
+    # $HOME holds the one thing a rebuild cannot restore: ~/.omp/agent/agent.db
     # (OAuth + API key), ~/.kube, and ~/.local/state. Written as `~`/`$HOME`
-    # rather than /home/dev so the rule is also correct on the macOS thin client.
+    # rather than a literal /home/agent so the rule is also correct on the macOS
+    # thin client, where the user is not `agent`.
     - match: "rm -rf ~*"
       approval: deny
     - match: "rm -fr ~*"
@@ -583,11 +669,17 @@ defaultThinkingLevel: auto
 providers:
   # Ceiling the `auto` classifier may resolve to. `xhigh` keeps it one tier
   # below the top, so `max` stays reserved for an explicit `ultrathink` — which
-  # matters here because syn:large:vision at `max` is by far the most expensive
-  # token class in this configuration, on the only metered pool.
-  # Note that syn:large:vision's ladder is `low,high,max`: it has no `xhigh`
-  # rung, so this ceiling resolves down to `high` on the architect and does its
-  # real work on the gemini roles, which expose the full ladder.
+  # matters because a syn:large model at `max` is by far the most expensive
+  # token class here, on the only metered pool.
+  #
+  # Checked against `omp models` on 2026-08-19: NO model in this configuration
+  # exposes an `xhigh` rung. gemini-3.7-flash is minimal,low,medium,high;
+  # gemini-3.1-pro is low,high; the syn:large aliases jump high -> max. So this
+  # ceiling never binds anywhere - every role already tops out at `high` on its
+  # own ladder. It is kept as a stated intent rather than deleted: it costs
+  # nothing, and it is the right ceiling the moment a model with the full ladder
+  # enters the table. The previous note claimed it "does its real work on the
+  # gemini roles, which expose the full ladder"; they do not.
   autoThinkingMaxEffort: xhigh
   webSearchGeminiModel: "gemini-3.7-flash"
 
@@ -610,6 +702,10 @@ tier:
 # Standalone `ultrathink`, `orchestrate`, and `workflowz` in a prompt attach a
 # hidden notice for that turn. Cheap, opt-in per prompt, and `ultrathink` is the
 # only route to `max` thinking given the autoThinkingMaxEffort ceiling above.
+# Worth knowing where that route actually leads: `max` exists only on the two
+# syn:large aliases, so `ultrathink` raises the depth on a `slow` or `plan` turn
+# and does NOTHING in the default driver seat, where flash already tops out at
+# `high`. To think harder from the driver seat you change role, not keyword.
 magicKeywords:
   enabled: true
 
