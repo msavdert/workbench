@@ -76,7 +76,7 @@ jq -r '.enabledPlugins // {} | to_entries[] | select(.value) | .key' ~/.claude/s
 [tasks."herdr:integrations"]
 description = "Install herdr's hook scripts for claude, omp and agy, then re-run home/install.sh to keep settings.json composed"
 run = """
-set -euo pipefail
+set -eu
 herdr integration install claude
 herdr integration install omp
 mkdir -p ~/.gemini/config
