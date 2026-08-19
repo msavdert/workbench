@@ -32,7 +32,8 @@ CHECK=0
 DRY=0
 PROFILE=""
 DRIFT=0
-BACKUP_DIR="$HOME/.config/workbench/backup-$(date -u +%Y%m%dT%H%M%SZ)"
+# Overridable so a caller (mac/setup.sh) and this script share one backup dir.
+BACKUP_DIR="${BACKUP_DIR:-$HOME/.config/workbench/backup-$(date -u +%Y%m%dT%H%M%SZ)}"
 
 usage() {
   sed -n '2,/^$/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2

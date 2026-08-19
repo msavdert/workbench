@@ -20,6 +20,7 @@ readonly REPO_DIR
 readonly DRY_RUN="${DRY_RUN:-}"
 BACKUP_DIR="$HOME/.config/workbench/backup-$(date -u +%Y%m%dT%H%M%SZ)"
 readonly BACKUP_DIR
+export BACKUP_DIR # home/install.sh honours it: one backup dir per run
 
 info() { printf '  ok     %s\n' "$*"; }
 warn() { printf '  WARN   %s\n' "$*"; }
