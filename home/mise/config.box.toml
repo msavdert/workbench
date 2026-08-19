@@ -72,9 +72,11 @@ set -eu
 export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
 
 echo "== apt"
-sudo -E apt-get update -qq
-sudo -E apt-get full-upgrade -y -qq
-sudo -E apt-get autoremove -y -qq --purge
+# Use-Pty=0 keeps dpkg from drawing progress bars into a log with no tty.
+apt="sudo -E apt-get -qq -o Dpkg::Use-Pty=0"
+$apt update
+$apt full-upgrade -y
+$apt autoremove -y --purge
 sudo -E apt-get clean
 
 echo "== mise"

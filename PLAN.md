@@ -96,3 +96,8 @@ history. Older entries are condensed; `git log` has the full trail.
   download page (the Homebrew cask livecheck approach); verified on the box:
   ls-remote resolves 26.2.1.222.1617, install and `sql -V` work, warning
   gone.
+- 2026-08-19: `mise run box:maintain` / `make maintain` added: apt
+  full-upgrade + autoremove, `mise up` + `mise prune`, docker and disk
+  usage, final reboot-pending line (never reboots). First run on the box:
+  7 packages upgraded, old sqlcl pruned, reboot pending (kernel 6.8.0-137
+  -> 138 installed, not booted) - the owner decides when.
