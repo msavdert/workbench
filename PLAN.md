@@ -133,3 +133,8 @@ history.
   transcribe.py skips malformed yt-dlp lines. omp 17.3.5 source confirms the
   read tool field is `path` (delegation.ts hook is correct). Open for the
   operator: statusline glyphs vs the no-emoji rule.
+- 2026-08-19: operator decisions: statusline glyphs are an explicit exception
+  to the no-emoji rule (AGENTS.md 7); agy $HOME probe stays in Next. Signing
+  key registered on GitHub as a signing key, commits show verified. Public
+  key shipped as home/git/allowed_signers so `git log --show-signature`
+  verifies on every machine (signing itself stays in ~/.gitconfig.local).

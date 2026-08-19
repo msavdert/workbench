@@ -85,6 +85,13 @@
     navigate = true
     line-numbers = true
 
+# --- Signature verification --------------------------------------------------
+# Signing itself is machine-specific (op-ssh-sign, ~/.gitconfig.local); the
+# public key that verifies those signatures is not, so `git log
+# --show-signature` works on every machine. The file is linked by install.sh.
+[gpg "ssh"]
+    allowedSignersFile = ~/.config/git/allowed_signers
+
 # --- Machine-specific overrides ----------------------------------------------
 # Last include wins. Holds commit signing (1Password op-ssh-sign on macOS) and
 # anything else that is not portable between the laptop and the box.

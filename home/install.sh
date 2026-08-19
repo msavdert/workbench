@@ -204,6 +204,7 @@ manifest() {
   link mise/config.toml "$HOME/.config/mise/config.toml"
   link "mise/config.$PROFILE.toml" "$HOME/.config/mise/config.$PROFILE.toml"
   link git/config "$HOME/.gitconfig"
+  link git/allowed_signers "$HOME/.config/git/allowed_signers"
   link op-env "$HOME/.config/op-env"
   link bin/opwith "$HOME/.local/bin/opwith"
 
