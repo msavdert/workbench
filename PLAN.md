@@ -110,3 +110,7 @@ history. Older entries are condensed; `git log` has the full trail.
   agent-vm, never decided). Switched to America/New_York in bootstrap
   step_system, recorded as D15; tzdata 2026c current, systemd-timesyncd
   synced against ntp.ubuntu.com, chrony deliberately not installed.
+- 2026-08-19: agy auth check: the one re-login on the mac was a token
+  refresh failing on DNS (cli log 14:09), not provision; agy keeps its
+  token in the Keychain, install.sh never touches it. Silenced the
+  first-run model warning by seeding the display name in settings.base.

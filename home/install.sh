@@ -237,8 +237,10 @@ manifest() {
 
   # parallel harnesses (D12): config only, per file; agy composed like Claude
   link herdr/config.toml "$HOME/.config/herdr/config.toml"
-  # agy rewrites model (to its display name) and trustedWorkspaces (appending
-  # what the operator trusts in-session); both are seed keys, see merge_settings.
+  # agy stores model under its display name ("Gemini 3.7 Flash (High)", not an
+  # id; an id is accepted once, then rewritten with a warning on first run) and
+  # appends what the operator trusts in-session to trustedWorkspaces; both are
+  # seed keys, see merge_settings.
   merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json" model,trustedWorkspaces
   link agy/statusline.sh "$HOME/.gemini/antigravity-cli/statusline.sh"
   # config.yml is generated, not linked. omp writes to
