@@ -40,7 +40,7 @@ workbench/
     zsh/  starship.toml     rich interactive shell, both profiles
     git/  op-env/  bin/opwith
     claude/settings.base.json  settings.box.json  settings.mac.json  statusline.sh
-    herdr/  agy/  omp/  aws/
+    herdr/  agy/  omp/  aws/  nvim/  zellij/
   agents/
     CLAUDE.md  agents/  skills/  hooks/
   providers/
@@ -62,7 +62,9 @@ workbench/
 | `~/.gitconfig`, `~/.config/op-env/*`, `~/.local/bin/opwith` | `home/git/`, `home/op-env/`, `home/bin/` | `home/install.sh` |
 | `~/.claude/settings.json` | `home/claude/settings.base.json` + overlay | `home/install.sh` (jq merge) |
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
-| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/{settings.json,statusline.sh}`, `~/.omp/agent/*` (per file), `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
+| `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file), `~/.aws/config` | `home/herdr/ agy/ omp/ aws/` | `home/install.sh` |
+| `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
+| `~/.config/nvim`, `~/.config/zellij` (box only) | `home/nvim/`, `home/zellij/` | `home/install.sh box` |
 | `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/*`, `~/.claude/hooks/*` | `agents/` | `home/install.sh` (links) |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |
 | `~/.claude.json`, `~/.claude/*.jsonl`, sessions, credentials | runtime state, not in repo | the tools themselves |

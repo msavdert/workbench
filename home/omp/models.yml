@@ -1,0 +1,88 @@
+# =============================================================================
+# Oh My Pi (OMP) model registry overrides  ->  baked into the image at BUILD time
+# =============================================================================
+# COPYed to /home/dev/.omp/agent/models.yml inside the image (symlinked on the
+# macOS thin client). OMP loads its bundled provider/model catalog first, then
+# layers this file on top; nothing here defines a new provider or a new model.
+#
+# What this file is FOR:
+#   1. Renaming Synthetic's raw `hf:` ids into something legible in `/model`,
+#      `omp models` and the status line, with the agent role spelled out — the
+#      whole role strategy is invisible otherwise.
+#   2. Giving the small-context Synthetic models an explicit
+#      `contextPromotionTarget`, which is what makes `contextPromotion.enabled`
+#      in config.yml actually do something.
+#
+# What this file deliberately does NOT do:
+#   - No `baseUrl`, no `apiKey`, no `headers`. Credentials are never baked into
+#     this repo; the Synthetic key and both OAuth grants live in agent.db and
+#     are recovered by logging in again, exactly like `gh` auth. Inventing a
+#     baseUrl for a provider OMP already knows would only break when it moves.
+#   - No custom `models:` list. Every id below is a real, currently-served model
+#     verified with `omp models`; this file only decorates them.
+#
+# Schema note: `synthetic` is an OVERRIDE-ONLY provider entry (no `models:`),
+# which is valid because it defines `modelOverrides`. Adding a `models:` list
+# would flip it to a full custom provider and then require `baseUrl` + `apiKey`.
+# =============================================================================
+
+providers:
+  synthetic:
+    modelOverrides:
+      # --- Assigned to an agent role ---------------------------------------
+      # audit: adversarial read-only reviewer. Pinned in agents/audit.md
+      # frontmatter, not in config.yml, so the agent stays self-describing.
+      # Reasoning model: max_tokens covers internal reasoning AND final output,
+      # which is why the 66K output ceiling matters more than it looks.
+      "hf:zai-org/GLM-5.2":
+        name: GLM 5.2 - audit (524K)
+
+      # librarian: docs and external-API research. Benchmarked as the best
+      # documentation writer in this pool. Note the 8.2K output ceiling — it
+      # reads wide (524K in) and writes short.
+      "hf:moonshotai/Kimi-K3":
+        name: Kimi K3 - librarian (524K)
+
+      # --- Reachable only via fallback / manual selection -------------------
+      # Synthetic serves exactly ONE in-flight request per model, so these are
+      # kept off the hot roles on purpose: they exist as overflow capacity that
+      # does not contend with audit or librarian.
+      #
+      # Each gets GLM-5.2 as its context-promotion target — every one of them
+      # is strictly smaller, and promoting beats compacting or hard-failing.
+      # The tradeoff: a promotion can queue behind a running audit, since both
+      # then want the single GLM-5.2 slot. Slower is still better than lost.
+      "hf:zai-org/GLM-4.7-Flash":
+        name: GLM 4.7 Flash - synthetic overflow (197K)
+        contextPromotionTarget: "synthetic/hf:zai-org/GLM-5.2"
+
+      "hf:openai/gpt-oss-120b":
+        name: gpt-oss 120b - synthetic overflow (131K)
+        contextPromotionTarget: "synthetic/hf:zai-org/GLM-5.2"
+
+      "hf:nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4":
+        name: Nemotron 3 Super - synthetic overflow (262K)
+        contextPromotionTarget: "synthetic/hf:zai-org/GLM-5.2"
+
+      # The only image-capable Synthetic model. No promotion target: nothing
+      # larger on this provider also takes images, and promoting to a text-only
+      # model would silently drop the images that caused the overflow.
+      "hf:Qwen/Qwen3.6-27B":
+        name: Qwen 3.6 27B - synthetic vision (262K)
+
+# --- On `equivalence:` (deliberately absent) ---------------------------------
+# `equivalence.overrides` maps a concrete `provider/model-id` onto an official
+# upstream canonical id so variants of the same model coalesce into one entry,
+# and `equivalence.exclude` opts a variant out of that grouping.
+#
+# Rejected here, because the one case it would address is already solved:
+# google-antigravity resells claude-opus-4-5/4-6 and claude-sonnet-4-5/4-6
+# alongside Anthropic's own, and those coalesce by bundled catalog match with
+# no help from this file. Which concrete variant wins is then decided by
+# `modelProviderOrder` in config.yml (anthropic -> google-antigravity ->
+# synthetic), which is the right place for that preference: it is a policy about
+# provider trust and metering, not a statement about model identity.
+#
+# Adding equivalence entries anyway would create a second, silently divergent
+# place where provider preference appears to be configured. Revisit only if two
+# providers ever serve the same model under ids OMP fails to group on its own.

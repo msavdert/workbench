@@ -49,8 +49,8 @@ A session inside the box itself cannot reach the host and cannot run
 
 ## Open questions
 
-- nvim / zellij: keep under `home/` for both profiles, or drop? (phase 2)
-
+- none open; nvim/zellij (box only) and the statusline (one script, both
+  repos had the same) were decided in phase 2.
 
 ## Backlog (not scheduled)
 

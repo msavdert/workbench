@@ -1,0 +1,50 @@
+// Zellij Configuration
+// Ref: https://zellij.dev/documentation/config
+
+theme "catppuccin-mocha"
+pane_frames false
+default_layout "compact"
+on_force_close "detach"
+simplified_ui true
+copy_on_select true
+attach_to_session true
+styled_underlines true
+scroll_buffer_size 30000
+
+// macOS terminal clipboard integration
+// copy_command "pbcopy"
+
+keybinds {
+    normal {
+        // Quick pane navigation with Alt + h/j/k/l (bypassing modal modes)
+        bind "Alt h" "Alt Left" { MoveFocus "Left"; }
+        bind "Alt l" "Alt Right" { MoveFocus "Right"; }
+        bind "Alt k" "Alt Up" { MoveFocus "Up"; }
+        bind "Alt j" "Alt Down" { MoveFocus "Down"; }
+
+        // Quick pane resizing with Alt + Shift + h/j/k/l (capital H/J/K/L)
+        bind "Alt H" { Resize "Increase Left"; }
+        bind "Alt J" { Resize "Increase Down"; }
+        bind "Alt K" { Resize "Increase Up"; }
+        bind "Alt L" { Resize "Increase Right"; }
+
+        // Pane Management
+        bind "Alt n" { NewPane; }             // Open new pane
+        bind "Alt x" { CloseFocus; }          // Close current pane
+        bind "Alt f" { ToggleFocusFullscreen; } // Toggle pane fullscreen zoom
+        bind "Alt F" { ToggleFloatingPanes; }   // Toggle floating panes
+
+        // Tab Management
+        bind "Alt t" { NewTab; }              // Open new tab
+        bind "Alt [" { GoToPreviousTab; }     // Switch to previous tab
+        bind "Alt ]" { GoToNextTab; }         // Switch to next tab
+    }
+}
+
+// No `themes { ... }` block on purpose.
+//
+// zellij has shipped catppuccin as a BUILT-IN theme since 0.40, so declaring it
+// by hand only creates a second source of truth. The hand-written block that
+// used to live here also had its palette wrong - `white` was set to #1e1e2e
+// (catppuccin's darkest base) and `bg` to a mid-grey surface colour, which is
+// why panes looked washed out.

@@ -1,0 +1,79 @@
+# =============================================================================
+# Herdr configuration (home/herdr, linked by home/install.sh) - edit in the repo
+# =============================================================================
+# Docs: https://herdr.dev/docs/configuration/
+# Config reference: https://herdr.dev/docs/config-reference/
+# =============================================================================
+
+# Disable first-run onboarding prompt (declarative configuration is already in place)
+onboarding = false
+
+# --- Theme & Appearance ------------------------------------------------------
+[theme]
+name = "catppuccin"
+auto_switch = true
+dark_name = "catppuccin"
+light_name = "catppuccin-latte"
+
+# --- Terminal Defaults -------------------------------------------------------
+[terminal]
+# Follow the current active pane's directory when creating splits/tabs
+new_cwd = "follow"
+shell_mode = "auto"
+
+# --- Update & Release Channel ------------------------------------------------
+[update]
+channel = "stable"
+version_check = true
+manifest_check = true
+
+# --- UI & Layout -------------------------------------------------------------
+[ui]
+sidebar_width = 26
+sidebar_start_collapsed = false
+sidebar_collapsed_mode = "compact"
+pane_borders = true
+pane_gaps = true
+confirm_close = true
+tab_bar_position = "top"
+agent_panel_sort = "spaces"
+
+# --- Notifications (Agent State & Toasts) ------------------------------------
+[ui.toast]
+# Delivery: "herdr" (in-app toasts), "system" (OS notification), "terminal", or "off"
+delivery = "herdr"
+delay_seconds = 1
+
+[ui.toast.herdr]
+position = "bottom-right"
+
+[ui.toast.clipboard]
+enabled = true
+position = "bottom-center"
+
+# --- Sound Feedback ----------------------------------------------------------
+[ui.sound]
+enabled = false
+
+# --- Session & Restore -------------------------------------------------------
+[session]
+# Resume supported AI agent sessions (Claude Code, OMP, AGY) after restart
+resume_agents_on_restore = true
+
+# --- Remote Attach -----------------------------------------------------------
+[remote]
+# OpenSSH keepalive and multiplexing management for `herdr --remote`
+manage_ssh_config = true
+
+# --- Keybindings & Quick Actions ---------------------------------------------
+[keys]
+# Prefix key (default: ctrl+b)
+
+# Modal popup shortcuts (runs on top without altering tab layouts)
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+description = "open lazygit"
+width = "80%"
+height = "80%"

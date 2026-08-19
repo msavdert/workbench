@@ -46,11 +46,11 @@ not migrated.
 | `configs/mise/macos.toml` | `home/mise/config.mac.toml` (shared parts up to `config.toml`) |
 | `configs/mise/devbox.toml` | `home/mise/config.box.toml` (minus container-only tasks; plus agent-vm's list; plus aws-cli) |
 | `configs/claude/settings.json`, `statusline.sh` | `home/claude/` (see D8; the two statuslines are compared in phase 2) |
-| `configs/herdr/`, `configs/gemini/`, `configs/omp/` | `home/herdr/`, `home/agy/`, `home/omp/` |
+| `configs/herdr/`, `configs/gemini/`, `configs/omp/` | `home/herdr/`, `home/agy/` (settings composed like Claude's), `home/omp/` (minus the devbox-image and vps-deploy skills, retired with the container) |
 | `configs/git/`, `configs/op-env/`, `opwith` | `home/git/`, `home/op-env/`, `home/bin/` (merged with agent-vm's) |
 | `configs/zsh/`, `configs/starship.toml` | `home/zsh/`, `home/starship.toml`; on the box reached only through the interactive hand-off in `home/bash/interactive.sh` (D5) |
 | `configs/ssh/`, `configs/ghostty/` | `mac/ssh/`, `mac/ghostty/` |
-| `configs/nvim/`, `configs/zellij/` | decided in phase 2: keep under `home/` (both profiles) or drop |
+| `configs/nvim/`, `configs/zellij/` | `home/nvim/`, `home/zellij/`, linked for the box profile only (decided in phase 2; the mac never had them) |
 | `Dockerfile`, `compose.yaml` | drop (D3) |
 | `docs/00-08` | decisions with lasting value folded into `docs/00-vision.md`; the rest dropped |
 

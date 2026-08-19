@@ -1,0 +1,83 @@
+# =============================================================================
+# Oh My Pi (OMP) keybindings  ->  baked into the container image at BUILD time
+# =============================================================================
+# COPYed to /home/dev/.omp/agent/keybindings.yml (symlinked on the macOS thin
+# client). This is a FLAT mapping of keybinding action id -> chord; it is NOT
+# read from config.yml and there is no nested `keybindings:` object. A value is
+# either one chord string or an array of chord strings. Run `/hotkeys` in a
+# session to see what is actually live, including extension-provided chords.
+#
+# WHY the double bindings below:
+#   This box runs omp inside zellij, and home/zellij/config.kdl only ADDS
+#   normal-mode Alt bindings - it never clears zellij's default modal prefixes.
+#   Those defaults claim Ctrl+G, Ctrl+P, Ctrl+T, Ctrl+O, Ctrl+N, Ctrl+H, Ctrl+S
+#   and Ctrl+Q, and the multiplexer consumes them before omp ever sees the key.
+#   So every action whose documented default lands on that list gets a second,
+#   Alt+Shift-based chord that survives zellij. The Ctrl form is kept so the
+#   bindings still behave as documented when omp runs on a bare terminal (the
+#   macOS thin client, or `zellij` detached).
+#   Alt+Shift+H/J/K/L and Alt+Shift+F are avoided on purpose - zellij's pane
+#   resize and floating-pane toggles already own those.
+# =============================================================================
+
+# --- Model switching ---------------------------------------------------------
+# The cheap->capable ladder from config.yml `cycleOrder` (smol, task, default,
+# slow). Forward/backward map onto the arrow direction so the ladder has an
+# obvious physical sense.
+app.model.cycleForward:
+  - Ctrl+P
+  - Alt+Shift+Right
+app.model.cycleBackward:
+  - Shift+Ctrl+P
+  - Alt+Shift+Left
+# One-off model for this session without rewriting role assignments - the safe
+# way to try something before committing it to config.yml.
+app.model.selectTemporary: Alt+P
+# Full selector: pick models AND reassign roles persistently. Note this writes
+# through to the container's config.yml, which is thrown away on rebuild; port
+# anything you want to keep back into home/omp/config.yml.
+app.model.select: Alt+M
+
+# --- Thinking ----------------------------------------------------------------
+# `defaultThinkingLevel: auto` means the level changes per turn; cycle is how
+# you override the classifier for the turn you are about to send.
+app.thinking.cycle: Shift+Tab
+# Display only - hides the thinking block, does not stop it being generated.
+app.thinking.toggle:
+  - Ctrl+T
+  - Alt+Shift+T
+
+# --- Planning ----------------------------------------------------------------
+app.plan.toggle: Alt+Shift+P
+
+# --- Composing ---------------------------------------------------------------
+# Drop the draft into $VISUAL/$EDITOR (neovim here) for anything longer than a
+# line or two.
+app.editor.external:
+  - Ctrl+G
+  - Alt+Shift+E
+# Queue a follow-up while a turn is still running. With `steeringMode` at its
+# default one-at-a-time, queued messages are delivered one per turn.
+app.message.followUp:
+  - Ctrl+Q
+  - Alt+Shift+Q
+# Pull the last queued message back into the editor. The documented default is
+# Alt+Up, which home/zellij/config.kdl rebinds to MoveFocus "Up" - so this
+# one is remapped outright rather than doubled.
+app.message.dequeue: Alt+Shift+Up
+
+# --- Output and history ------------------------------------------------------
+app.tools.expand:
+  - Ctrl+O
+  - Alt+Shift+O
+app.history.search: Ctrl+R
+app.clipboard.copyPrompt: Alt+Shift+C
+# Redraw after a stray control sequence garbles the TUI - common when a bash
+# tool call streams raw output from a program that assumes it owns the terminal.
+app.display.reset: Ctrl+L
+
+# --- Recovery ----------------------------------------------------------------
+# Re-run the last failed assistant turn. Worth a dedicated key here because
+# `retry.fallbackChains` may have moved the session onto a fallback model, and
+# a manual retry after `cooldown-expiry` is how you get back to the primary.
+app.retry: Alt+R

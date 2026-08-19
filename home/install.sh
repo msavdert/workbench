@@ -103,22 +103,25 @@ generate() {
 }
 
 # ---------------------------------------------------------------------------
-# Claude Code settings: base + profile overlay (D8). Objects merge
-# recursively; the overlay wins on scalars. Two array families are joined
-# instead of replaced so an overlay can add without knowing the base:
-# hooks.<Event> (base hooks stay registered) and permissions.allow/ask/deny
-# (deduplicated). Any other array is replaced by the overlay's.
-claude_settings() {
-  local base="$HOME_SRC/claude/settings.base.json" \
-    overlay="$HOME_SRC/claude/settings.$PROFILE.json" \
-    dst="$HOME/.claude/settings.json" tmp
+# Composed settings (D8): merge_settings <dir-under-home/> <dst-absolute>
+# reads <dir>/settings.base.json and <dir>/settings.$PROFILE.json (optional).
+# Objects merge recursively; the overlay wins on scalars. Two array families
+# are joined instead of replaced so an overlay can add without knowing the
+# base: hooks.<Event> (base hooks stay registered) and
+# permissions.allow/ask/deny (deduplicated). Any other array is replaced by
+# the overlay's. Strings inside arrays that start with "~/" (or are "~") get
+# $HOME substituted, for path lists such as agy's trustedWorkspaces.
+merge_settings() {
+  local base="$HOME_SRC/$1/settings.base.json" \
+    overlay="$HOME_SRC/$1/settings.$PROFILE.json" \
+    dst="$2" tmp
   if [[ ! -f $base ]]; then
-    log SKIP "$dst (source missing: home/claude/settings.base.json)"
+    log SKIP "$dst (source missing: home/$1/settings.base.json)"
     return 0
   fi
   [[ -f $overlay ]] || overlay=/dev/null
   tmp="$(mktemp)"
-  jq -S -s '
+  jq -S -s --arg home "$HOME" '
     def joined(a; b): (a // []) + (b // []);
     .[0] as $b | (.[1] // {}) as $o
     | ($b * $o)
@@ -135,6 +138,10 @@ claude_settings() {
             else . end)
       )
     | if .permissions == {} then del(.permissions) else . end
+    | walk(if type == "array" then
+             map(if type == "string" and (. == "~" or startswith("~/"))
+                 then $home + .[1:] else . end)
+           else . end)
   ' "$base" "$overlay" >"$tmp"
   generate "$dst" 0644 <"$tmp"
   rm -f "$tmp"
@@ -166,17 +173,24 @@ manifest() {
   link bin/opwith "$HOME/.local/bin/opwith"
 
   # Claude Code (D8): settings composed, statusline linked, nothing else
-  claude_settings
+  merge_settings claude "$HOME/.claude/settings.json"
   link claude/statusline.sh "$HOME/.claude/statusline.sh"
 
-  # parallel harnesses (D12): config only, per file
+  # parallel harnesses (D12): config only, per file; agy composed like Claude
   link herdr/config.toml "$HOME/.config/herdr/config.toml"
-  link agy/settings.json "$HOME/.gemini/antigravity-cli/settings.json"
+  merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json"
   link agy/statusline.sh "$HOME/.gemini/antigravity-cli/statusline.sh"
   local f
   for f in config.yml models.yml keybindings.yml lsp.json AGENTS.md RULES.md WATCHDOG.md APPEND_SYSTEM.md agents skills hooks; do
     link "omp/$f" "$HOME/.omp/agent/$f"
   done
+
+  # editor and multiplexer: box only, the mac never had them (mise installs
+  # neovim and zellij from config.box.toml)
+  if [[ $PROFILE == box ]]; then
+    link nvim "$HOME/.config/nvim"
+    link zellij "$HOME/.config/zellij"
+  fi
 
   profile_env
 }

@@ -1,0 +1,605 @@
+# =============================================================================
+# Oh My Pi (OMP) agent settings  ->  baked into the container image at BUILD time
+# =============================================================================
+# This file is COPYed to /home/dev/.omp/agent/config.yml inside the image (and
+# symlinked to ~/.omp/agent/config.yml on the macOS thin client). It is the
+# GLOBAL settings layer: built-in defaults <- THIS FILE <- <cwd>/.omp/config.yml
+# <- `--config` overlays <- runtime flags.
+#
+# IMPORTANT — this file is the source of truth, not a snapshot:
+#   `omp config set`, `omp config reset` and the in-session `/settings` panel
+#   all write straight back into ~/.omp/agent/config.yml. What that means
+#   depends on where you are, and the two cases fail in opposite directions:
+#     - In the CONTAINER, that copy lives on the image layer, so a runtime tweak
+#       is silently DISCARDED on the next rebuild. Costs nothing, teaches you
+#       nothing.
+#     - On the macOS thin client, ~/.omp/agent/* are symlinks INTO this repo, so
+#       the same tweak silently EDITS A TRACKED FILE and shows up as an
+#       uncommitted diff you did not make deliberately. This is the dangerous
+#       one: it gets committed by accident.
+#   Treat interactive edits as experiments either way: once you like one, port
+#   it HERE deliberately. Nothing in this repo ever reads a mutated copy back.
+#
+# Also note: everything OMP *generates* next to this file (agent.db, history.db,
+# sessions/, terminal-sessions/, last-changelog-version) is runtime state and is
+# gitignored. Credentials in particular are NOT baked — the google-antigravity
+# OAuth token plus the synthetic API key live in agent.db and are treated as
+# disposable/recoverable, exactly like `gh` auth.
+#
+# Every key below is a real key in OMP's settings schema (`omp config list`).
+# Defaults are only restated when the comment explains why the default is the
+# deliberate choice for this box.
+# =============================================================================
+
+setupVersion: 1
+
+# --- Model roles -------------------------------------------------------------
+# The whole point of this setup: one large model is the ARCHITECT and the QA
+# gate, and cheap/fast models do the bulk work, so the scarce pool is only ever
+# spent on judgement. A role value may carry a thinking suffix (`:low` … `:max`);
+# it is used only where the extra reasoning tokens actually buy something.
+#
+# 2026-08-06 — Anthropic models were removed from this file entirely. Everything
+# now runs on the Antigravity OAuth quota and the Synthetic pack. Two structural
+# consequences follow and are worked around below rather than discovered later:
+#   1. Synthetic is BOTH the metered pool and the one that allows a single
+#      in-flight request PER MODEL. Every extra role parked on syn:large:vision is
+#      a request that queues behind the main session, so only the architect roles
+#      sit there and no subagent does.
+#   2. The architect is syn:large:VISION, not syn:large:text. Same 524K window
+#      and same pack, but it accepts image input, which is what keeps
+#      `compaction.strategy: snapcompact` working on the main session. The text
+#      variant would have silently degraded every architect compaction to
+#      context-full — lossy where snapcompact is not. The price is a
+#      `low,high,max` ladder instead of `minimal,high,max`, which costs nothing:
+#      no architect turn should be running at `minimal` anyway.
+modelRoles:
+  # Interactive driver and architect. The ladder is `low,high,max` — no minimal
+  # or medium rung — so `defaultThinkingLevel: auto` has three stops here rather
+  # than six, and pinning `:high` costs nothing that auto would not have picked
+  # anyway on work worth giving to the architect.
+  default: "synthetic/syn:large:text:high"
+  # `slow` is the explicit "I am stuck, think properly" escalation. Same model at
+  # the top of its ladder: if you have already decided to pay for it, pay all the
+  # way. It shares the model with `default`, which is free — they are the same
+  # session and never in flight at the same time.
+  slow: "synthetic/syn:large:text:max"
+  # Plan mode is read-only exploration that produces a plan every later agent
+  # follows, so a bad plan is the most expensive possible mistake — but it is
+  # still bounded work, so `high` rather than `max`.
+  plan: "synthetic/syn:large:text:high"
+  # Titles, classification, and cheap background chatter. Left bare: `smol` is
+  # also a cycleOrder stop (Ctrl+P), so it has to stay usable for real chat.
+  smol: "google-antigravity/gemini-3.7-flash:high"
+  # Advisor reviews EVERY completed turn, so its cost is multiplied by turn
+  # count: a 76-turn session is 76 extra calls. That multiplier must never land
+  # on Synthetic, which is the metered pool and serialises per model — an advisor
+  # there would queue behind the architect on every single turn.
+  # On Antigravity: the advisor's job is noticing, not solving (its own brief in
+  # WATCHDOG.md), and flash is good enough at noticing. Anything it finds is
+  # handed to the architect anyway, so the quality that matters is recall, not
+  # authorship.
+  advisor: "google-antigravity/gemini-3.7-flash:high"
+  # Default model for spawned subagents that have no override below. gemini-3.1-pro
+  # exposes only `low,high`, and a worker that cannot reason is worse than no
+  # worker, so `high` it is.
+  task: "google-antigravity/gemini-3.1-pro:high"
+  # Image reading is perception, not reasoning — no thinking suffix. syn:small:vision
+  # is the only vision-capable model left in the routing table that is not also
+  # doing something else in a hot path, and its 262K window is enough for the
+  # screenshot-and-diagram traffic this role actually sees.
+  vision: synthetic/syn:small:vision
+  # Commit-message drafting: short, structured, high volume.
+  commit: "google-antigravity/gemini-3.7-flash:high"
+  # `tiny` is the online model for pure background chores (session titles, memory
+  # summarisation, auto-thinking classification, unexpected-stop detection). It
+  # is invoked constantly and nobody reads its reasoning, hence `:minimal`.
+  # Unset, this would fall back to `smol` and quietly cost more.
+  tiny: "google-antigravity/gemini-3.7-flash:high"
+
+# Ctrl+P / Shift+Ctrl+P walk this ladder. Ordered cheap -> capable so the first
+# press is always the de-escalation, which is the one you want under a quota wall.
+cycleOrder:
+  - smol
+  - task
+  - default
+  - slow
+
+# Several ids exist on more than one provider (gpt-oss-120b is on both
+# antigravity and synthetic). When a bare or canonical id is ambiguous, resolve
+# it against the OAuth Antigravity quota first and Synthetic second — Synthetic
+# last because it is the only metered pool here (500 requests / 5h, $24
+# credits/week) and should not be spent by accident. Roles that genuinely want a
+# Synthetic model name it explicitly above, so this order only governs accidents.
+modelProviderOrder:
+  - google-antigravity
+  - synthetic
+
+# No local inference engine runs in this image, and a keyless local provider is
+# probed on every launch unless it is disabled — three guaranteed-failing
+# connection attempts and three log warnings per start, which contradicts the
+# no-work-at-startup invariant this repo applies to the shell. Arrays REPLACE
+# rather than merge, so this must stay the complete list.
+#
+# `anthropic` is disabled deliberately, not merely unreferenced: removing the
+# names from the roles above would still leave `/model`, a bare id, or a future
+# default able to reach it. Disabling the provider makes the decision hold
+# without depending on nobody typing the wrong thing.
+disabledProviders:
+  - anthropic
+  - ollama
+  - llama.cpp
+  - lm-studio
+
+# The architect plans, a cheap model types. At the first edit/write after the todo list
+# exists, the session hands off from the active model to the `smol` role. This
+# is the structural version of the rule AGENTS.md states in prose: judgement is
+# the scarce thing, keystrokes are not.
+# It is deliberately a default rather than a per-run flag, because the failure
+# mode it corrects is the architect quietly doing the work itself — and that
+# decision is never made consciously enough to remember a flag. Opt out with
+# `--no-prewalk` when an edit genuinely needs the expensive model, or
+# `--prewalk-into @task` to hand off to gemini-3.1-pro instead of flash.
+prewalk:
+  enabled: false
+
+# --- Subagents ---------------------------------------------------------------
+task:
+  # One call carries { context, tasks[] }, one subagent per item. Required for
+  # the fan-out pattern this setup is built around: a shared context block plus
+  # heterogeneous agent types in a single dispatch.
+  batch: true
+
+  # Role -> model for BUNDLED agents. This is the single place model policy for
+  # subagents lives, so the bundled agent definitions (prompt, tool set,
+  # `blocking: true` on scout) are inherited untouched.
+  # This table mirrors the routing table in home/omp/AGENTS.md and the two must be kept in sync.
+  agentModelOverrides:
+    # Read-only repo search. Volume-heavy, judgement-light, and `blocking: true`
+    # means it runs inline — latency matters more than depth.
+    scout: google-antigravity/gemini-3.7-flash:high
+    # Strictly mechanical edits. Same reasoning as scout.
+    sonic: google-antigravity/gemini-3.7-flash:high
+    # General worker. Matches modelRoles.task; stated explicitly so a change to
+    # the interactive `task` role does not silently retune every subagent.
+    task: google-antigravity/gemini-3.1-pro
+    # Docs/research. Kimi-K3 benchmarked as the best documentation writer of the
+    # pool here (1946 chars in 5.3s). 524K context swallows whole doc trees.
+    librarian: "synthetic/hf:moonshotai/Kimi-K3"
+    docs: "synthetic/hf:moonshotai/Kimi-K3"
+    audit: "synthetic/hf:zai-org/GLM-5.2"
+    # Reviewer is a quality gate whose output gets acted on, so it wants the best
+    # judgement available — but NOT syn:large:vision, because the architect is
+    # sitting on that model and Synthetic serialises per model: a reviewer there
+    # would block the session it is reviewing for. gemini-3.1-pro at `:high` is
+    # the strongest model on this box that is genuinely parallel with the main
+    # session, and that availability is worth more here than a marginally better
+    # verdict that arrives after a stall.
+    reviewer: "google-antigravity/gemini-3.1-pro:high"
+    security-reviewer: "synthetic/hf:zai-org/GLM-5.2"
+    # Design work is the one subagent role that routinely reads screenshots and
+    # mockups, so it gets the vision model rather than a text one.
+    designer: synthetic/syn:small:vision
+
+  # Synthetic allows exactly ONE in-flight request PER MODEL per subscription
+  # pack; a second call to the same model queues behind the first, while calls
+  # to *different* models run fully parallel. That is why librarian (Kimi-K3)
+  # and audit (GLM-5.2) sit on different models — but it also caps useful width:
+  # a batch of 20 librarians is 20 serialised requests, not a fan-out.
+  # 8 is the honest ceiling for this box: wide enough for a real Antigravity
+  # fan-out, narrow enough that a Synthetic-heavy batch does not build a 30-deep
+  # queue behind one slot, and gentle on a shared VPS's RAM. With Anthropic gone
+  # this ceiling binds harder than it used to — the parallel width now lives
+  # almost entirely on Antigravity, so a batch of Synthetic agents is the case to
+  # keep an eye on.
+  maxConcurrency: 8
+
+  # architect -> worker -> scout is two levels and covers every real workflow.
+  # Depth 3 makes token spend unbounded and debugging a runaway tree miserable,
+  # because the tool is stripped only at the limit.
+  maxRecursionDepth: 2
+
+  # Subagents get the `lsp` tool. Default is false, which silently stripped it
+  # at spawn: `agents/audit.md` declares `lsp` in its tool list and its prompt
+  # tells it to run `lsp diagnostics`, and AGENTS.md names that as part of the
+  # verification gate. All three were false — a live probe returned
+  # `read,grep,glob,bash,yield,hub` for every spawned agent. The gate was
+  # quietly weaker than it read. Cheap to fix, and the alternative (deleting the
+  # promise from three files) leaves the audit agent unable to check types.
+  enableLsp: true
+
+  # Finished subagents stay live in memory this long before being parked to disk
+  # (5 min, down from the 7 min default). Parking is lossless — messaging a
+  # parked agent revives it from its session file — so on a memory-constrained
+  # VPS there is no reason to hold idle sessions resident for longer.
+  agentIdleTtlMs: 300000
+
+# --- Advisor -----------------------------------------------------------------
+# A second model watches every completed turn and injects notes. Worth it here
+# precisely because the primary is expensive: catching a wrong direction on turn
+# 2 costs one cheap call, catching it on turn 12 costs eleven architect turns.
+# See WATCHDOG.md for what it is told to look for.
+#
+# Tradeoff, stated deliberately: the advisor runs on flash. WATCHDOG.md asks it
+# for reviewer-grade paranoia about secret leakage, volume shadowing and
+# unverified subagent claims, and that judgement is a cheap model's. This is a
+# quality-for-quota trade, made on purpose, not an assumption that coverage is
+# unchanged. If advisor notes visibly degrade, the fix is to move it up to
+# gemini-3.1-pro — not onto Synthetic, which would serialise it behind the
+# architect on every turn.
+advisor:
+  enabled: true
+  # NOT on subagents. Subagents are already cheap, short-lived, and reviewed by
+  # their parent; an advisor per spawn would multiply request count by ~2x for
+  # the exact population of agents that needs it least.
+  subagents: false
+  # Stall the primary (max 30s) only once the advisor is 3+ turns behind.
+  # `off` lets advice arrive after the mistake has already compounded; `1`
+  # serialises the session behind the advisor. 3 is the point where the advisor
+  # is far enough behind that its notes are about to be useless anyway.
+  syncBacklog: "3"
+  # After a concern/blocker interrupts, route further ones as non-interrupting
+  # asides for this many turns. Raised from 3 because architect turns are long:
+  # a repeat interrupt inside 3 turns is almost always the same unresolved
+  # concern re-fired, and a second interrupt does not add information.
+  immuneTurns: 5
+
+# --- Memory ------------------------------------------------------------------
+# OFF, and the reason is a correction to what this block used to claim.
+#
+# The previous comment here said `local` was "the on-box summary pipeline: no
+# network, no remote service, no secret". Two of those three were true. `local`
+# describes where memory is STORED and orchestrated, not where inference runs.
+# Per omp://memory.md, the local backend's model selection is:
+#     Phase 1 (per-session extraction)  -> the `default` role
+#     Phase 2 (cross-session synthesis) -> the `smol` role
+# `default` is the architect. So this block, as previously written, mined up to
+# 32 session rollouts per launch using the single most expensive model in the
+# configuration — to produce a summary nobody had asked for, in the background,
+# on the one pool that is actually rationed. That is the exact failure this
+# whole setup exists to prevent, hiding inside a comment that said the opposite.
+# Since the architect now sits on Synthetic, which serialises per model, this
+# would additionally have queued the mining calls in front of the first prompt.
+#
+# `providers.memoryModel` does offer on-device options, but omp://local-models.md
+# documents it as driving the Mnemopi backend, not this one. No way was found to
+# point the local backend's Phase 1 at a cheaper role. If that changes, this is
+# worth switching back on: the feature is useful, its default wiring is not.
+#
+# Rejected: leaving it on and accepting the cost. The pipeline had produced
+# nothing yet (`memory://root` reported no artifacts), so the entire spend to
+# date had bought zero context.
+# Rejected: the remote backends (hindsight, mnemopi). They need a credential in
+# the environment, which this repo does not do.
+memory:
+  # Quoted: bare `off` is a BOOLEAN in YAML 1.1, and this key is an enum
+  # (off|local|hindsight|mnemopi). Quoting removes the ambiguity entirely.
+  backend: "off"
+
+# The `memories.*` tuning below is inert while the backend is off. It is kept,
+# not deleted, because it is correct and re-enabling should not require
+# rediscovering these values.
+memories:
+  # Rollout mining runs at startup. These four keys exist to keep that from
+  # becoming "work at start-up", which is a repo invariant for the shell and a
+  # good idea for the agent too.
+  # Anything older than a fortnight is archaeology, not context.
+  maxRolloutAgeDays: 14
+  # Never mine a session that was active in the last 6h — it is probably the
+  # work you are still doing, and summarising it mid-flight is noise.
+  minRolloutIdleHours: 6
+  # Hard cap on sessions processed per launch. 32 (vs 64) halves worst-case
+  # cold-start cost on a small VPS; the backlog is drained over the next launches.
+  maxRolloutsPerStartup: 32
+  # Budget for the summary injected into every system prompt. Trimmed from 5000
+  # because this rides along on subagent prompts too, and the Synthetic models
+  # have far smaller windows (197K-524K) than the 1M Gemini ones.
+  summaryInjectionTokenLimit: 4000
+
+# --- Context and compaction --------------------------------------------------
+# On context overflow, switch to the model's declared larger-context sibling
+# before falling back to compaction. Cheaper and lossless compared to throwing
+# history away. See models.yml, where the small Synthetic models are given
+# explicit `contextPromotionTarget`s — without those this setting is inert.
+contextPromotion:
+  enabled: true
+
+compaction:
+  enabled: true
+  # snapcompact archives discarded history as dense bitmap frames instead of
+  # paying for an LLM summarisation call: local, deterministic, no network, no
+  # key, and therefore also safe as overflow recovery.
+  # It requires the CURRENT model to accept image input (`model.input` includes
+  # "image"); otherwise the run falls back to context-full and warns. This
+  # requirement is why the architect roles are on syn:large:VISION rather than
+  # the text variant — the text model would have degraded every main-session
+  # compaction to context-full, which throws history away where snapcompact
+  # archives it. The gemini roles and syn:small:vision qualify too. The Synthetic
+  # text models (GLM-5.2, Kimi-K3) do not, so audit/librarian/docs subagents
+  # degrade automatically; that is fine, they are short-lived and rarely compact.
+  strategy: snapcompact
+  # Compact at safe tool-loop boundaries mid-turn rather than only between
+  # turns. Long agentic turns are exactly where this session blows its window.
+  midTurnEnabled: true
+  # Keep going after a compaction instead of handing control back. A stop here
+  # would interrupt a subagent fan-out for no reason.
+  autoContinue: true
+  # Headroom left for the turn that follows a compaction. Raised from 16384:
+  # syn:large:vision emits up to 66K output tokens and `slow` runs at `:max`
+  # thinking, so the default reserve is thin enough to trigger an immediate
+  # re-compaction.
+  reserveTokens: 32768
+  # Recent history always preserved verbatim. Raised from 20000 because the
+  # context windows in play are 1M — spending 32K on verbatim recency is
+  # rounding error, and losing the last few tool results is what makes a
+  # compacted session feel lobotomised.
+  keepRecentTokens: 16000
+
+# --- Retry and fallback ------------------------------------------------------
+retry:
+  enabled: true
+  # Lowered from 10. Backoff climbs to a 5-minute ceiling, so 10 retries can
+  # park a turn for the better part of an hour. With modelFallback on, switching
+  # models beats waiting out a quota wall — fail over faster, retry less.
+  maxRetries: 6
+  modelFallback: true
+  # Return to the primary once its suppression window expires, rather than
+  # staying on the fallback until manually switched. A transient 429 should not
+  # silently demote the session for the rest of the day.
+  fallbackRevertPolicy: cooldown-expiry
+  fallbackChains:
+    # Covers every assigned role without its own chain. Degrades along the axis
+    # that matters — capability — while crossing providers, so a Synthetic-wide
+    # outage or a spent pack still leaves a working session. This chain matters
+    # more than it used to: the architect now lives on the metered pool, and
+    # `500 requests / 5h` is a wall you can actually hit in a long day.
+    default:
+      - google-antigravity/gemini-3.1-pro
+      - google-antigravity/gemini-3.7-flash:high
+    advisor:
+      - google-antigravity/gemini-3.7-flash:high
+      - google-antigravity/gemini-3.1-pro
+    # `smol` must stay cheap under failure, so it degrades sideways (another
+    # flash) without ever reaching for the metered Synthetic pack.
+    smol:
+      - google-antigravity/gemini-3.7-flash:high
+      - google-antigravity/gemini-3.5-flash
+      - google-antigravity/gemini-3.1-pro
+    # Provider wildcard: applies to every synthetic model, current or future,
+    # regardless of which role or agent is holding it.
+    synthetic/*:
+      - google-antigravity/gemini-3.1-pro
+      - google-antigravity/gemini-3.7-flash:high
+# --- Tools and approvals -----------------------------------------------------
+tools:
+  # This is a disposable container on a VPS: the workspace is a volume, the
+  # image rebuilds from the Dockerfile, and nothing here is precious. Prompting
+  # for every write would make the agent useless without making the box safer.
+  # The safety net is the ordered bash rule list below, not the approval mode.
+  approvalMode: yolo
+  # Records a one-line intent per tool call. Cheap, and it is the only readable
+  # audit trail of what an unattended fan-out actually did.
+  intentTracing: true
+
+  # Large tool payloads are re-billed on every subsequent orchestrator turn,
+  # so they must spill to artifacts instead of inlining. 16 KB sits above
+  # ordinary small file reads and diffs while still spilling anything genuinely large.
+  artifactSpillThreshold: 16
+  artifactHeadBytes: 6
+  artifactTailBytes: 3
+  artifactTailLines: 120
+  outputMaxColumns: 768
+
+bash:
+  # Ordered command rules; FIRST MATCH WINS, so specificity goes at the top and
+  # the permissive catch-all goes last. Matching is asymmetric on purpose:
+  #   - `deny`/`prompt` fire when the glob matches the whole command OR ANY
+  #     SEGMENT of a compound line (split on && || ; | & subshells, newlines),
+  #     so `cd /tmp && rm -rf /` is still caught.
+  #   - `allow` must match the ENTIRE command and never applies to a compound
+  #     line, so a narrow allow can never vouch for what follows it.
+  # This list guards the handful of things that are unrecoverable or that this
+  # repo has explicitly ruled out; everything else stays out of the way.
+  patterns:
+    # `--force-with-lease` is the safe push and must be allowed BEFORE the
+    # blanket force-push deny below, which would otherwise swallow it. Because
+    # allow rules never apply to compound lines, chaining it still hits the deny.
+    - match: "git push --force-with-lease*"
+      approval: allow
+
+    # 1. Filesystem annihilation. No legitimate command on this box begins here.
+    - match: "*--no-preserve-root*"
+      approval: deny
+    - match: "rm -rf /"
+      approval: deny
+    - match: "rm -fr /"
+      approval: deny
+    # $HOME holds the one thing the image cannot rebuild: ~/.omp/agent/agent.db
+    # (OAuth + API key), ~/.kube, and ~/.local/state. Written as `~`/`$HOME`
+    # rather than /home/dev so the rule is also correct on the macOS thin client.
+    - match: "rm -rf ~*"
+      approval: deny
+    - match: "rm -fr ~*"
+      approval: deny
+    - match: "rm -rf $HOME*"
+      approval: deny
+    # Any other absolute-path recursive delete: plausible (build dirs under
+    # /tmp) but never routine, so ask instead of forbidding.
+    - match: "rm -rf /*"
+      approval: prompt
+    - match: "rm -fr /*"
+      approval: prompt
+
+    # 2. Block devices. Present in the container namespace, unrecoverable, and
+    #    never something a coding agent needs.
+    - match: "mkfs*"
+      approval: deny
+    - match: "wipefs*"
+      approval: deny
+    - match: "dd if=* of=/dev/*"
+      approval: deny
+
+    # 3. The container and its volumes. `work`, `state` and `kube` are the only
+    #    persistent state in the whole two-tier setup; pruning them from inside
+    #    the container destroys exactly what the image cannot restore.
+    - match: "docker system prune*"
+      approval: deny
+    - match: "docker volume prune*"
+      approval: deny
+    - match: "docker volume rm*"
+      approval: deny
+    - match: "docker compose down -v*"
+      approval: deny
+
+    # 4. Live clusters. The homelab kubeconfig is materialised on demand and
+    #    points at real workloads — reads are free, deletes are not.
+    - match: "kubectl delete*"
+      approval: prompt
+    - match: "helm uninstall*"
+      approval: prompt
+
+    # 5. Git history. Rewriting published history is the one repo action that
+    #    cannot be undone from this side of the remote.
+    - match: "git push --force*"
+      approval: deny
+    - match: "git push -f*"
+      approval: deny
+    - match: "git push * --force*"
+      approval: deny
+    - match: "git push * -f"
+      approval: deny
+    - match: "git reset --hard*"
+      approval: prompt
+    - match: "git clean -*f*"
+      approval: prompt
+
+    # 6. Curl-pipe-shell. Denied on principle, not on risk: this repo's first
+    #    invariant is that nothing bootstraps at runtime. Tools belong in
+    #    home/mise/config.box.toml and get installed during `docker build`.
+    - match: "curl * | sh*"
+      approval: deny
+    - match: "curl * | bash*"
+      approval: deny
+    - match: "wget * | sh*"
+      approval: deny
+    - match: "wget * | bash*"
+      approval: deny
+
+    # 7. Everything else. Note this does NOT bypass OMP's built-in
+    #    critical-command guard — that still applies unless a rule above
+    #    explicitly denies the command.
+    - match: "*"
+      approval: allow
+
+# --- Language servers --------------------------------------------------------
+# The devbox ships real toolchains (python, node, go, rust, java), so LSP is a
+# genuine correctness win rather than decoration.
+#
+# Server-level tuning lives in lsp.json next to this file. That file is strict
+# JSON and cannot carry comments - the loader turns every unrecognised
+# top-level key into a server definition - so its rationale is recorded here:
+#   - `servers: {}` is intentionally EMPTY. Auto-detection is suppressed only
+#     when a config file contributes at least one server override, so an empty
+#     map keeps OMP's full built-in detection (binary present + rootMarkers
+#     matched) while still letting the file set a global timeout. Nothing is
+#     disabled by default; per-project overrides belong in <repo>/.omp/lsp.json.
+#   - `idleTimeoutMs: 600000` (10 min). This container is long-lived, and
+#     jdtls/rust-analyzer hold hundreds of MB of index each. Left unset,
+#     language servers never shut down and the box slowly bleeds memory across
+#     a week of use. 10 minutes is longer than any pause inside one editing
+#     session, and `lazy: true` below restarts a server transparently when the
+#     next request for that language arrives.
+lsp:
+  enabled: true
+  # Start servers on demand. Eager start would spin up every detected server at
+  # launch, which on a polyglot image means several hundred MB for nothing.
+  lazy: true
+  diagnosticsOnWrite: true
+  # Enabled (default is false): this session edits far more than it writes
+  # whole files, and a type error surfaced on the edit that caused it is worth
+  # vastly more than the same error found three tool calls later.
+  diagnosticsOnEdit: true
+  # Formatting is the project's job (mise tasks / pre-commit), not the editor's.
+  # Auto-formatting on write would produce diffs the repo's own tooling disagrees
+  # with, and reformat files the change never touched.
+  formatOnWrite: false
+
+# --- Files: editing and reading ----------------------------------------------
+edit:
+  # Line-anchored patches keyed to a snapshot tag. Chosen over `replace`/`patch`
+  # because it fails loudly on stale line numbers instead of fuzzily applying an
+  # edit to the wrong place — the failure mode that actually costs time.
+  mode: hashline
+  # Refuse to edit generated files (protoc, sqlc, swagger, lockfiles). Editing
+  # generated output is always the wrong fix; the generator input is the target.
+  blockAutoGenerated: true
+
+read:
+  # Structural summaries (declarations, bodies elided) for code read without a
+  # selector. Turns "open a 2000-line file" from a context disaster into a map
+  # plus a targeted second read.
+  summarize:
+    enabled: true
+    prose: false
+  # 250 covers a typical config or source file in one call while still capping
+  # pathological whole-file reads.
+  defaultLimit: 250
+
+# --- Thinking ----------------------------------------------------------------
+# `auto` classifies each turn and picks a depth, instead of billing one fixed
+# tier for "list this directory" and "design this subsystem" alike. The roles
+# above override it wherever the depth is known in advance (slow/plan/advisor).
+defaultThinkingLevel: auto
+providers:
+  # Ceiling the `auto` classifier may resolve to. `xhigh` keeps it one tier
+  # below the top, so `max` stays reserved for an explicit `ultrathink` — which
+  # matters here because syn:large:vision at `max` is by far the most expensive
+  # token class in this configuration, on the only metered pool.
+  # Note that syn:large:vision's ladder is `low,high,max`: it has no `xhigh`
+  # rung, so this ceiling resolves down to `high` on the architect and does its
+  # real work on the gemini roles, which expose the full ladder.
+  autoThinkingMaxEffort: xhigh
+  webSearchGeminiModel: "gemini-3.7-flash"
+
+web_search:
+  enabled: true
+
+# thinkingBudgets.* (minimal 1024 / low 2048 / medium 8192 / high 16384 /
+# xhigh 32768 / max 32768) are intentionally left at their schema defaults.
+# They only apply to providers that take an explicit token budget, and inventing
+# values here would be guessing against a number the vendor tunes.
+
+# --- Subagent service tier ---------------------------------------------------
+tier:
+  # Subagents track whatever per-family tier the main agent is currently on
+  # (including a live `/fast` toggle) rather than pinning one. Pinning would
+  # mean a fan-out silently ignores the tier you just switched to.
+  subagent: inherit
+
+# --- Prompt keywords ---------------------------------------------------------
+# Standalone `ultrathink`, `orchestrate`, and `workflowz` in a prompt attach a
+# hidden notice for that turn. Cheap, opt-in per prompt, and `ultrathink` is the
+# only route to `max` thinking given the autoThinkingMaxEffort ceiling above.
+magicKeywords:
+  enabled: true
+
+# --- Appearance --------------------------------------------------------------
+# The devbox installs a Nerd Font and the rest of the shell (starship, eza,
+# yazi) already assumes one, so glyphs are safe. titanium/light matches the
+# terminal theme used everywhere else in this repo.
+statusLine:
+  preset: nerd
+symbolPreset: nerd
+theme:
+  dark: titanium
+  light: light
+
+# --- Autolearn ---------------------------------------------------------------
+# Off. Enabling it would (a) run an extra capture turn after the agent stops,
+# billed on top of every session, and (b) write generated skills into
+# ~/.omp/agent/managed-skills — untracked, machine-local state inside a
+# container that gets rebuilt, which is exactly the kind of invisible drift this
+# repo exists to prevent. Skills here are authored deliberately under
+# home/omp/skills/ and baked into the image.
+autolearn:
+  enabled: false
