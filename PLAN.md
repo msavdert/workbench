@@ -19,19 +19,23 @@ definition and record is `docs/02-migration.md`.
 ## Now
 
 Migration complete (2026-08-19). From-scratch rebuild test of the Proxmox
-box in progress (2026-08-19, operator approved): `make snapshot` from the
-mac worked (Proxmox path proven without devbox), VM 105 destroyed with all
-snapshots (`make vm-destroy --purge`), `make bootstrap-all` green in 3m14s
-(47 ok, 0 fail; disk re-imported from the noble cloud image, all of
-`/home/agent` newer than boot). One bug only the fresh path shows, fixed:
-`vm-create` rsynced into a non-existent `/root/workbench/providers/` on the
-PVE host (now `mkdir -p` first). `box/remotes.list` gained ai-hub,
-dba-to-dbre, suhuf so the rebuild recreated them (enabled, not started).
-Waiting on the operator's manual logins (`claude auth login`, omp, agy);
-then `make claude-remote`, final checks, `make snapshot NAME=clean`.
-Note: the box's old op token had died ("Service Account Deleted") when
-the operator rotated the account for the devbox `.env`; the 1Password item
-already held the new token, `make secrets` installed it.
+box done the same day: `make snapshot` from the mac worked, VM 105
+destroyed with all snapshots, `make bootstrap-all` green in 3m14s (47 ok,
+0 fail; disk re-imported from the noble cloud image). After the operator's
+manual logins (claude, omp, agy) `make claude-remote` starts all five
+servers, `home/install.sh --check box` reports no drift after an agy and an
+omp run, `opwith git gh api user` and `op whoami` answer, docker runs
+hello-world, `clean` snapshot taken (2026-08-19 03:27 UTC). Four bugs only
+the fresh path shows, all fixed and pushed: vm-create rsynced into a
+missing staging dir on the PVE host (41a4d64); `make claude-remote` never
+started template instances because `list-unit-files` does not list them
+(uses the `wants/` symlinks now); agy rewrites its settings.json without a
+Claude-style `permissions` key and in its own key order, so the block is
+gone from `home/agy/settings.base.json` (eceeaf9) and `install.sh` compares
+JSON targets by content (0b44295); the mac's multiplexed ssh master
+predates the docker group after a rebuild (runbook note). `box/remotes.list`
+gained ai-hub, dba-to-dbre, suhuf so they survive rebuilds (188629c). No
+active phase; work is backlog-driven.
 
 ## Operator seat
 
@@ -45,10 +49,9 @@ the mac since the devbox seat is gone.
 
 ## Next
 
-1. After the operator's logins on the rebuilt box: `make claude-remote`,
-   `make remote-ls`, `home/install.sh --check box`, `omp`/`agy` smoke,
-   then `make snapshot NAME=clean` (approved as part of the rebuild test).
-2. Pick from the backlog below; nothing else is scheduled.
+1. Pick from the backlog below; nothing else is scheduled.
+2. Optional: add `knowledge` to `box/remotes.list` if the operator wants it
+   on the box again (it had no Remote Control server; not recreated).
 3. Leftovers, not blocking (unchanged): the mac's
    `~/Documents/all/github/knowledge/.claude/skills` link to a devbox
    path; ai-hub `lab/` records say `runtime/`; `providers/proxmox/README.md`
@@ -164,3 +167,7 @@ the mac since the devbox seat is gone.
 - 2026-08-19: rebuild test: snapshot from the mac ok, VM 105 destroyed
   with snapshots, bootstrap-all green from scratch in 3m14s after fixing
   vm-create's missing staging dir on the PVE host. Manual logins pending.
+- 2026-08-19: rebuild test closed: logins done by the operator, all RC
+  servers up, no drift, clean snapshot. Fixed on the way: claude-remote
+  template-instance start, agy settings drift (base + JSON-aware check),
+  ssh-master docker gotcha documented.

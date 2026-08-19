@@ -142,6 +142,13 @@ Full rebuild checklist (what is automated and what is not):
 | `omp` provider logins (`omp` on the VM, interactive) | **manual**, only if you use omp there |
 | `make snapshot NAME=clean` | one command |
 
+Rebuild gotcha (seen 2026-08-19): with `ControlMaster auto` in the mac's ssh
+config, the multiplexed master to the box opens during `vm-wait`, before
+`step_docker` adds `agent` to the `docker` group, so later `ssh agent-vm-ssh
+docker ...` fails with "permission denied" until the master is closed:
+`ssh -O exit agent-vm-ssh`. Provisioning itself is unaffected (`sudo -u`
+starts fresh sessions).
+
 Anything you `remote-add` by hand and do not put in `box/remotes.list`
 is lost on rebuild (the directory too, unless pushed). Anything under
 `~/work/*` that is not pushed is lost on rebuild or rollback.
