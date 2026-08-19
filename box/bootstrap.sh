@@ -167,15 +167,12 @@ step_user() {
   # lingering: user services (tmux/claude) survive logout and start at boot
   loginctl enable-linger "$AGENT_USER"
   install -d -o "$AGENT_USER" -g "$AGENT_USER" -m 0755 \
-    "$AGENT_HOME/.local/bin" "$AGENT_HOME/.config/mise" "$AGENT_HOME/.config/op-env" \
+    "$AGENT_HOME/.local/bin" \
     "$AGENT_HOME/.claude" "$AGENT_HOME/work" "$AGENT_HOME/.config/systemd/user"
   install -d -o "$AGENT_USER" -g "$AGENT_USER" -m 0700 "$AGENT_HOME/.config/op"
   put 0644 "$files/bashrc" "$AGENT_HOME/.bashrc"
   put 0644 "$files/bash_profile" "$AGENT_HOME/.bash_profile"
   put 0644 "$files/tmux.conf" "$AGENT_HOME/.tmux.conf"
-  put 0755 "$files/opwith" "$AGENT_HOME/.local/bin/opwith"
-  # op:// reference files for `opwith` (no secret values inside)
-  for f in "$here"/op-env/*.env; do put 0644 "$f" "$AGENT_HOME/.config/op-env/$(basename "$f")"; done
   put 0755 "$files/agent-session" "$AGENT_HOME/.local/bin/agent-session"
   # installed but not enabled: needs a one-time interactive `claude auth login`
   put 0644 "$files/claude-remote.service" "$AGENT_HOME/.config/systemd/user/claude-remote.service"

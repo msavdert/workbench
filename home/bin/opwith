@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# opwith <env-name> <command...>
+# opwith <env-name> <command...>  (home/bin, linked to ~/.local/bin by home/install.sh)
 # Run <command> with the secrets listed in $OP_ENV_DIR/<env-name>.env resolved
 # from 1Password and injected into that one process only.
 #   opwith git gh repo list
