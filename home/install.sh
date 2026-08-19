@@ -139,26 +139,38 @@ generate() {
 # Objects merge recursively; the overlay wins on scalars. Two array families
 # are joined instead of replaced so an overlay can add without knowing the
 # base: hooks.<Event> (base hooks stay registered) and
-# permissions.allow/ask/deny (deduplicated). Any other array is replaced by
-# the overlay's. Strings inside arrays that start with "~/" (or are "~") get
-# $HOME substituted, for path lists such as agy's trustedWorkspaces.
+# permissions.allow/ask/deny, both deduplicated so a hook or rule listed in
+# base and overlay fires once. Any other array is replaced by the overlay's.
+# Strings inside arrays that start with "~/" (or are "~") get $HOME
+# substituted, for path lists such as agy's trustedWorkspaces.
+#
+# Optional third argument: comma-separated top-level keys the TOOL owns after
+# first install ("seed keys"). The repo supplies their initial value; once the
+# target exists, the tool's current value is carried over instead, so a model
+# picked in the tool's UI or a workspace trusted interactively is neither
+# reported as drift nor reset by the next provision. Everything else stays
+# repo-owned and is still compared and rewritten.
 merge_settings() {
   local base="$HOME_SRC/$1/settings.base.json" \
     overlay="$HOME_SRC/$1/settings.$PROFILE.json" \
-    dst="$2" tmp
+    dst="$2" seed="${3:-}" tmp have
   if [[ ! -f $base ]]; then
     log SKIP "$dst (source missing: home/$1/settings.base.json)"
     return 0
   fi
   [[ -f $overlay ]] || overlay=/dev/null
+  have='{}'
+  if [[ -n $seed && -f $dst && ! -L $dst ]]; then
+    have="$(jq -c . "$dst" 2>/dev/null || printf '{}')"
+  fi
   tmp="$(mktemp)"
-  jq -S -s --arg home "$HOME" '
+  jq -S -s --arg home "$HOME" --arg seed "$seed" --argjson have "$have" '
     def joined(a; b): (a // []) + (b // []);
     .[0] as $b | (.[1] // {}) as $o
     | ($b * $o)
     | .hooks = (
         (($b.hooks // {}) | keys) + (($o.hooks // {}) | keys) | unique
-        | map({key: ., value: joined($b.hooks[.]; $o.hooks[.])}) | from_entries
+        | map({key: ., value: (joined($b.hooks[.]; $o.hooks[.]) | unique)}) | from_entries
       )
     | if .hooks == {} then del(.hooks) else . end
     | .permissions = (
@@ -173,6 +185,8 @@ merge_settings() {
              map(if type == "string" and (. == "~" or startswith("~/"))
                  then $home + .[1:] else . end)
            else . end)
+    | reduce (($seed | split(",")) | map(select(. != ""))[]) as $k (.;
+        if $have | has($k) then .[$k] = $have[$k] else . end)
   ' "$base" "$overlay" >"$tmp"
   generate "$dst" 0644 <"$tmp"
   rm -f "$tmp"
@@ -223,7 +237,9 @@ manifest() {
 
   # parallel harnesses (D12): config only, per file; agy composed like Claude
   link herdr/config.toml "$HOME/.config/herdr/config.toml"
-  merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json"
+  # agy rewrites model (to its display name) and trustedWorkspaces (appending
+  # what the operator trusts in-session); both are seed keys, see merge_settings.
+  merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json" model,trustedWorkspaces
   link agy/statusline.sh "$HOME/.gemini/antigravity-cli/statusline.sh"
   # config.yml is generated, not linked. omp writes to
   # ~/.omp/agent/config.yml itself: `omp config set`, `omp config reset`, the

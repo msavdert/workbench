@@ -115,6 +115,15 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
 - Adding a secret: put it in the `dotfiles` vault, add an `op://` line to a
   file in `home/op-env/`, push, `make provision STEPS=home` (the box links
   `~/.config/op-env` into its clone of this repository).
+- Audit, every few months: `env | grep -iE 'token|key|secret'` on both
+  machines must print nothing, and `git log -p -- home/op-env/` must show
+  only `op://` references.
+- If a secret leaks: rotate it first (1Password revoke and reissue; the
+  `op://` reference does not change, so no repo edit), then decide about git
+  history - usually leave it, the value is dead and clones keep the old
+  objects anyway. If the leaked value was `OP_SERVICE_ACCOUNT_TOKEN`, rotate
+  the service account in 1Password and run `make secrets` to push the new
+  token to `~/.config/op/env` on the box.
 
 ## Updating
 

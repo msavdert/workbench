@@ -117,6 +117,12 @@ profile overlay (`settings.box.json`: bypass permissions for the
 unattended box, Remote Control statusline; `settings.mac.json`: interactive
 mode) is merged with jq by `home/install.sh`. `~/.claude` is never
 symlinked wholesale: it holds runtime state and credentials.
+Added 2026-08-19: a composed file may name seed keys that the tool owns
+after first install (agy: `model`, `trustedWorkspaces`). The repo supplies
+the initial value; afterwards the value the tool wrote in-session is
+carried over on every provision and is not drift. Settings a tool rewrites
+live are otherwise unmanageable: either every provision resets the
+operator's choice or every check cries wolf.
 
 D9 Claude behaviour (global CLAUDE.md, subagents, skills, hooks) lives in
 `home/claude/` next to its settings, the same way omp and agy keep their
@@ -157,7 +163,9 @@ omp's `config.yml` both qualify, and both are compared by meaning rather than
 bytes so the harness reformatting its own file is not drift.
 
 D13 Repository language is English; commits are imperative, one topic
-each; no emoji; comments say why, not what.
+each; no emoji; comments say why, not what. Terminal-rendered indicator
+glyphs (statusline scripts, `home/starship.toml`) are the one exception,
+see AGENTS.md rule 7.
 
 ## Known differences between substrates (accepted, documented)
 

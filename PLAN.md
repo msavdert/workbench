@@ -146,3 +146,10 @@ history.
 - 2026-08-19: ai-hub side done (ai-hub c4de199, pushed from the box with the
   operator's one-time authorization): project skills under .claude/skills/,
   templates and overnight protocol under lab/, all references repointed.
+- 2026-08-19: starship.toml rewritten for both profiles (Nerd Font glyphs,
+  palette, right prompt with status/time, os/hostname/sudo/direnv modules,
+  git_status ignore_submodules); the ttyd constraint it carried was stale.
+- 2026-08-19: review follow-ups: omp skills add-secret/omp-tuning removed
+  (unused, stale references), secret-leak procedure in runbook; agy
+  `model`/`trustedWorkspaces` are seed keys (D8) so in-session changes are
+  neither drift nor reset; hooks merge deduplicates.

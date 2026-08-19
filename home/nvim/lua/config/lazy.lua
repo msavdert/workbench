@@ -22,7 +22,8 @@ require("lazy").setup({
   },
   install = { colorscheme = { "tokyonight", "habamax" } },
   -- No update checks: versions change only when lazy-lock.json is updated
-  -- deliberately (docs/06-maintenance.md).
+  -- deliberately and committed; an unprompted upgrade on the box would be
+  -- drift this repo cannot see.
   checker = { enabled = false },
   change_detection = { notify = false },
   performance = {

@@ -198,11 +198,11 @@ if (( $+commands[op] )) && [[ -d $OP_ENV_DIR ]]; then
         function agy    { command agy --dangerously-skip-permissions "$@"; }
     fi
 
-    # NOTE: no `omp` wrapper here, on purpose. op-env/ai.env sets
-    # ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN and ANTHROPIC_MODEL, which would
-    # reroute OMP's own Anthropic OAuth through OpenRouter and break the Claude
-    # architect setup. OMP resolves its credentials from ~/.omp/agent/agent.db
-    # and its Synthetic key from ~/.omp/agent/.env (`mise run omp:auth`).
+    # NOTE: no `omp` wrapper here, on purpose. OMP needs nothing from op-env:
+    # it resolves its credentials from ~/.omp/agent/agent.db and its Synthetic
+    # key from ~/.omp/agent/.env (`mise run omp:auth`). Wrapping it would put
+    # every variable in ai.env into its environment, and any ANTHROPIC_* value
+    # added there later would silently reroute OMP's own Anthropic OAuth.
 fi
 
 # --- OMP ---------------------------------------------------------------------

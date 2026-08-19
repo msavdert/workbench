@@ -88,6 +88,11 @@ skills, templates and protocol docs; they do not live in workbench.
 symlink into `home/`) and generated files (`~/.claude/settings.json`,
 `~/.gemini/antigravity-cli/settings.json`, `~/.omp/agent/config.yml`,
 `~/.config/workbench/env`), rewritten only when their content differs.
+Generated settings may carry seed keys (`merge_settings <tool> <dst>
+<keys>`): the repo sets them once, the tool owns them afterwards (agy's
+`model` and `trustedWorkspaces`, which agy rewrites in its own form and
+extends from its UI). `--check` ignores their drift by design; everything
+else in the file stays repo-owned.
 A target is generated rather than linked whenever the tool that reads it also
 WRITES it: through a symlink such a write lands in a tracked file, which is
 how an omp 17 schema migration silently rewrote `home/omp/config.yml` on
