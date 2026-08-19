@@ -77,6 +77,17 @@ setupVersion: 1
 # therefore never true. Aliases are the vendor's to repoint, so treat that
 # mapping as dated evidence, not a constant.
 #
+# POLICY, operator decision 2026-08-19: no Antigravity gemini reference in this
+# file runs below `:high`. The Antigravity OAuth quota is not the constraint
+# here, so shaving reasoning tokens off a gemini call buys nothing worth having
+# and costs answer quality on roles that fire constantly. `:high` is the top of
+# both gemini ladders, so this is "always the best these models do", not a
+# tuning dial. It applies to bare references too - a bare id resolves through
+# `defaultThinkingLevel: auto`, which can land on `low` - so every gemini entry
+# below, INCLUDING the ones inside retry.fallbackChains, carries the suffix
+# explicitly. Synthetic roles are unaffected: that pool is metered and `slow`
+# and `plan` still name their own rungs.
+#
 # Consequences, applied below:
 #   - NO model in this configuration has an `xhigh` rung. `high` is the top of
 #     both gemini ladders; only the two syn:large aliases go on to `max`.
@@ -151,12 +162,17 @@ modelRoles:
   # Commit-message drafting: short, structured, high volume.
   commit: "google-antigravity/gemini-3.7-flash:high"
   # `tiny` is the online model for pure background chores (session titles, memory
-  # summarisation, auto-thinking classification, unexpected-stop detection). It
-  # is invoked constantly and nobody reads its reasoning, hence `:minimal`.
-  # Unset, this would fall back to `smol` and quietly cost more.
-  # 2026-08-19: it said `:minimal` here and billed `:high` — the suffix did not
-  # match the sentence above it, on the one role that fires most often. Fixed.
-  tiny: "google-antigravity/gemini-3.7-flash:minimal"
+  # summarisation, auto-thinking classification, unexpected-stop detection).
+  # Unset, this would fall back to `smol`, so it is named explicitly.
+  #
+  # The suffix has a history worth keeping. The comment here used to argue for
+  # `:minimal` ("invoked constantly and nobody reads its reasoning") while the
+  # value said `:high`; that disagreement was resolved to `:minimal` and then
+  # reversed the same day by the policy above. Both readings are coherent - they
+  # differ on whether the Antigravity quota is scarce. It is not, so the role
+  # that fires most often is also the one where a cheap rung would be felt most
+  # often, and it runs at `:high` like everything else on this provider.
+  tiny: "google-antigravity/gemini-3.7-flash:high"
 
 # Ctrl+P / Shift+Ctrl+P walk this ladder. Ordered cheap -> capable so the first
 # press is always the de-escalation, which is the one you want under a quota wall.
@@ -228,13 +244,12 @@ task:
     scout: google-antigravity/gemini-3.7-flash:high
     # Strictly mechanical edits. Same reasoning as scout.
     sonic: google-antigravity/gemini-3.7-flash:high
-    # General worker. Same model as modelRoles.task but deliberately WITHOUT the
-    # `:high` suffix that role carries: a spawned worker gets its depth from
-    # `defaultThinkingLevel: auto` per turn, while the interactive role is
-    # pinned. Stated explicitly so a change to the interactive `task` role does
-    # not silently retune every subagent. home/omp/AGENTS.md lists it bare too;
-    # the two must stay in sync.
-    task: google-antigravity/gemini-3.1-pro
+    # General worker. Now carries `:high` under the no-gemini-below-high policy
+    # above; it was bare, which meant `defaultThinkingLevel: auto` could put the
+    # workhorse subagent on `low`. Stated explicitly rather than inherited so a
+    # change to the interactive `task` role does not silently retune every
+    # subagent. home/omp/AGENTS.md carries the same value; keep the two in sync.
+    task: google-antigravity/gemini-3.1-pro:high
     # Docs/research. Kimi-K3 benchmarked as the best documentation writer of the
     # pool here (1946 chars in 5.3s). 524K context swallows whole doc trees.
     librarian: "synthetic/hf:moonshotai/Kimi-K3"
@@ -453,6 +468,10 @@ retry:
   # staying on the fallback until manually switched. A transient 429 should not
   # silently demote the session for the rest of the day.
   fallbackRevertPolicy: cooldown-expiry
+  # Every gemini rung below carries `:high` explicitly. A fallback is where an
+  # unpinned id hides best - the chain only fires when something has already
+  # gone wrong, so a rung silently running at `auto` would degrade quality at
+  # exactly the moment nobody is watching the model picker.
   fallbackChains:
     # Covers every assigned role without its own chain. Degrades along the axis
     # that matters — capability — while CROSSING PROVIDERS, so an outage on
@@ -469,21 +488,21 @@ retry:
     # Synthetic alias that takes image input, so snapcompact survives the
     # failover instead of the session starting to discard history mid-outage.
     default:
-      - google-antigravity/gemini-3.1-pro
+      - google-antigravity/gemini-3.1-pro:high
       - synthetic/syn:large:vision:high
     advisor:
       - google-antigravity/gemini-3.7-flash:high
-      - google-antigravity/gemini-3.1-pro
+      - google-antigravity/gemini-3.1-pro:high
     # `smol` must stay cheap under failure, so it degrades sideways (another
     # flash) without ever reaching for the metered Synthetic pack.
     smol:
       - google-antigravity/gemini-3.7-flash:high
-      - google-antigravity/gemini-3.5-flash
-      - google-antigravity/gemini-3.1-pro
+      - google-antigravity/gemini-3.5-flash:high
+      - google-antigravity/gemini-3.1-pro:high
     # Provider wildcard: applies to every synthetic model, current or future,
     # regardless of which role or agent is holding it.
     synthetic/*:
-      - google-antigravity/gemini-3.1-pro
+      - google-antigravity/gemini-3.1-pro:high
       - google-antigravity/gemini-3.7-flash:high
 # --- Tools and approvals -----------------------------------------------------
 tools:
@@ -663,8 +682,14 @@ read:
 
 # --- Thinking ----------------------------------------------------------------
 # `auto` classifies each turn and picks a depth, instead of billing one fixed
-# tier for "list this directory" and "design this subsystem" alike. The roles
-# above override it wherever the depth is known in advance (slow/plan/advisor).
+# tier for "list this directory" and "design this subsystem" alike.
+#
+# In practice it now governs very little: every gemini reference is pinned to
+# `:high` by the policy at the top of this file, and slow/plan/advisor name
+# their own rungs, which leaves `modelRoles.vision` and any model reached
+# without a role. Kept as the right default for whatever is not pinned rather
+# than replaced by a fixed tier, which would also raise the metered Synthetic
+# roles that deliberately are not pinned.
 defaultThinkingLevel: auto
 providers:
   # Ceiling the `auto` classifier may resolve to. `xhigh` keeps it one tier
@@ -681,6 +706,12 @@ providers:
   # enters the table. The previous note claimed it "does its real work on the
   # gemini roles, which expose the full ladder"; they do not.
   autoThinkingMaxEffort: xhigh
+  # Deliberately bare, and the one gemini reference the `:high` policy does NOT
+  # apply to: this is a raw model ID handed to Google Search grounding
+  # ("Model ID for Gemini Google Search grounding" in the settings schema), not
+  # a role pattern the model resolver reads. A grounding call has no thinking
+  # rung to set, so a `:high` suffix here would be a model id that does not
+  # exist rather than a deeper search.
   webSearchGeminiModel: "gemini-3.7-flash"
 
 web_search:

@@ -14,7 +14,7 @@ result.
 | Escalate when stuck, or plan mode | you, via `slow` / `plan` | `syn:large:text` (`:max` / `:high`) |
 | Find files, map unknown code, read-only search | `scout` | `gemini-3.7-flash:high` |
 | Mechanical rename/move/reformat across files | `sonic` | `gemini-3.7-flash:high` |
-| General multi-step implementation slice | `task` | `gemini-3.1-pro` |
+| General multi-step implementation slice | `task` | `gemini-3.1-pro:high` |
 | External library or API behaviour, from source | `librarian` | `Kimi-K3` |
 | Write or rewrite documentation | `docs` | `Kimi-K3` |
 | Adversarial review before "done" | `audit` | `GLM-5.2` |
@@ -38,6 +38,8 @@ contention map is:
 - `designer` shares `syn:small:vision` with the `vision` role. Both low-volume.
 
 Everything else is on Antigravity, which is where the parallel width lives.
+Every Antigravity model in this table runs at `:high`, the top of its ladder -
+that quota is not the constraint, so there is no cheap rung to pick here.
 
 ## Enforcement layer
 
