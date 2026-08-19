@@ -86,10 +86,22 @@ link_path() {
 
 # generate <dst-absolute> <mode> ; expected content on stdin (redirected, not
 # piped: DRIFT must be set in this shell, not in a subshell)
+# JSON targets compare by content, not bytes: agy rewrites its settings.json
+# in its own key order on every run, and that reformatting is not a change.
+same_content() {
+  local dst="$1" want="$2"
+  [[ -f $dst && ! -L $dst ]] || return 1
+  if [[ $dst == *.json ]] && command -v jq >/dev/null 2>&1; then
+    [[ "$(jq -S . "$dst" 2>/dev/null)" == "$(printf '%s\n' "$want" | jq -S . 2>/dev/null)" ]]
+  else
+    [[ "$(cat "$dst")" == "$want" ]]
+  fi
+}
+
 generate() {
   local dst="$1" mode="$2" want
   want="$(cat)"
-  if [[ -f $dst && ! -L $dst && "$(cat "$dst")" == "$want" ]]; then
+  if same_content "$dst" "$want"; then
     log ok "$dst"
     return 0
   fi
