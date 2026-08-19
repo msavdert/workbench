@@ -28,9 +28,21 @@ Still in `box/files/` although the source map sends them to `home/`:
 mise.toml, gitconfig, opwith, claude-settings.json, claude-statusline.sh,
 `box/op-env/` - they move in phase 2 step 3.
 
+## Operator seat
+
+Sessions run from `devbox` (the dotfiles container) until phase 6: it has
+ssh to the Proxmox host (`pve-vm-ssh`) and to the box (`agent-vm-ssh`), so
+`make provision`, `snapshot`, `rollback` and `vm-create` work from there.
+A session inside the box itself cannot reach the host and cannot run
+`make provision` literally (no ssh alias); it can only run
+`sudo box/bootstrap.sh <steps>` locally. Verify tooling on devbox first
+(`make lint` needs shellcheck and shfmt - unconfirmed there).
+
 ## Next
 
-1. `make snapshot NAME=pre-phase2` (owner's call, from the laptop).
+1. From devbox: `make provision STEPS="user verify"` - the literal phase 1
+   acceptance run (so far only executed by hand inside the box), then
+   `make snapshot NAME=pre-phase2` (owner's call).
 2. Phase 2, step 1: `home/install.sh <profile>` - per-file symlinks, jq
    merge for Claude settings, idempotent, `--check`. Then step 2, one merge
    per commit (mise, gitconfig, opwith, settings, statusline).
@@ -74,3 +86,5 @@ mise.toml, gitconfig, opwith, claude-settings.json, claude-statusline.sh,
   `updated /etc/claude-code/CLAUDE.md`; `remote-ls` unchanged (6 units
   active). Not done: `providers/proxmox/README.md` sizing notes from
   agent-vm `docs/design.md` (source map row, not a phase 1 step).
+- 2026-08-19: phase 1 committed and pushed (5f47c7e). Operator seat moves
+  to devbox (has Proxmox ssh); the in-box session ends here.
