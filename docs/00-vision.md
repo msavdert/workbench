@@ -114,7 +114,8 @@ mise specifics are in `docs/reference/mise-2026.md`.
 D8 Claude Code configuration is composed, not copied.
 `home/claude/settings.base.json` holds what is true everywhere; a small
 profile overlay (`settings.box.json`: bypass permissions for the
-unattended box, Remote Control statusline; `settings.mac.json`: interactive
+unattended box, Remote Control statusline, `remoteControlAtStartup` so every
+terminal session is also reachable from the Claude app; `settings.mac.json`: interactive
 mode) is merged with jq by `home/install.sh`. `~/.claude` is never
 symlinked wholesale: it holds runtime state and credentials.
 Added 2026-08-19: a composed file may name seed keys that the tool owns
@@ -145,7 +146,12 @@ so per-project servers are optional: `remote-add <name>` starts a
 `claude-remote@<name>` unit rooted in `~/work/<name>` when a project needs its
 own environment. Repositories that must be present after a rebuild are listed
 in `box/remotes.list` (`--clone-only` by default). Requires systemd - one more
-reason for D3.
+reason for D3. The other direction is covered by `remoteControlAtStartup: true`
+in the box overlay (D8): a `claude` started in a herdr pane registers itself
+with the app too, so a terminal session can be followed from the phone without
+a server. The mac overlay leaves it off - the mac runs against the real
+filesystem. Handoff between surfaces is PLAN.md plus a push, not session
+transfer (one session has one host; `/rc` moves it).
 
 D12 Parallel harnesses: herdr is installed by mise (D7), configured in
 `home/herdr/`, and its integrations are applied by a mise task

@@ -7,5 +7,6 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "remoteControlAtStartup": true,
   "theme": "dark"
 }

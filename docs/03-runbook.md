@@ -111,6 +111,18 @@ closing. `make ssh` is the fallback below it: plain ssh into tmux session
 being debugged. Other agents (`omp`, a second `claude`) run in further herdr
 tabs, or tmux windows on the fallback path.
 
+Every `claude` started on the box is Remote Control enabled
+(`remoteControlAtStartup` in `home/claude/settings.box.json`): it prints a
+notice at startup and shows up under Recents in the Claude app, so a session
+begun in a herdr pane can be followed or continued from the phone. The rules:
+one session has one host at a time - opening the same session in a second
+terminal leaves Remote Control off there with a notice; `/rc` moves it. Keep
+one active session per checkout (the `work` server is same-dir, bypass). To
+change surface, finish the session: update PLAN.md, push, start fresh on the
+other side; `claude --resume` in the same directory is the fallback when the
+transcript itself is needed. Mac sessions are not registered: the mac overlay
+does not set the key.
+
 ## Secrets
 
 - `make secrets` writes `OP_SERVICE_ACCOUNT_TOKEN` to `~/.config/op/env`
