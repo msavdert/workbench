@@ -26,6 +26,6 @@ touch disk except one 1Password service-account token; everything else is an
 Read `docs/00-vision.md` for the decisions and their reasons, `PLAN.md` for
 the current state, `AGENTS.md` if you are an agent working here.
 
-Status: phase 6 (retire) of the migration from three predecessor
-repositories. The box is built by this repository since phase 1; the
-predecessors are being archived.
+Status: migration complete (2026-08-19). The box and the mac are built from
+this repository alone; `agent-vm` and `dotfiles` are archived on GitHub,
+`ai-hub` keeps doctrine and journal only.

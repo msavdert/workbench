@@ -1,7 +1,6 @@
 # 03 - Runbook
 
-Status: procedures for the box built from this repository (phase 1: identical
-to agent-vm's).
+Status: procedures for the box built from this repository.
 
 ## First-time Claude Code login and Remote Control
 

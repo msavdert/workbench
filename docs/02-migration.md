@@ -1,10 +1,11 @@
 # 02 - Migration from agent-vm, dotfiles, ai-hub
 
-Status: plan. Progress and the active phase are tracked in `PLAN.md`.
+Status: complete (2026-08-19). Kept as the record of what moved where;
+`PLAN.md` tracks current work.
 
 Ground rules for every phase:
 
-- The live box (currently built by `agent-vm` on Proxmox) keeps working
+- The live box (built by `agent-vm` on Proxmox until phase 1) keeps working
   throughout. Each phase ends with `make provision` green and `verify`
   passing.
 - Snapshot before phases that touch the box: `make snapshot NAME=pre-phaseN`.
@@ -150,6 +151,19 @@ closed with those two exceptions.
    runs.
 Acceptance: `PLAN.md` says "migration complete"; `AGENTS.md` loses its
 migration section.
+
+Executed 2026-08-19. Step 1: both repositories archived with a README notice
+(agent-vm 3f055ab, dotfiles 87a1c15); `agent-vm` removed from
+`box/remotes.list` and from the box (`remote-rm`, clone deleted). Step 2:
+container wording removed from `home/` (nvim `devbox.lua` is `box.lua`, omp
+skills rewritten); on the VPS the `dotfiles` compose project taken down
+with its volumes, the orphan `devbox_*` volumes and the
+`ghcr.io/msavdert/devbox` image removed, `/home/opc/dotfiles` deleted.
+Left on purpose or open: `/home/opc/devbox` (an older compose dir with a
+`.env` token, deletion was blocked in the session; the operator removes it
+by hand and rotates that service account), the mac's untracked
+`~/.ssh/config.local` `Host dev`/`dev-sh` entries, the ghcr package itself
+(needs a `delete:packages` token).
 
 ## What could go wrong
 

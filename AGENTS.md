@@ -9,12 +9,12 @@ current state of work and the handoff between sessions.
 
 ## Start of every session
 
-1. Read `PLAN.md`. It names the active phase, the next concrete action, and
-   what the previous session left behind.
+1. Read `PLAN.md`. It names the current state, the next concrete action,
+   and what the previous session left behind.
 2. Read the document that governs what you are about to touch:
    `docs/00-vision.md` before questioning a decision,
    `docs/01-architecture.md` before adding or moving a file,
-   `docs/02-migration.md` before doing phase work,
+   `docs/02-migration.md` to learn where a setting came from,
    `docs/03-runbook.md` before touching a live machine.
 3. Do not re-derive decisions recorded in `docs/00-vision.md`. If one is
    wrong, change the document in the same commit as the code and say why.
@@ -57,21 +57,18 @@ current state of work and the handoff between sessions.
 - Commit messages: imperative subject, body says why. One topic per commit.
 - Repository language is English.
 
-## Phase work protocol
+## Work protocol
 
-- Work on the phase `PLAN.md` marks as active. Do not start the next phase
-  in the same change.
-- A phase is done when every item of its acceptance list in
-  `docs/02-migration.md` has been executed and its output reported, not
-  described.
+- Work on what `PLAN.md` marks as active; one topic per change.
+- A task is done when its acceptance has been executed and its output
+  reported, not described.
 - Before ending a session, update `PLAN.md`: `Now` (state), `Next` (the one
   concrete action), and one dated line in `Log`. This is the handoff; there
   is no other memory between sessions.
 
 ## Related repositories
 
-- `ai-hub` - doctrine, experiments and journal about working with AI. Its
-  runtime artifacts (global CLAUDE.md, agents, skills, hooks) move here in
-  phase 3; after that `ai-hub` holds no configuration.
-- `agent-vm` and `dotfiles` - the predecessors this repository replaces.
-  Read-only references during the migration; archived at the end (phase 6).
+- `ai-hub` - doctrine, experiments and journal about working with AI. It
+  holds no configuration; the runtime artifacts moved here (`agents/`).
+- `agent-vm` and `dotfiles` - the archived predecessors (read-only on
+  GitHub since 2026-08-19). `docs/02-migration.md` records what moved where.
