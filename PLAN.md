@@ -17,34 +17,33 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 
 ## Now
 
-Phases 2-4 are done on both profiles. Phase 4 findings, all fixed and
-applied on the box (`make provision STEPS="home tools verify"` green,
-`--check box` no drift) and on the mac: the completion/init cache was
-never generated on the box and `~/.local/share/zsh-plugins` existed
-nowhere (`home/zsh/install-plugins.sh`, run by mac/setup.sh and
-step_tools, `mise run zsh:plugins`); `herdr integration install claude`
-appends its own SessionStart hook to the composed settings.json (the
-`herdr:integrations` task now ends with `home/install.sh <profile>`;
-mise tasks run under dash on the box, so `set -eu` only); Claude Code
-plugin keys verified (`enabledPlugins`, `extraKnownMarketplaces`),
-`mise run claude:plugins` installs what the settings enable (nothing
-today); `.zshenv` no longer exports `CLAUDE_CONFIG_DIR` (a devbox
-Docker-volume leftover that gave the box two Claude identities: bash saw
-`~/.claude.json`, zsh saw `~/.claude/.claude.json` and a login screen);
-`theme: dark` in the box overlay (Claude wrote it during that onboarding).
+Phase 5 step 1 executed from the mac on 2026-08-19: `providers/orbstack/`
+(`create-vm.sh`, `vm.env`, `user-data.yaml`), Makefile branches on
+`PROVIDER=orbstack` (`vm-create` runs locally, `VM_HOST=agent@agent-vm@orb`,
+`vm-destroy` = `orb delete`). `make bootstrap-all PROVIDER=orbstack` on a
+deleted-then-recreated machine: exit 0, `verify` 43 ok, about 3 minutes
+end to end (Ubuntu 24.04.4 arm64, `systemd-detect-virt` = lxc, uid 501).
+sshd on port 22 answers the 1Password key on the machine's LAN address.
 
-Measured on the box: `ssh host cmd`, `bash -c`, `bash -lc`, `docker run`
-all plain (PS1 empty, 0 aliases, NO_COLOR=1); `bash -ic` stays bash; a TTY
-login is zsh 5.9 with starship, fzf widget, autosuggestions,
-syntax-highlighting, zoxide, `$SHELL` still `/bin/bash`. herdr (0.8.0,
-started headless in tmux, driven over its socket API: workspace create,
-pane split, agent start/prompt/wait/read) ran claude and omp in two panes
-on a scratch repo and both answered a prompt; omp's Synthetic key comes
-from its agent.db, `mise run omp:auth` was not needed. `mise ls
---current --missing` empty on the box.
+From-scratch findings, all fixed in `box/bootstrap.sh` and re-verified on
+both substrates (`make provision STEPS="system verify"` green on Proxmox
+and OrbStack): `chown -R` in step_user assumed `.gitconfig`/`.claude`
+that only step_home creates (hidden on Proxmox by prior runs); `sshd -t`
+ran unguarded (OrbStack image has no sshd; `openssh-server` is now in
+step_apt and the check tolerates an idle socket-activated sshd, missing
+`/run/sshd`); `verify` required qemu-guest-agent unconditionally (now only
+where `/dev/virtio-ports/org.qemu.guest_agent.0` exists) and had a
+duplicated check. Provider-side quirks stay in `providers/orbstack/`:
+image lacks `rsync`; OrbStack seeds a one-line `/etc/ssh/sshd_config`
+(no Include, `UsePAM no` -> "account is locked" for the passwordless
+user), removed by cloud-init `runcmd` before openssh-server lands.
 
-Phase 5 has not started; `providers/orbstack/` and `providers/cloud/` do
-not exist yet.
+Not done: the "Remote Control environment works from it" acceptance
+item needs the manual OAuth login on the OrbStack machine
+(`claude auth status` there: loggedIn false; units and `remotes` clones
+are in place). Phase 5 step 2 (`providers/cloud/`) not started.
+Working tree uncommitted (5 files + providers/orbstack/), `make lint`
+green, no secrets in the diff.
 
 ## Operator seat
 
@@ -57,27 +56,24 @@ has (`pve-vm-ssh`, Tailscale SSH).
 
 ## Next
 
-1. Phase 5 step 1: `providers/orbstack/` - create an OrbStack Ubuntu 24.04
-   VM on the mac (OrbStack is in mac/Brewfile), run `make bootstrap-all
-   PROVIDER=orbstack`, then `bootstrap.sh verify` with no provider-specific
-   step and a Remote Control environment from it. Read
-   `docs/01-architecture.md` "A provider must deliver" and
-   `providers/proxmox/` first; the operator's question "is a from-scratch
-   rebuild tested" is answered by this phase, not by destroying the
-   Proxmox VM (rule 8; not planned).
-2. Nothing pending from phase 4: `omp:auth` works (Synthetic API
-   Credential created in the dotfiles vault; the mac's `~/.claude.json` is
-   the merged file, originals in
-   `~/.config/workbench/backup-claudejson-20260819T012830Z/`).
-3. Leftovers, not blocking: `~/Documents/all/github/knowledge/.claude/skills`
-   on the mac links to a devbox path (repoint to
-   `~/work/workbench/agents/skills`); ai-hub `lab/` records still say
-   `runtime/` (history); omp prompts (WATCHDOG.md, skills) still describe
-   the dotfiles/container workflow; `providers/proxmox/README.md` sizing
-   notes; `DRY_RUN=1 mac/setup.sh` does not say what is currently at each
-   target; the phase 4 "Remote Control session shows the plain shell"
-   item was measured by shape (`bash -c` under the agent's environment),
-   not from inside a live Remote Control session.
+1. Operator, on the mac: `ssh -t agent@agent-vm@orb claude auth login`,
+   then `make claude-remote PROVIDER=orbstack` and open the environment
+   from claude.ai. That closes phase 5 step 1's acceptance; record the
+   result here.
+2. Commit the phase 5 step 1 work (operator decides; nothing committed).
+3. Phase 5 step 2: `providers/cloud/user-data.yaml` generic for any Ubuntu
+   cloud image (start from `providers/orbstack/user-data.yaml` minus the
+   OrbStack `runcmd`; add `qemu-guest-agent`, `rsync`) and one tested
+   provider (backlog says Hetzner). Then decide whether
+   `providers/orbstack/user-data.yaml` should include the cloud one
+   instead of duplicating the users block.
+4. Leftovers, not blocking (unchanged from phase 4):
+   `~/Documents/all/github/knowledge/.claude/skills` on the mac links to a
+   devbox path; ai-hub `lab/` records still say `runtime/`; omp prompts
+   still describe the dotfiles/container workflow;
+   `providers/proxmox/README.md` sizing notes; `DRY_RUN=1 mac/setup.sh`
+   does not say what is at each target; the phase 4 Remote Control item
+   was measured by shape only.
 
 ## Open questions
 
@@ -160,3 +156,10 @@ has (`pve-vm-ssh`, Tailscale SSH).
   item was recreated as an API Credential in the dotfiles vault (op item
   move refused the original: unsupported SSO field type); merged
   ~/.claude.json installed on the mac. Next session starts phase 5.
+- 2026-08-19: phase 5 step 1 (OrbStack) executed from the mac. Machine
+  created, deleted, recreated with `make bootstrap-all PROVIDER=orbstack`:
+  verify green in about 3 minutes. Three bootstrap.sh bugs only a fresh
+  machine shows (chown before home, unguarded sshd -t, unconditional
+  qemu-guest-agent) fixed and re-verified on Proxmox too. Remaining
+  acceptance item: manual `claude auth login` + `make claude-remote
+  PROVIDER=orbstack`. Uncommitted.
