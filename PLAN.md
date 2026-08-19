@@ -185,6 +185,8 @@ the mac since the devbox seat is gone.
   on the box: `omp config set` leaves the repo clean, `--check` reports the
   drift and exits 1, `install.sh box` reverts it. Settings changed with it:
   modelRoles.default -> gemini-3.7-flash:high, advisor.enabled -> false.
-  Not done: the mac still has the old symlink, held because `install.sh mac`
-  would also revert ~/.claude/settings.json `model` (runtime `opus[1m]` vs
-  repo `claude-fable-5[1m]`, base layer, so it would move the box too).
+  Applied on both machines, `--check` clean on both. `install.sh mac` also
+  reverted ~/.claude/settings.json `model` from a runtime `opus[1m]` back to
+  the repo's `claude-fable-5[1m]`; the operator chose to let the repo win
+  rather than encode the runtime value, so `/model` in a session is an
+  experiment there too, not a setting.
