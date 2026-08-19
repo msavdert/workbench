@@ -142,8 +142,10 @@ ssh-add -l || true
 [tasks."omp:auth"]
 description = "Write the Synthetic API key from 1Password into ~/.omp/agent/.env"
 run = """
+set -eu
+key="$(op read "op://dotfiles/Synthetic/credential")"
 mkdir -p ~/.omp/agent
-printf 'SYNTHETIC_API_KEY=%s\\n' "$(op read "op://dotfiles/Synthetic/credential")" > ~/.omp/agent/.env
-chmod 600 ~/.omp/agent/.env
+umask 077
+printf 'SYNTHETIC_API_KEY=%s\\n' "$key" > ~/.omp/agent/.env
 """
 
