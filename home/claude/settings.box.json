@@ -6,5 +6,6 @@
   },
   "permissions": {
     "defaultMode": "bypassPermissions"
-  }
+  },
+  "theme": "dark"
 }
