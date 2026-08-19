@@ -1,0 +1,24 @@
+# =============================================================================
+# Ghostty configuration - macOS thin client terminal
+# =============================================================================
+
+# --- Font --------------------------------------------------------------------
+font-family = "JetBrainsMono Nerd Font"
+font-size = 13.5
+font-thicken = true
+
+# --- Theme & Appearance ------------------------------------------------------
+theme = dark:GitLab Dark,light:GitLab Light
+macos-titlebar-style = transparent
+window-padding-x = 10
+window-padding-y = 10
+
+# --- Clipboard ---------------------------------------------------------------
+# Allows OSC 52 copy/paste from the remote box to macOS clipboard
+clipboard-read = allow
+clipboard-write = allow
+
+# --- Behavior ----------------------------------------------------------------
+cursor-style = block
+cursor-style-blink = false
+macos-option-as-alt = true

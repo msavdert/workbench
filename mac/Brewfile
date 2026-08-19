@@ -1,0 +1,80 @@
+# =============================================================================
+# macOS package manifest - the complete list of what may exist on this Mac
+# =============================================================================
+# `CLEANUP=1 mac/setup.sh` runs `brew bundle cleanup --force`, which
+# UNINSTALLS anything not listed here. That is the point: the Mac cannot
+# silently accumulate leftovers from experiments any more.
+#
+# A plain `mac/setup.sh` only PRINTS what would be removed. Read that list,
+# move anything you want to keep into this file, then run with CLEANUP=1.
+#
+# Division of labour on macOS:
+#   - Homebrew  -> GUI applications (casks) and daemons that need system
+#                  integration. mise cannot install these.
+#   - mise      -> every CLI tool (home/mise/config.toml + config.mac.toml).
+#   - the box   -> every DEVELOPMENT tool (home/mise/config.box.toml).
+# =============================================================================
+
+# --- Formulae ----------------------------------------------------------------
+# Only what genuinely cannot come from mise.
+brew "tailscale"                # host-level VPN daemon; must run on the host
+brew "sshpass"                  # no mise backend, and occasionally unavoidable
+
+# mise is NOT installed via brew. It comes from the standalone installer
+# (https://mise.run) into ~/.local/bin; no second copy shadowing the first.
+# `mac/setup.sh` installs it if missing (the box gets mise from apt, D7).
+#
+# git is Apple's (/usr/bin/git); current enough, and one less thing to own.
+# Add `brew "git"` here if you ever need a newer one.
+
+# --- Terminal ----------------------------------------------------------------
+cask "ghostty"
+
+
+# --- Secrets -----------------------------------------------------------------
+cask "1password"                # also provides the SSH agent (mac/ssh/config.macos)
+cask "1password-cli"            # `op` - required by the op run wrappers
+cask "bitwarden"
+
+# --- Containers --------------------------------------------------------------
+cask "orbstack"                 # Linux VMs on the laptop: the phase 5 box substrate
+
+# --- Editors & IDEs ----------------------------------------------------------
+cask "visual-studio-code"
+cask "antigravity"
+cask "claude"
+
+# --- Browsers ----------------------------------------------------------------
+cask "firefox"
+cask "google-chrome"
+cask "microsoft-edge"
+
+# --- Desktop apps ------------------------------------------------------------
+cask "obsidian"
+cask "google-drive"
+cask "dbeaver-community"
+cask "syncthing-app"
+
+# --- Fonts -------------------------------------------------------------------
+cask "font-jetbrains-mono"
+cask "font-jetbrains-mono-nerd-font"
+
+# =============================================================================
+# Deliberately NOT listed
+# =============================================================================
+# These were installed via brew and are now provided by mise instead. Listing
+# them here as well would mean two copies on PATH, with the mise shims winning
+# silently - the exact ambiguity this repo exists to remove. `brew bundle
+# cleanup` proposing to uninstall them is the intended outcome:
+#
+#   fd, fzf, gh, ripgrep, shellcheck, uv   -> home/mise/config.toml
+#
+# Removed during the tier split because the box provides them:
+#
+#   helm, jq, kind, node, oci-cli, talosctl, terraform, tmux, zellij
+#
+# terraform additionally came from hashicorp/tap, and listing a third-party tap
+# makes `brew trust hashicorp/tap` a prerequisite for every bundle operation.
+# If you ever want it on the host again: run that trust command and add
+#   tap "hashicorp/tap"
+#   brew "hashicorp/tap/terraform"

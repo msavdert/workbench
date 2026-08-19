@@ -1,0 +1,13 @@
+# =============================================================================
+# macOS-only SSH settings (linked to ~/.ssh/config.macos, included from config)
+# =============================================================================
+# Keys live in 1Password and never touch the filesystem. The agent hands them
+# out after a Touch ID prompt, so a stolen laptop backup contains no usable key.
+#
+# Requires: 1Password -> Settings -> Developer -> "Use the SSH agent"
+# If that is off, comment out IdentityAgent to fall back to ~/.ssh/id_*.
+# =============================================================================
+
+Host *
+    IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+    UseKeychain yes

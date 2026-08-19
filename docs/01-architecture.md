@@ -35,7 +35,7 @@ workbench/
     remotes.list            Remote Control environments that survive a rebuild
   home/
     install.sh <profile>    idempotent per-file symlinks + settings merge
-    mise/config.toml  mise/config.mac.toml  mise/config.box.toml  mise-tasks/
+    mise/config.toml  mise/config.mac.toml  mise/config.box.toml  (tasks inline)
     bash/interactive.sh     interactive-only block sourced by the box bashrc; hands off to zsh
     zsh/  starship.toml     rich interactive shell, both profiles
     git/  op-env/  bin/opwith
@@ -66,6 +66,7 @@ workbench/
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/nvim`, `~/.config/zellij` (box only) | `home/nvim/`, `home/zellij/` | `home/install.sh box` |
 | `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/*`, `~/.claude/hooks/*` | `agents/` | `home/install.sh` (links) |
+| `~/.ssh/config`, `~/.ssh/config.macos`, `~/.config/ghostty/config` (mac only) | `mac/ssh/`, `mac/ghostty/` | `mac/setup.sh` |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |
 | `~/.claude.json`, `~/.claude/*.jsonl`, sessions, credentials | runtime state, not in repo | the tools themselves |
 

@@ -49,3 +49,16 @@ rm -f ~/.ssh/config.local.tmp
 chmod 600 ~/.ssh/config.local
 printf 'Synced %s host(s) from 1Password into ~/.ssh/config.local.\\n' "$(ls -1 ~/.ssh/1p-hosts/*.pub 2>/dev/null | wc -l | tr -d ' ')"
 """
+
+[tasks."mac:sync"]
+description = "Pull the workbench repository and refresh the laptop's links"
+run = """
+REPO_DIR="${WORKBENCH_DIR:-$HOME/work/workbench}"
+if [ ! -d "$REPO_DIR/.git" ]; then
+    printf 'Cloning workbench to %s...\\n' "$REPO_DIR"
+    git clone https://github.com/msavdert/workbench.git "$REPO_DIR"
+else
+    git -C "$REPO_DIR" pull --ff-only
+fi
+"$REPO_DIR/mac/setup.sh" --links-only
+"""

@@ -117,6 +117,7 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
 | mise tools | `ssh agent-vm-ssh 'mise up'` |
 | Claude Code | self-updates; `claude update` to force |
 | This repo's config | `make provision`; `box/` only: `STEPS=user`; `home/` only: `STEPS=home` (pulls `~/work/workbench` on the box and re-runs `home/install.sh box`) |
+| The laptop | `mise run mac:sync` (pulls `~/work/workbench`, `mac/setup.sh --links-only`); full run `mac/setup.sh`, `CLEANUP=1` to also remove brew packages not in `mac/Brewfile` |
 | Drift check of `home/` on the box | `ssh agent-vm-ssh 'bash -lc "~/work/workbench/home/install.sh --check box"'` (also part of `verify`) |
 | ai-hub (global CLAUDE.md, agents, skills, hooks) | `make provision STEPS=aihub` or on the VM `git -C ~/work/ai-hub pull && bash ~/work/ai-hub/install.sh` |
 
