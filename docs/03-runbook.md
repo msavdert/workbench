@@ -213,6 +213,12 @@ The first `claude auth login` on it is manual, as on every substrate.
   into `/etc/terminfo`; for another terminal, export its entry the same way
   (`infocmp -x $TERM`) and add it there. Quick check on the box: `infocmp
   $TERM`.
+- **Duplicate or offline environments in the app's Remote Control picker**
+  after a rebuild or after stopping a server - expected. An environment is
+  registered per (machine, directory) and there is no way to deregister
+  one (CLI, UI or expiry; anthropics/claude-code#78695). Entries of the
+  destroyed VM stay "offline", freshly stopped ones can show "online" for a
+  while. The live `work` server is the one reporting `N of 2 sessions`.
 - **Remote Control session missing from the app** - `systemctl --user status
   claude-remote`; if it loops on auth, `claude auth login` again (token
   expired) and `systemctl --user restart claude-remote`.
