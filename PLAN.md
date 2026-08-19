@@ -17,35 +17,48 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 
 ## Now
 
-Phase 1 is done: agent-vm's `provision/`, `pve/`, `cloud-init/`, `Makefile`
-live here as `box/`, `providers/proxmox/`, `Makefile` (files, not history).
-`box/bootstrap.sh` is byte-identical to agent-vm's except for comments and
-one shellcheck fix; the box is now provisioned from this repository
-(`/etc/claude-code/CLAUDE.md` comes from `box/files/machine-CLAUDE.md`).
-`docs/03-runbook.md` exists. Phase 2 is active; nothing of it exists yet.
-`~/work/agent-vm` and the `dotfiles` clone remain the read-only sources.
-Still in `box/files/` although the source map sends them to `home/`:
-mise.toml, gitconfig, opwith, claude-settings.json, claude-statusline.sh,
-`box/op-env/` - they move in phase 2 step 3.
+Phase 2 is implemented and its box-side acceptance is green; the mac side
+has not been executed yet (this session ran on devbox). State of the tree:
+`home/install.sh <profile>` (per-file links, jq-composed Claude and agy
+settings, `~/.config/workbench/env` with `MISE_ENV`, `--check`, `--dry-run`,
+move-aside backups) and everything the source map sends to `home/`:
+mise (base + mac + box), git, op-env, bin/opwith, claude (base + box + mac
+overlays, one statusline), bash/interactive.sh (D5 hand-off to zsh), zsh,
+starship, herdr, agy, omp, nvim, zellij. `box/files/` lost the duplicates;
+`box/bootstrap.sh` has `step_home` (clones `~/work/workbench` on the box,
+runs `home/install.sh box`), zsh in apt, mise under the agent's login shell
+with `opwith git` for the GitHub API limit, and three new verify checks.
+`mac/` has Brewfile, setup.sh, ssh/, ghostty/; `mise run mac:sync`.
+
+Live box: `make provision STEPS="home tools verify"` green, 50 mise tools
+current, `home/install.sh --check box` no drift, 6 Remote Control units
+active. Originals moved to `~/.config/workbench/backup-20260819T003951Z/`
+on the box. Snapshot `pre-phase2` exists on the PVE host.
 
 ## Operator seat
 
 Sessions run from `devbox` (the dotfiles container) until phase 6: it has
-ssh to the Proxmox host (`pve-vm-ssh`) and to the box (`agent-vm-ssh`), so
-`make provision`, `snapshot`, `rollback` and `vm-create` work from there.
-A session inside the box itself cannot reach the host and cannot run
-`make provision` literally (no ssh alias); it can only run
-`sudo box/bootstrap.sh <steps>` locally. Verify tooling on devbox first
-(`make lint` needs shellcheck and shfmt - unconfirmed there).
+ssh to the Proxmox host (`pve-vm-ssh`, Tailscale SSH - may ask for a
+browser re-auth) and to the box (`agent-vm-ssh`), shellcheck 0.11 and shfmt
+3.13 via mise, so `make lint`, `provision`, `snapshot`, `rollback` all work
+there. The mac steps (`mac/setup.sh`) need a session on the laptop.
 
 ## Next
 
-1. From devbox: `make provision STEPS="user verify"` - the literal phase 1
-   acceptance run (so far only executed by hand inside the box), then
-   `make snapshot NAME=pre-phase2` (owner's call).
-2. Phase 2, step 1: `home/install.sh <profile>` - per-file symlinks, jq
-   merge for Claude settings, idempotent, `--check`. Then step 2, one merge
-   per commit (mise, gitconfig, opwith, settings, statusline).
+1. On the mac, with `~/work/workbench` cloned: `DRY_RUN=1 mac/setup.sh`,
+   then `mac/setup.sh`, then a second `mac/setup.sh` that changes nothing;
+   `ls -la ~/.claude/settings.json` is a regular file equal to
+   base+mac overlay; `home/install.sh --check mac` no drift. Fix what
+   breaks (assumptions marked in mac/setup.sh: mise on PATH after the
+   standalone install, `brew bundle cleanup` subcommand form). Then mark
+   phase 2 done and start phase 3 (agents/ from ai-hub runtime;
+   `step_aihub` becomes links inside `home/install.sh`).
+2. Backlog from this session: zsh plugins (autosuggestions,
+   syntax-highlighting) are referenced by `.zshrc` but nothing installs
+   `~/.local/share/zsh-plugins` on either profile (phase 4); omp prompts
+   (WATCHDOG.md, skills) still describe the dotfiles/container workflow and
+   want a content pass in phase 4; `providers/proxmox/README.md` sizing
+   notes (phase 1 leftover).
 
 ## Open questions
 
@@ -88,3 +101,17 @@ A session inside the box itself cannot reach the host and cannot run
   agent-vm `docs/design.md` (source map row, not a phase 1 step).
 - 2026-08-19: phase 1 committed and pushed (5f47c7e). Operator seat moves
   to devbox (has Proxmox ssh); the in-box session ends here.
+- 2026-08-19: phase 1 literal acceptance from devbox: `make provision
+  STEPS="user verify"` green, `remote-ls` 6 units; snapshot `pre-phase2`
+  (VM 105). Phase 2 executed in eleven commits (8325835..aaa5925): step 1
+  install.sh; step 2 merges (mise, git, opwith/op-env, Claude settings,
+  statusline, shell layer, herdr/agy/omp/nvim/zellij); step 3 bootstrap
+  `step_home`; step 4 mac/. Decisions taken in passing: pull.ff=only over
+  pull.rebase; core.pager and color.ui=never dropped from the shared
+  gitconfig (env handles the agent path); node pinned to major 24; uv
+  backend pin dropped (registry fixed); nvim/zellij box-only; agy settings
+  composed with `~` expansion in path lists; MISE_ENV via generated
+  `~/.config/workbench/env`. Two live findings fixed in step 3: mise must
+  run under the agent's login shell (else only the base 18 tools install)
+  and needs GITHUB_TOKEN (anonymous API limit hit at 49 tools) - both in
+  `step_tools` now. Box acceptance green; mac acceptance pending.
