@@ -96,7 +96,9 @@ step_system() {
   # here; without one zle redraws the whole line and every keystroke shows
   # twice over ssh. tic overwrites in place, so re-runs are harmless.
   tic -x -o /etc/terminfo "$files/xterm-ghostty.terminfo"
-  timedatectl set-timezone Etc/UTC
+  # The owner works on New York time (D15); the RTC stays in UTC and
+  # systemd-timesyncd (the 24.04 default, ntp.ubuntu.com) keeps the clock.
+  timedatectl set-timezone America/New_York
 }
 
 # ---------------------------------------------------------------------------

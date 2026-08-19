@@ -106,3 +106,7 @@ history. Older entries are condensed; `git log` has the full trail.
   down as vision D14; README, runbook (reboot procedure), architecture
   ownership table and the box CLAUDE.md updated, stale
   `box/files/mise.toml` reference removed.
+- 2026-08-19: timezone check: the box was still on Etc/UTC (inherited from
+  agent-vm, never decided). Switched to America/New_York in bootstrap
+  step_system, recorded as D15; tzdata 2026c current, systemd-timesyncd
+  synced against ntp.ubuntu.com, chrony deliberately not installed.

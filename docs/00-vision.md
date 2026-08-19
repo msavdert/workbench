@@ -181,6 +181,15 @@ agent that finds a half-upgraded or unexpectedly rebooted box mid-task
 loses its session, and the box runs Remote Control servers that a reboot
 silently kills, so the owner picks the moment.
 
+D15 The box keeps the owner's wall clock: `America/New_York`, set by
+`timedatectl` in `box/bootstrap.sh` `step_system`. The predecessor used UTC
+by default; that was inherited, never decided. Logs, timers
+(`unattended-upgrades`, `docker-prune.timer`) and `box:maintain` output
+therefore read in local time. Time sync stays on Ubuntu's
+`systemd-timesyncd` against `ntp.ubuntu.com`; chrony is not installed
+because a VM client needs nothing more. `tzdata` comes from the distro and
+is refreshed by the normal apt passes (D14).
+
 ## Known differences between substrates (accepted, documented)
 
 - Snapshots: Proxmox has ZFS snapshots and `make snapshot` / `make rollback`;
