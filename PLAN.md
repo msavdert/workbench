@@ -190,3 +190,17 @@ the mac since the devbox seat is gone.
   the repo's `claude-fable-5[1m]`; the operator chose to let the repo win
   rather than encode the runtime value, so `/model` in a session is an
   experiment there too, not a setting.
+- 2026-08-19: omp config reviewed against `omp models` and the omp-fleet
+  benchmark notes. Key fact recovered: Synthetic aliases resolve to concrete
+  models (syn:large:text = GLM-5.2, syn:large:vision = Kimi-K3), so `slow`/
+  `plan` share a slot with audit/security-reviewer and were NOT moved to the
+  vision alias to regain snapcompact - that would queue them in front of
+  librarian and docs. Changed: `tiny` :high -> :minimal (comment and suffix
+  disagreed), and the `default` fallback chain, whose second rung was the
+  primary itself and which no longer crossed providers. Corrected claims in
+  config.yml and AGENTS.md: no model here has an `xhigh` rung, snapcompact
+  never worked on the main session before the move to flash, the reviewer's
+  stated reason, "no subagent sits on the session's model", and a hook said to
+  deploy "via the Dockerfile COPY". Also: the `work` Remote Control server was
+  stopped, disabled and re-enabled; it came back with the same environment id,
+  which is the runbook's point that registrations cannot be removed.
