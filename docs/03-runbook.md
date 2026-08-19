@@ -106,7 +106,8 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
   from the operator's current shell environment.
 - `opwith git gh ...` for gh; `git push` over HTTPS needs nothing extra.
 - Adding a secret: put it in the `dotfiles` vault, add an `op://` line to a
-  file in `box/op-env/`, `make provision STEPS=user`.
+  file in `home/op-env/`, push, `make provision STEPS=home` (the box links
+  `~/.config/op-env` into its clone of this repository).
 
 ## Updating
 
@@ -115,7 +116,8 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
 | OS packages | `ssh agent-vm-ssh 'sudo apt update && sudo apt full-upgrade -y'`; `sudo needrestart -b` shows `KSTA: 3` if a reboot is pending |
 | mise tools | `ssh agent-vm-ssh 'mise up'` |
 | Claude Code | self-updates; `claude update` to force |
-| This repo's config | `make provision` |
+| This repo's config | `make provision`; `box/` only: `STEPS=user`; `home/` only: `STEPS=home` (pulls `~/work/workbench` on the box and re-runs `home/install.sh box`) |
+| Drift check of `home/` on the box | `ssh agent-vm-ssh 'bash -lc "~/work/workbench/home/install.sh --check box"'` (also part of `verify`) |
 | ai-hub (global CLAUDE.md, agents, skills, hooks) | `make provision STEPS=aihub` or on the VM `git -C ~/work/ai-hub pull && bash ~/work/ai-hub/install.sh` |
 
 ## Rollback / rebuild

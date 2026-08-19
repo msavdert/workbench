@@ -13,6 +13,7 @@ AGENT_USER="${AGENT_USER:-agent}"
 # ai-hub: the operator's agent-behaviour repo (global CLAUDE.md, subagents,
 # skills, hooks). It stays a separate repo; this VM only installs it.
 AIHUB_REPO="${AIHUB_REPO:-https://github.com/msavdert/ai-hub.git}"
+WORKBENCH_REPO="${WORKBENCH_REPO:-https://github.com/msavdert/workbench.git}"
 AGENT_HOME="$(getent passwd "$AGENT_USER" | cut -d: -f6)"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 files="$here/files"
@@ -132,8 +133,8 @@ step_apt() {
     python3 python3-venv python3-dev python3-pip
     # database clients (servers run in docker)
     postgresql-client mysql-client redis-tools sqlite3
-    # shell hygiene
-    shellcheck
+    # shell hygiene; zsh is the interactive hand-off target only (D5)
+    shellcheck zsh
     # runtime managers / containers
     mise
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -202,16 +203,39 @@ step_user() {
 }
 
 # ---------------------------------------------------------------------------
+step_home() {
+  log "home: clone/update $WORKBENCH_REPO and run home/install.sh box (as $AGENT_USER)"
+  # The links must point at a durable checkout, not at the rsync staging dir
+  # (~/workbench-box is replaced on every provision), so home/ is installed
+  # from the agent's own clone of this repository. Public repo: no token
+  # needed; login shell anyway so PATH and MISE_ENV are the agent's own.
+  local dir="$AGENT_HOME/work/workbench"
+  if [[ -d $dir/.git ]]; then
+    as_agent bash -lc "git -C '$dir' pull -q --ff-only" || echo "  WARN: workbench pull failed (local changes?); using existing checkout"
+  else
+    as_agent bash -lc "git clone -q '$WORKBENCH_REPO' '$dir'"
+  fi
+  as_agent bash -lc "'$dir/home/install.sh' box" | sed 's/^/  /'
+}
+
+# ---------------------------------------------------------------------------
 step_tools() {
   log "tools: mise-managed runtimes and CLIs (as $AGENT_USER)"
+  # both are symlinks into ~/work/workbench/home/mise (step_home); login
+  # shell so MISE_ENV=box (from ~/.config/workbench/env via bashrc) selects
+  # config.box.toml - without it only the shared base would be installed
   as_agent mise trust -q "$AGENT_HOME/.config/mise/config.toml"
-  as_agent mise install -y
-  as_agent mise reshim
+  as_agent mise trust -q "$AGENT_HOME/.config/mise/config.box.toml"
+  # 49 tools resolve "latest" through the GitHub API, which rate-limits
+  # anonymous callers to 60/h (seen: 403 mid-install). With the op token in
+  # the login shell, `opwith git` injects GITHUB_TOKEN into this one process
+  # (home/op-env/git.env); without it, plain mise for a fresh box.
+  as_agent bash -lc 'if op whoami >/dev/null 2>&1; then opwith git mise install -y; else mise install -y; fi && mise reshim'
   log "tools: Claude Code (native installer, self-updating)"
   if [[ ! -x $AGENT_HOME/.local/bin/claude ]]; then
     as_agent bash -c 'curl -fsSL https://claude.ai/install.sh | bash' >/dev/null
   fi
-  as_agent mise ls --current 2>/dev/null | awk '{printf "  %-40s %s\n", $1, $2}'
+  as_agent bash -lc 'mise ls --current' 2>/dev/null | awk '{printf "  %-40s %s\n", $1, $2}'
   printf '  claude %s\n' "$(as_agent "$AGENT_HOME/.local/bin/claude" --version 2>/dev/null || echo '(not installed)')"
 }
 
@@ -265,12 +289,16 @@ step_verify() {
   check test -f /etc/needrestart/conf.d/99-agent.conf
   check test -L "$AGENT_HOME/.claude/CLAUDE.md"
   check grep -q boundary-gate.sh "$AGENT_HOME/.claude/settings.json"
+  check as_agent bash -lc "'$AGENT_HOME/work/workbench/home/install.sh' --check box"
+  # shellcheck disable=SC2016 # MISE_ENV must expand in the agent's login shell
+  check as_agent bash -lc 'test "$MISE_ENV" = box'
+  check command -v zsh
   check test -f /etc/claude-code/CLAUDE.md
   check test -f /etc/claude-code/CLAUDE.md
   [[ $ok == 1 ]] || die "verification failed"
 }
 
-STEPS=(system apt docker user tools aihub remotes verify)
+STEPS=(system apt docker user home tools aihub remotes verify)
 if [[ $# -gt 0 ]]; then STEPS=("$@"); fi
 for s in "${STEPS[@]}"; do
   declare -F "step_$s" >/dev/null || die "unknown step: $s"
