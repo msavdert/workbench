@@ -182,10 +182,6 @@ step_user() {
   put 0755 "$files/remote-rm" "$AGENT_HOME/.local/bin/remote-rm"
   put 0755 "$files/remote-ls" "$AGENT_HOME/.local/bin/remote-ls"
   as_agent systemctl --user daemon-reload 2>/dev/null || true
-  # Claude Code statusline: a standalone script the TUI execs and reads
-  # stdout from directly, never part of a shell an agent's Bash tool sees.
-  # Safe to colour regardless of bashrc's NO_COLOR policy for agent shells.
-  put 0755 "$files/claude-statusline.sh" "$AGENT_HOME/.claude/statusline.sh"
   # ~/.claude.json holds two one-time consents that otherwise need a TTY and
   # would keep claude-remote.service from starting: workspace trust for
   # ~/work and the "Enable Remote Control? (y/n)" dialog. Merge them in,

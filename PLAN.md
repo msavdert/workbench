@@ -50,7 +50,7 @@ A session inside the box itself cannot reach the host and cannot run
 ## Open questions
 
 - nvim / zellij: keep under `home/` for both profiles, or drop? (phase 2)
-- Which statusline survives, agent-vm's or dotfiles'? (phase 2)
+
 
 ## Backlog (not scheduled)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Deployed by agent-vm/provision (step_user) to ~/.claude/statusline.sh.
-# Vendored from github.com/msavdert/dotfiles/tree/main/configs/claude - edit
-# here (or there and re-copy), not on the VM directly.
+# ~/.claude/statusline.sh (home/claude, linked by home/install.sh). Claude Code
+# execs it and reads stdout; it is never part of a shell an agent sees, so
+# colour here is safe regardless of the NO_COLOR policy for agent shells.
 # ==============================================================================
 # Claude Code Statusline — Tokyo Cyber Minimalist
 # ==============================================================================
@@ -34,7 +34,7 @@ set -f
 # Ensure package-manager directories are prepended to PATH so dependencies like
 # jq and git can always be resolved, even in restricted subshell environments.
 for d in /opt/homebrew/bin /usr/local/bin; do
-  [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$d:$PATH";; esac
+  [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$d:$PATH" ;; esac
 done
 export PATH
 
@@ -57,9 +57,9 @@ input=$(cat)
 # ------------------------------------------------------------------------------
 # Raw ESC assignment allows fast, direct string interpolation with printf '%s'.
 ESC=$'\033'
-R="${ESC}[0m"           # Reset
-B="${ESC}[1m"           # Bold
-D="${ESC}[2m"           # Dimmed / Subdued
+R="${ESC}[0m" # Reset
+B="${ESC}[1m" # Bold
+D="${ESC}[2m" # Dimmed / Subdued
 
 CY="${ESC}[38;5;117m"   # Soft Cyan / Sky (Model name, PR badges, untracked flags)
 BL="${ESC}[38;5;75m"    # Soft Blue (Directory, worktree, agent badges)
@@ -70,8 +70,8 @@ RD="${ESC}[38;5;203m"   # Coral Red (High threshold alerts, removed lines)
 WH="${ESC}[38;5;253m"   # Clean White (Emphasized text, values)
 GRAY="${ESC}[38;5;242m" # Slate Gray (Neutral dividers)
 
-SEP=" ${GRAY}│${R} "    # Major segment separator
-DOT=" ${GRAY}·${R} "    # Minor segment separator
+SEP=" ${GRAY}│${R} " # Major segment separator
+DOT=" ${GRAY}·${R} " # Minor segment separator
 
 # ------------------------------------------------------------------------------
 # 4. Helper Functions
@@ -94,9 +94,9 @@ link() {
 fmt_tokens() {
   local n=${1:-0}
   if [ "$n" -ge 1000000 ]; then
-    printf '%dM' "$(( n / 1000000 ))"
+    printf '%dM' "$((n / 1000000))"
   elif [ "$n" -ge 1000 ]; then
-    printf '%dk' "$(( n / 1000 ))"
+    printf '%dk' "$((n / 1000))"
   else
     printf '%d' "$n"
   fi
@@ -104,7 +104,7 @@ fmt_tokens() {
 
 # int <value> <fallback>
 # Sanitizes inputs to safe integers to prevent bash arithmetic syntax errors ($(( ... ))).
-int() { case "$1" in ''|*[!0-9-]*) echo "${2:-0}";; *) echo "$1";; esac; }
+int() { case "$1" in '' | *[!0-9-]*) echo "${2:-0}" ;; *) echo "$1" ;; esac }
 
 # ------------------------------------------------------------------------------
 # 5. Single-Pass JSON Parsing Engine
@@ -197,15 +197,15 @@ SID=${SID:-nosess}
 CACHE="${TMPDIR:-/tmp}/cc-sl-${SID//[^A-Za-z0-9]/_}.cache"
 now=$(date +%s 2>/dev/null || echo 0)
 mt=$(stat -c %Y "$CACHE" 2>/dev/null || stat -f %m "$CACHE" 2>/dev/null || echo 0)
-case "$mt" in ''|*[!0-9]*) mt=0;; esac
+case "$mt" in '' | *[!0-9]*) mt=0 ;; esac
 
-if [ -s "$CACHE" ] && [ $(( now - mt )) -lt 5 ]; then
+if [ -s "$CACHE" ] && [ $((now - mt)) -lt 5 ]; then
   # Cache hit (< 5s old)
-  IFS=$'\t' read -r BRANCH AHEAD BEHIND STAGED UNSTAGED UNTRACKED GIT_ADD GIT_REM BADGE < "$CACHE"
+  IFS=$'\t' read -r BRANCH AHEAD BEHIND STAGED UNSTAGED UNTRACKED GIT_ADD GIT_REM BADGE <"$CACHE"
 else
   # Cache miss or expired: query git and workspace state
-  BRANCH=$(git -C "$CWD" symbolic-ref --short HEAD 2>/dev/null \
-           || git -C "$CWD" rev-parse --short HEAD 2>/dev/null || echo "")
+  BRANCH=$(git -C "$CWD" symbolic-ref --short HEAD 2>/dev/null ||
+    git -C "$CWD" rev-parse --short HEAD 2>/dev/null || echo "")
   AHEAD=0
   BEHIND=0
   STAGED=0
@@ -245,7 +245,7 @@ else
 
   # Custom badge hook (evaluates SL_BADGE_CMD if provided)
   if [ -n "$SL_BADGE_CMD" ]; then
-    BADGE=$( (cd "$ROOT" 2>/dev/null && eval "$SL_BADGE_CMD") 2>/dev/null | head -1 | tr -d '\t\n' )
+    BADGE=$( (cd "$ROOT" 2>/dev/null && eval "$SL_BADGE_CMD") 2>/dev/null | head -1 | tr -d '\t\n')
   fi
 
   AHEAD=$(int "$AHEAD" 0)
@@ -257,7 +257,7 @@ else
   GIT_REM=$(int "$GIT_REM" 0)
 
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
-    "$BRANCH" "$AHEAD" "$BEHIND" "$STAGED" "$UNSTAGED" "$UNTRACKED" "$GIT_ADD" "$GIT_REM" "$BADGE" > "$CACHE" 2>/dev/null
+    "$BRANCH" "$AHEAD" "$BEHIND" "$STAGED" "$UNSTAGED" "$UNTRACKED" "$GIT_ADD" "$GIT_REM" "$BADGE" >"$CACHE" 2>/dev/null
 fi
 
 AHEAD=$(int "$AHEAD" 0)
@@ -279,24 +279,24 @@ L1=""
 # 1. Vim Editor Mode (when Vim mode is enabled in Claude Code)
 if [ -n "$VIM_MODE" ]; then
   case "$VIM_MODE" in
-    NORMAL)  L1="${L1}${MG}[NOR]${R} ";;
-    INSERT)  L1="${L1}${GR}[INS]${R} ";;
-    VISUAL*) L1="${L1}${YE}[VIS]${R} ";;
-    *)       L1="${L1}${CY}[${VIM_MODE:0:3}]${R} ";;
+    NORMAL) L1="${L1}${MG}[NOR]${R} " ;;
+    INSERT) L1="${L1}${GR}[INS]${R} " ;;
+    VISUAL*) L1="${L1}${YE}[VIS]${R} " ;;
+    *) L1="${L1}${CY}[${VIM_MODE:0:3}]${R} " ;;
   esac
 fi
 
 # 2. Model Name & Execution Modifiers (Effort / Thinking / Fast Mode)
 L1="${L1}${CY}󰚩 ${B}${MODEL}${R}"
-[ -n "$EFFORT" ]    && L1="${L1}${DOT}${WH}${EFFORT}${R}"
-[ "$THINK" = true ]  && L1="${L1}${DOT}${MG}think${R}"
-[ "$FAST" = true ]   && L1="${L1}${DOT}${YE}⚡fast${R}"
+[ -n "$EFFORT" ] && L1="${L1}${DOT}${WH}${EFFORT}${R}"
+[ "$THINK" = true ] && L1="${L1}${DOT}${MG}think${R}"
+[ "$FAST" = true ] && L1="${L1}${DOT}${YE}⚡fast${R}"
 
 # 3. Prompt Caching Efficiency (Cache Hit Ratio)
 # Formula: (cache_read_input_tokens / total_input_tokens) * 100
 # Measures the fraction of prompt tokens served directly from cache for cost/speed gains.
 if [ "$IN_TOK" -gt 0 ] && [ "$CACHE_R" -gt 0 ]; then
-  hit_pct=$(( CACHE_R * 100 / IN_TOK ))
+  hit_pct=$((CACHE_R * 100 / IN_TOK))
   [ $hit_pct -gt 100 ] && hit_pct=100
   L1="${L1}${SEP}${MG}⚡${hit_pct}% cache${R}"
 fi
@@ -310,11 +310,11 @@ if [ "$FIVE_PCT" -ge 0 ]; then
 
   rst_txt=""
   if [ "$FIVE_RST" -gt 0 ] && [ "$FIVE_RST" -gt "$now" ]; then
-    diff=$(( FIVE_RST - now ))
-    mins=$(( diff / 60 ))
+    diff=$((FIVE_RST - now))
+    mins=$((diff / 60))
     if [ "$mins" -ge 60 ]; then
-      h=$(( mins / 60 ))
-      m=$(( mins % 60 ))
+      h=$((mins / 60))
+      m=$((mins % 60))
       rst_txt=" (${D}⏱ ${h}h${m}m${R})"
     elif [ "$mins" -gt 0 ]; then
       rst_txt=" (${D}⏱ ${mins}m${R})"
@@ -347,14 +347,14 @@ ctx_col="$GR"
 [ "$CTX_PCT" -ge 80 ] && ctx_col="$RD"
 
 bw=8
-fill=$(( CTX_PCT * bw / 100 ))
+fill=$((CTX_PCT * bw / 100))
 [ $fill -gt $bw ] && fill=$bw
 [ $fill -lt 0 ] && fill=0
-empty=$(( bw - fill ))
+empty=$((bw - fill))
 
 bar=""
-for ((i=0;i<fill;i++)); do bar="${bar}▓"; done
-for ((i=0;i<empty;i++)); do bar="${bar}░"; done
+for ((i = 0; i < fill; i++)); do bar="${bar}▓"; done
+for ((i = 0; i < empty; i++)); do bar="${bar}░"; done
 
 in_tok_fmt=$(fmt_tokens "$IN_TOK")
 size_tok_fmt=$(fmt_tokens "$CTX_SIZE")
@@ -374,10 +374,10 @@ fi
 # 3. Git Branch & Detailed Status Indicators (Ahead/Behind & File Counts)
 if [ -n "$BRANCH" ]; then
   git_seg="${MG} ${BRANCH}${R}"
-  [ "$AHEAD" -gt 0 ]     && git_seg="${git_seg} ${BL}⇡${AHEAD}${R}"
-  [ "$BEHIND" -gt 0 ]    && git_seg="${git_seg} ${RD}⇣${BEHIND}${R}"
-  [ "$STAGED" -gt 0 ]    && git_seg="${git_seg} ${GR}+${STAGED}${R}"
-  [ "$UNSTAGED" -gt 0 ]  && git_seg="${git_seg} ${YE}*${UNSTAGED}${R}"
+  [ "$AHEAD" -gt 0 ] && git_seg="${git_seg} ${BL}⇡${AHEAD}${R}"
+  [ "$BEHIND" -gt 0 ] && git_seg="${git_seg} ${RD}⇣${BEHIND}${R}"
+  [ "$STAGED" -gt 0 ] && git_seg="${git_seg} ${GR}+${STAGED}${R}"
+  [ "$UNSTAGED" -gt 0 ] && git_seg="${git_seg} ${YE}*${UNSTAGED}${R}"
   [ "$UNTRACKED" -gt 0 ] && git_seg="${git_seg} ${CY}?${UNTRACKED}${R}"
   L2="${L2}${SEP}${git_seg}"
 fi
@@ -389,10 +389,22 @@ if [ -n "$PR_NUM" ]; then
   pr_state_icon=""
   pr_col="$CY"
   case "$PR_STATE" in
-    approved)          pr_state_icon=" 󰄬"; pr_col="$GR";;
-    changes_requested) pr_state_icon=" 󰅖"; pr_col="$RD";;
-    draft)             pr_state_icon=" ${D}(draft)${R}"; pr_col="$GRAY";;
-    *)                 pr_state_icon=""; pr_col="$CY";;
+    approved)
+      pr_state_icon=" 󰄬"
+      pr_col="$GR"
+      ;;
+    changes_requested)
+      pr_state_icon=" 󰅖"
+      pr_col="$RD"
+      ;;
+    draft)
+      pr_state_icon=" ${D}(draft)${R}"
+      pr_col="$GRAY"
+      ;;
+    *)
+      pr_state_icon=""
+      pr_col="$CY"
+      ;;
   esac
   pr_label="${pr_icon} #${PR_NUM}${pr_state_icon}"
   pr_clickable=$(link "${pr_col}${pr_label}${R}" "$PR_URL")
@@ -424,8 +436,8 @@ fi
 # 6. Custom Badge (if SL_BADGE_CMD is configured)
 if [ -n "$BADGE" ]; then
   case "$BADGE" in
-    *:*) L2="${L2}${SEP}${GR}●${R} ${D}${BADGE%%:*}:${R}${WH}${BADGE#*:}${R}";;
-    *)   L2="${L2}${SEP}${GR}●${R} ${WH}${BADGE}${R}";;
+    *:*) L2="${L2}${SEP}${GR}●${R} ${D}${BADGE%%:*}:${R}${WH}${BADGE#*:}${R}" ;;
+    *) L2="${L2}${SEP}${GR}●${R} ${WH}${BADGE}${R}" ;;
   esac
 fi
 
