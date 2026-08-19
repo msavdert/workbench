@@ -7,8 +7,8 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 
 | # | Phase | Status |
 |---|---|---|
-| 0 | Founding documents | in progress |
-| 1 | Move agent-vm in, unchanged behaviour | not started |
+| 0 | Founding documents | done |
+| 1 | Move agent-vm in, unchanged behaviour | active |
 | 2 | home/ and mac/ | not started |
 | 3 | agents/ (from ai-hub runtime) | not started |
 | 4 | Human layer, herdr/agy/aws-cli, plugins | not started |
@@ -17,18 +17,20 @@ before ending a session. Phases are defined in `docs/02-migration.md`.
 
 ## Now
 
-Phase 0. Documents drafted in `~/work/workbench` on the box, not committed,
-not yet published. `docs/00-vision.md` reviewed once: D1 changed to a clean
-start (no history import), D5 changed to allow a zsh hand-off for
-interactive terminals; all other decisions accepted.
+Phase 1 is active; nothing of it exists yet. Phase 0 is complete: the
+repository is published at https://github.com/msavdert/workbench and
+registered as Remote Control environment `workbench`. The live box is still
+built by `agent-vm`; `~/work/agent-vm` and the `dotfiles` clone are the
+read-only sources for the source map in `docs/02-migration.md`.
 
 ## Next
 
-1. On explicit approval: first commit, `opwith git gh repo create
-   msavdert/workbench --public` (the repository is written to be public;
-   nothing in it may ever depend on being private), push, then
-   `remote-add workbench https://github.com/msavdert/workbench.git`.
-2. Then phase 1.
+1. Phase 1, step 1: copy agent-vm's `provision/`, `pve/`, `cloud-init/`,
+   `Makefile` into `box/`, `providers/proxmox/`, `Makefile` per the source
+   map. Behaviour must not change.
+2. Adjust paths; `make lint` green; `make provision STEPS="user verify"`
+   against the live box; `remote-ls` unchanged.
+3. Update this file, then stop and ask before committing.
 
 ## Open questions
 
@@ -51,3 +53,5 @@ interactive terminals; all other decisions accepted.
   only doctrine/lab/journal. mise researched; profiles = MISE_ENV +
   config.<profile>.toml (verified on 2026.8.8). Review round 1: D1 clean
   start, D5 zsh hand-off, documents rewritten for a public repository.
+- 2026-08-19: first commit, repository published (public), Remote Control
+  environment `workbench` added. Phase 0 done, phase 1 active.
