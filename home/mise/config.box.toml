@@ -14,7 +14,6 @@ node = "24"
 go = "1.26"
 java = "temurin-24"
 rust = "latest"
-bun = "latest"
 cargo-binstall = "latest"
 
 # --- editor and multiplexer (interactive only; config under home/nvim,

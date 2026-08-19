@@ -39,6 +39,9 @@ shfmt = "latest"
 # --- AI harnesses (D12); omp is the npm package below ---
 herdr = "latest"
 agy = "latest"
+# bun is the package manager of the npm backend (settings.npm.package_manager
+# above); without it the omp install fails on a profile without node.
+bun = "latest"
 "npm:@oh-my-pi/pi-coding-agent" = "latest"
 
 [tasks."completions:regen"]
