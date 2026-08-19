@@ -83,7 +83,9 @@ history. Older entries are condensed; `git log` has the full trail.
   quickstart, diagram, highlights), docs/glossary.md, lint workflow and
   badge, verify transcript under docs/reference/, PLAN log condensed,
   operator seat moved to the runbook.
-- 2026-08-19: herdr 0.8.0 leaves SGR mouse reporting and the kitty keyboard
-  protocol on after prefix+q detach (raw "35;64;25M" bytes at the prompt);
-  .zshrc now wraps herdr and resets both modes on exit. Revisit when a
-  herdr release fixes detach.
+- 2026-08-19: herdr prefix+q over ssh left "3;1:3u" / "35;64;25M" on the
+  next prompt. Not a herdr mode leak (verified in a pty: resets are sent
+  before the detach message); it is the q key release and mouse motion
+  arriving in the latency window before the resets reach Ghostty. .zshrc
+  wraps herdr and drains the tty for 0.2s of quiet when SSH_CONNECTION is
+  set. zellij used to absorb this in the old container setup.
