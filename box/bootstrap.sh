@@ -166,10 +166,17 @@ step_apt() {
 # ---------------------------------------------------------------------------
 step_docker() {
   log "docker: daemon config, group membership, cache janitor"
+  # Restart only on a real daemon.json change: live-restore keeps containers
+  # up, but an unconditional restart still kills in-flight builds on every
+  # provision run.
+  local before
+  before=$(md5sum /etc/docker/daemon.json 2>/dev/null || true)
   put 0644 "$files/docker-daemon.json" /etc/docker/daemon.json
   usermod -aG docker "$AGENT_USER"
   systemctl enable --now docker >/dev/null
-  systemctl restart docker
+  if [[ $before != "$(md5sum /etc/docker/daemon.json)" ]]; then
+    systemctl restart docker
+  fi
   put 0644 "$files/docker-prune.service" /etc/systemd/system/docker-prune.service
   put 0644 "$files/docker-prune.timer" /etc/systemd/system/docker-prune.timer
   systemctl daemon-reload

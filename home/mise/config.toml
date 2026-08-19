@@ -82,6 +82,10 @@ jq -r '.enabledPlugins // {} | to_entries[] | select(.value) | .key' ~/.claude/s
 description = "Install herdr's hook scripts for claude, omp and agy, then re-run home/install.sh to keep settings.json composed"
 run = """
 set -eu
+# WORKBENCH_PROFILE comes from ~/.config/workbench/env, written by an earlier
+# home/install.sh run (bootstrap step_home precedes step_tools). Fail loudly
+# rather than with an unbound-variable error if that order is ever broken.
+[ -n "${WORKBENCH_PROFILE:-}" ] || { echo "herdr:integrations: WORKBENCH_PROFILE unset; run home/install.sh <profile> first" >&2; exit 1; }
 herdr integration install claude
 herdr integration install omp
 mkdir -p ~/.gemini/config

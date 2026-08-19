@@ -1,8 +1,7 @@
 # =============================================================================
-# Oh My Pi (OMP) keybindings  ->  baked into the container image at BUILD time
+# Oh My Pi (OMP) keybindings  ->  linked by home/install.sh
 # =============================================================================
-# COPYed to /home/dev/.omp/agent/keybindings.yml (symlinked on the macOS thin
-# client). This is a FLAT mapping of keybinding action id -> chord; it is NOT
+# Symlinked to ~/.omp/agent/keybindings.yml on the box and on the mac. This is a FLAT mapping of keybinding action id -> chord; it is NOT
 # read from config.yml and there is no nested `keybindings:` object. A value is
 # either one chord string or an array of chord strings. Run `/hotkeys` in a
 # session to see what is actually live, including extension-provided chords.
@@ -34,7 +33,7 @@ app.model.cycleBackward:
 # way to try something before committing it to config.yml.
 app.model.selectTemporary: Alt+P
 # Full selector: pick models AND reassign roles persistently. Note this writes
-# through to the container's config.yml, which is thrown away on rebuild; port
+# through to ~/.omp/agent/config.yml, which install.sh regenerates; port
 # anything you want to keep back into home/omp/config.yml.
 app.model.select: Alt+M
 

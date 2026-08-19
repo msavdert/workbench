@@ -127,3 +127,9 @@ history.
   reference doc matches inline tasks, PLAN log condensed. Non-finding: the
   smol chain's gemini-3.5-flash is real (`omp models` on the box lists 3.5,
   3.6, 3.7-flash); config.yml's fingerprint table now says so.
+- 2026-08-19: review low-priority follow-ups: docker restarts only when
+  daemon.json changed, omp WATCHDOG/models/keybindings lost their container
+  wording (VM + install.sh), herdr:integrations guards WORKBENCH_PROFILE,
+  transcribe.py skips malformed yt-dlp lines. omp 17.3.5 source confirms the
+  read tool field is `path` (delegation.ts hook is correct). Open for the
+  operator: statusline glyphs vs the no-emoji rule.

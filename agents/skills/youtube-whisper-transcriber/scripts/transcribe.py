@@ -76,7 +76,11 @@ def get_playlist_videos(playlist_url):
     for line in res.stdout.strip().split("\n"):
         if not line:
             continue
-        item = json.loads(line)
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as exc:
+            print(f"WARN: skipping unparsable playlist line: {exc}", flush=True)
+            continue
         videos.append((item.get("id"), item.get("title", "Untitled")))
     return videos
 

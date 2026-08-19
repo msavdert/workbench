@@ -7,8 +7,8 @@ specific to this environment; the advisor already knows how to review code.
 
 # Review priorities
 
-You watch a session that edits a dotfiles repository which builds a container
-image. The failures worth catching here are configuration failures: they pass
+You watch a session that edits the workbench repository, which provisions an
+Ubuntu VM (the box) and a macOS client. The failures worth catching here are configuration failures: they pass
 every test, look correct in the diff, and only surface on the next rebuild or the
 next `ssh`. Raise a note when you see one; stay quiet otherwise.
 
@@ -19,7 +19,7 @@ including `ssh host command`, `scp`, `rsync`, git hooks, and `docker exec`. Flag
 output written unconditionally at startup (a banner, `echo`, a fastfetch call, a
 motd) — it corrupts `scp`/`rsync` streams; anything that reads stdin or blocks;
 a command invoked without a `(( $+commands[x] ))` guard, since the same file runs
-on macOS and in the container and a missing binary aborts the file under `-e`
+on macOS and on the box and a missing binary aborts the file under `-e`
 semantics; an alias whose name shadows a POSIX tool (`grep`, `cat`, `ls`) —
 aliases expand inside function bodies at definition time and silently rewrite
 functions defined later; and a network call, a `tool completion` subshell, or a
@@ -38,24 +38,22 @@ shell startup pulls a secret into every shell instead of one command, and an
 reference into a value on disk. A diagnostic that dumps a whole env file or
 config into the transcript is the same leak by another route.
 
-## Dockerfile changes that add runtime bootstrapping
+## Provisioning steps that are not idempotent
 
-Tooling is installed at build time; a container start must configure nothing.
-Flag an `ENTRYPOINT` or `CMD` script that installs a package, resolves a tool
-version, clones a repository, or downloads a toolchain; a `latest` resolution
-moved out of the build into the entrypoint; and any first-run setup guarded by
-"only if missing", which is runtime bootstrapping wearing a cache. It makes start
-time depend on the network and makes two containers from one image behave
-differently.
+`box/bootstrap.sh` and `home/install.sh` are re-run on already-provisioned
+machines; every step must converge, not append. Flag a step that appends to a
+file without a marker or a guard, installs something only "if missing" so a
+later version change is never applied, resolves `latest` at run time so two
+runs of the same commit differ, or restarts a service unconditionally when
+nothing it owns changed.
 
-## Volume mounts that shadow image-baked config
+## Hand fixes that never reach the repository
 
-Persistence is deliberately narrow: the work tree, local state, and kubeconfig.
-Flag any new mount whose target is an ancestor of an image-provided path —
-`/home/dev` above all, but equally a bind over a config directory or a dotfile.
-The image's own file disappears behind the volume, the mount keeps serving the
-version from first boot, and every subsequent image upgrade silently has no
-effect. This class of bug is invisible in the diff and diagnosed weeks later.
+A machine is changed through `box/` and `home/`, never by hand. Flag a
+transcript that edits a file on the box or under `$HOME` directly, chmods or
+symlinks something outside `install.sh`, or "just runs" a command on the box
+to make a check pass, without the same change landing in the repository in the
+same session. The fix works once and is gone at the next rebuild.
 
 ## Subagent output believed without verification
 

@@ -1,8 +1,7 @@
 # =============================================================================
-# Oh My Pi (OMP) model registry overrides  ->  baked into the image at BUILD time
+# Oh My Pi (OMP) model registry overrides  ->  linked by home/install.sh
 # =============================================================================
-# COPYed to /home/dev/.omp/agent/models.yml inside the image (symlinked on the
-# macOS thin client). OMP loads its bundled provider/model catalog first, then
+# Symlinked to ~/.omp/agent/models.yml on the box and on the mac. OMP loads its bundled provider/model catalog first, then
 # layers this file on top; nothing here defines a new provider or a new model.
 #
 # What this file is FOR:
