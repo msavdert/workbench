@@ -8,14 +8,18 @@ description: Use when changing this OMP setup itself - editing home/omp/config.y
 OMP's user agent directory is its **default**, `~/.omp/agent/`. There is no
 `PI_CODING_AGENT_DIR` anywhere in this repo, and there must not be: the variable
 relocates the whole agent base (config, auth store, sessions), and pointing it at
-a repo checkout would break the container, which never clones this repo.
+a repo checkout would break the agent base, which reaches `~/.omp/agent/` only
+through the per-file links below.
 
-The tracked source of truth is `home/omp/`, copied into the image at
-`/home/dev/.omp/agent/` by the config layer of the `Dockerfile`. So: **edit the
-repo, rebuild the image, pull on the VPS** (`skill://devbox-image`,
-`skill://vps-deploy`). Editing `~/.omp/agent/*` inside a running container works
-for a quick experiment and is destroyed by the next image pull - that directory
-is not one of the three persisted volumes.
+The tracked source of truth is `home/omp/`, linked file-by-file into
+`~/.omp/agent/` by `home/install.sh` (see the loop over
+`config.yml models.yml keybindings.yml lsp.json AGENTS.md RULES.md WATCHDOG.md
+APPEND_SYSTEM.md agents skills hooks`). So: **edit the repo, then re-run
+`home/install.sh`** - `make provision STEPS=home` from the mac (pulls the
+box's own checkout and re-links), or `home/install.sh box` directly on the box.
+Editing `~/.omp/agent/*` in place is not a shortcut: every path in that loop is
+a symlink into the box's checkout of this repo, so the edit lands in the repo
+itself - commit it there rather than treating it as disposable.
 
 ## Which file owns what
 
@@ -159,13 +163,14 @@ on built-in models and only surfaces the error in the UI, so verify with
 
 ## Ship it
 
-`home/omp/` is inside the image, so a change is not real until:
+`home/omp/` is linked, not copied, so a change is not real on the box until
+`home/install.sh` has re-run there:
 
 ```bash
-docker build -t devbox-test .    # local check
 git commit -am "feat(omp): ..." && git push
-ssh vps 'cd ~/devbox && docker compose pull && docker compose up -d'
+make provision STEPS=home   # from the mac: box pulls its checkout, re-links
+omp config path              # on the box, confirm it still resolves to ~/.omp/agent
 ```
 
-And per `CLAUDE.md` invariant 7, update the doc that describes the behaviour in
+And per `AGENTS.md` rule 5, update the doc that describes the behaviour in
 the same commit.

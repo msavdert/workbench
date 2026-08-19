@@ -1,12 +1,12 @@
--- The one place LazyVim's defaults are adjusted for the devbox.
+-- The one place LazyVim's defaults are adjusted for the box.
 --
--- Rule (CLAUDE.md invariant 1): nothing is downloaded after `docker build`.
--- Language servers and formatters therefore come from home/mise/config.box.toml,
--- not from mason. Adding one = one line in devbox.toml + one entry below.
+-- One source per setting: language servers and formatters come from
+-- home/mise/config.box.toml, not from mason. Adding one = one line there +
+-- one entry below.
 return {
-  -- mason downloads binaries into ~/.local/share/nvim at runtime; that
-  -- directory is not persisted, so every container recreation would fetch
-  -- them again. Disabled; nvim-lspconfig then uses whatever is on $PATH.
+  -- mason downloads binaries into ~/.local/share/nvim at runtime, outside
+  -- mise and outside this repository, so a rebuilt box would fetch them
+  -- again unversioned. Disabled; nvim-lspconfig then uses whatever is on $PATH.
   { "mason-org/mason.nvim", enabled = false },
   { "mason-org/mason-lspconfig.nvim", enabled = false },
 

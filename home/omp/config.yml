@@ -1,8 +1,8 @@
 # =============================================================================
-# Oh My Pi (OMP) agent settings  ->  baked into the container image at BUILD time
+# Oh My Pi (OMP) agent settings  ->  linked into ~/.omp/agent by home/install.sh
 # =============================================================================
-# This file is COPYed to /home/dev/.omp/agent/config.yml inside the image (and
-# symlinked to ~/.omp/agent/config.yml on the macOS thin client). It is the
+# This file is symlinked to ~/.omp/agent/config.yml on the box and on the
+# macOS thin client (`home/install.sh`, one source per setting). It is the
 # GLOBAL settings layer: built-in defaults <- THIS FILE <- <cwd>/.omp/config.yml
 # <- `--config` overlays <- runtime flags.
 #
@@ -188,7 +188,7 @@ task:
   # a batch of 20 librarians is 20 serialised requests, not a fan-out.
   # 8 is the honest ceiling for this box: wide enough for a real Antigravity
   # fan-out, narrow enough that a Synthetic-heavy batch does not build a 30-deep
-  # queue behind one slot, and gentle on a shared VPS's RAM. With Anthropic gone
+  # queue behind one slot, and gentle on the box's RAM. With Anthropic gone
   # this ceiling binds harder than it used to — the parallel width now lives
   # almost entirely on Antigravity, so a batch of Synthetic agents is the case to
   # keep an eye on.
@@ -211,7 +211,7 @@ task:
   # Finished subagents stay live in memory this long before being parked to disk
   # (5 min, down from the 7 min default). Parking is lossless — messaging a
   # parked agent revives it from its session file — so on a memory-constrained
-  # VPS there is no reason to hold idle sessions resident for longer.
+  # box there is no reason to hold idle sessions resident for longer.
   agentIdleTtlMs: 300000
 
 # --- Advisor -----------------------------------------------------------------
@@ -289,7 +289,7 @@ memories:
   # work you are still doing, and summarising it mid-flight is noise.
   minRolloutIdleHours: 6
   # Hard cap on sessions processed per launch. 32 (vs 64) halves worst-case
-  # cold-start cost on a small VPS; the backlog is drained over the next launches.
+  # cold-start cost on a small box; the backlog is drained over the next launches.
   maxRolloutsPerStartup: 32
   # Budget for the summary injected into every system prompt. Trimmed from 5000
   # because this rides along on subagent prompts too, and the Synthetic models
@@ -372,9 +372,9 @@ retry:
       - google-antigravity/gemini-3.7-flash:high
 # --- Tools and approvals -----------------------------------------------------
 tools:
-  # This is a disposable container on a VPS: the workspace is a volume, the
-  # image rebuilds from the Dockerfile, and nothing here is precious. Prompting
-  # for every write would make the agent useless without making the box safer.
+  # The box is rebuilt from this repository (`make bootstrap-all`) and its
+  # projects live in git; a `clean` snapshot exists on Proxmox. Prompting for
+  # every write would make the agent useless without making the box safer.
   # The safety net is the ordered bash rule list below, not the approval mode.
   approvalMode: yolo
   # Records a one-line intent per tool call. Cheap, and it is the only readable
@@ -430,8 +430,8 @@ bash:
     - match: "rm -fr /*"
       approval: prompt
 
-    # 2. Block devices. Present in the container namespace, unrecoverable, and
-    #    never something a coding agent needs.
+    # 2. Block devices. Reachable through the agent's passwordless sudo,
+    #    unrecoverable, and never something a coding agent needs.
     - match: "mkfs*"
       approval: deny
     - match: "wipefs*"
@@ -439,9 +439,8 @@ bash:
     - match: "dd if=* of=/dev/*"
       approval: deny
 
-    # 3. The container and its volumes. `work`, `state` and `kube` are the only
-    #    persistent state in the whole two-tier setup; pruning them from inside
-    #    the container destroys exactly what the image cannot restore.
+    # 3. Docker volumes. Projects on the box keep their databases and state in
+    #    volumes; pruning them destroys what no rebuild of the box restores.
     - match: "docker system prune*"
       approval: deny
     - match: "docker volume prune*"
@@ -475,7 +474,8 @@ bash:
 
     # 6. Curl-pipe-shell. Denied on principle, not on risk: this repo's first
     #    invariant is that nothing bootstraps at runtime. Tools belong in
-    #    home/mise/config.box.toml and get installed during `docker build`.
+    #    home/mise/config.box.toml (or apt in box/bootstrap.sh) and get
+    #    installed by provisioning.
     - match: "curl * | sh*"
       approval: deny
     - match: "curl * | bash*"
@@ -492,7 +492,7 @@ bash:
       approval: allow
 
 # --- Language servers --------------------------------------------------------
-# The devbox ships real toolchains (python, node, go, rust, java), so LSP is a
+# The box ships real toolchains (python, node, go, rust, java), so LSP is a
 # genuine correctness win rather than decoration.
 #
 # Server-level tuning lives in lsp.json next to this file. That file is strict
@@ -503,7 +503,7 @@ bash:
 #     map keeps OMP's full built-in detection (binary present + rootMarkers
 #     matched) while still letting the file set a global timeout. Nothing is
 #     disabled by default; per-project overrides belong in <repo>/.omp/lsp.json.
-#   - `idleTimeoutMs: 600000` (10 min). This container is long-lived, and
+#   - `idleTimeoutMs: 600000` (10 min). The box is long-lived, and
 #     jdtls/rust-analyzer hold hundreds of MB of index each. Left unset,
 #     language servers never shut down and the box slowly bleeds memory across
 #     a week of use. 10 minutes is longer than any pause inside one editing
@@ -584,7 +584,7 @@ magicKeywords:
   enabled: true
 
 # --- Appearance --------------------------------------------------------------
-# The devbox installs a Nerd Font and the rest of the shell (starship, eza,
+# The box installs a Nerd Font and the rest of the shell (starship, eza,
 # yazi) already assumes one, so glyphs are safe. titanium/light matches the
 # terminal theme used everywhere else in this repo.
 statusLine:
@@ -597,9 +597,9 @@ theme:
 # --- Autolearn ---------------------------------------------------------------
 # Off. Enabling it would (a) run an extra capture turn after the agent stops,
 # billed on top of every session, and (b) write generated skills into
-# ~/.omp/agent/managed-skills — untracked, machine-local state inside a
-# container that gets rebuilt, which is exactly the kind of invisible drift this
-# repo exists to prevent. Skills here are authored deliberately under
-# home/omp/skills/ and baked into the image.
+# ~/.omp/agent/managed-skills — untracked, machine-local state on a box that
+# gets rebuilt, which is exactly the kind of invisible drift this repo exists
+# to prevent. Skills here are authored deliberately under home/omp/skills/ and
+# linked in by home/install.sh.
 autolearn:
   enabled: false

@@ -24,8 +24,8 @@ opt.clipboard = "unnamedplus"
 
 -- Clipboard over OSC 52.
 --
--- Only when there is no local clipboard to talk to - i.e. inside the devbox
--- container or over ssh. Forcing OSC 52 on a local machine hijacks yanks away
+-- Only when there is no local clipboard to talk to - i.e. on the box, over
+-- ssh. Forcing OSC 52 on a local machine hijacks yanks away
 -- from pbcopy/wl-copy and breaks paste, because most terminals refuse OSC 52
 -- *reads* for security reasons.
 local function is_remote()

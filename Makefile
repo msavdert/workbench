@@ -1,5 +1,5 @@
 # Operator-side entry points. Run from any machine that can ssh to the PVE host
-# and to the VM (devbox, macOS). Nothing here runs on the VM itself except via
+# and to the VM (macOS today). Nothing here runs on the VM itself except via
 # ssh; the VM-side logic is box/bootstrap.sh.
 #
 #   make vm-create      create + start the VM on Proxmox

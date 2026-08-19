@@ -25,7 +25,7 @@ zellij = "latest"
 yazi = "latest"
 
 # Neovim language servers and formatters. mason is disabled in
-# home/nvim/lua/plugins/devbox.lua so these come from mise instead of being
+# home/nvim/lua/plugins/box.lua so these come from mise instead of being
 # downloaded at runtime. Add a server here AND in that file.
 lua-language-server = "latest"
 stylua = "latest"

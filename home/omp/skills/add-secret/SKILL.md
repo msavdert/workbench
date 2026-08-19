@@ -5,7 +5,7 @@ description: Use when a command needs a new credential, token or API key - cover
 
 # Adding a secret
 
-The rule, from `docs/05-secrets.md`: **no secret is ever exported into the shell
+The rule (AGENTS.md hard rule 1): **no secret is ever exported into the shell
 environment.** Values live in one process and die with it. Files in
 `home/op-env/` contain `op://` references only, which is why they are safe to
 commit (`CLAUDE.md` invariant 2).
@@ -15,7 +15,7 @@ commit (`CLAUDE.md` invariant 2).
 ### 1. Store the value in 1Password
 
 Put it in the **`dotfiles`** vault. Nothing else in this setup reads any other
-vault, and the devbox service account is scoped read-only to that vault alone.
+vault, and the box's service account is scoped read-only to that vault alone.
 
 Note the reference path shape: `op://<vault>/<item>/<field>`, e.g.
 `op://dotfiles/OpenRouter/generaltoken`.
@@ -103,9 +103,9 @@ catch a mistake.
 
 ## Authentication behind it
 
-- **devbox:** `OP_SERVICE_ACCOUNT_TOKEN`, supplied through `.env` next to
-  `compose.yaml` on the VPS. It is the one secret that exists as plaintext
-  somewhere, and the only one passed into the container.
+- **the box:** `OP_SERVICE_ACCOUNT_TOKEN`, pushed to `~/.config/op/env` by
+  `make secrets`. It is the one secret that exists as plaintext somewhere,
+  and the only one the box's shells depend on.
 - **macOS:** the 1Password desktop app over its local socket, unlocked with
   Touch ID. No token on disk. `op signin` once per session if prompted.
 
@@ -118,7 +118,7 @@ opwith ai env | grep -c OPENROUTER_API_KEY   # 1 inside the wrapped process
 
 ## Auditing
 
-From `docs/05-secrets.md`:
+On the box or the mac:
 
 ```bash
 env | grep -iE 'token|key|secret'                                 # must print nothing
@@ -146,23 +146,22 @@ Order matters.
 
    ```bash
    # 1Password -> Developer -> Service Accounts -> rotate
-   ssh vps
-   cd ~/devbox
-   $EDITOR .env                  # new OP_SERVICE_ACCOUNT_TOKEN
-   docker compose up -d          # recreates with the new value
-   docker exec devbox op whoami  # verify
+   make secrets                  # re-reads the vault, pushes the new
+                                  # OP_SERVICE_ACCOUNT_TOKEN to ~/.config/op/env
+   ssh agent-vm-ssh op whoami     # verify
    ```
 
-   Do this also if the VPS is ever compromised or the token is older than a year.
-   It is cheap.
+   Do this also if the box is ever compromised or the token is older than a
+   year. It is cheap.
 
 ## Not applicable
 
 - **git push/pull needs no secret in the environment.** `home/git/config`
   ships a credential helper that resolves op://dotfiles/GitHub/admintoken
-  itself on demand, so the devbox authenticates without an SSH key and
+  itself on demand, so the box authenticates without an SSH key and
   without depending on gh auth login's machine-local OAuth session.
-- **SSH keys** live in 1Password and are served by its agent
-  (`mac/ssh/config.macos`). No private key file exists on the Mac. Outbound
-  SSH *from* the container needs the forwarded-socket workaround in
-  `docs/05-secrets.md`.
+- **SSH keys** live in 1Password. On the Mac its native SSH agent serves them
+  (`mac/ssh/config.macos`); no private key file exists there. On the box
+  `mise run ssh:sync` (home/mise/config.box.toml) loads the keys tagged
+  `ssh-host` into the running ssh-agent and writes only public keys and
+  host stanzas to `~/.ssh/`.

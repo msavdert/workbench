@@ -93,7 +93,7 @@ labels to move.
 loaded into every Claude Code session on the VM. Edit in the repo, then
 `make provision STEPS=user`. Keep it short. `omp` does not read it; if omp
 needs the same context, put it in `~/.omp/agent/AGENTS.md` (currently not
-provisioned; the devbox version lives in dotfiles).
+provisioned).
 
 ## Interactive use
 
