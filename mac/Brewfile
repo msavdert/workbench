@@ -33,7 +33,9 @@ cask "ghostty"
 
 # --- Secrets -----------------------------------------------------------------
 cask "1password"                # also provides the SSH agent (mac/ssh/config.macos)
-cask "1password-cli"            # `op` - required by the op run wrappers
+# 1password-cli is NOT a cask here: `op` comes from mise (home/mise/config.toml,
+# both profiles). The 1Password app integration (Touch ID) works with that
+# copy; a second one from brew only shadows it.
 cask "bitwarden"
 
 # --- Containers --------------------------------------------------------------
