@@ -1,10 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "*"
-    ],
-    "defaultMode": "bypassPermissions"
-  },
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/.gemini/antigravity-cli/statusline.sh",

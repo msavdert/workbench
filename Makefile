@@ -73,8 +73,8 @@ secrets: ## push OP_SERVICE_ACCOUNT_TOKEN (this shell, else `op read $(OP_TOKEN_
 
 bootstrap-all: vm-create vm-wait secrets provision ## fresh VM end to end
 
-claude-remote: ## after `claude auth login`: start the generic `work` server and every project server from box/remotes.list
-	$(SSH) $(VM_HOST) 'test -f ~/.claude/.credentials.json || { echo "run: ssh $(VM_HOST) -t claude auth login"; exit 1; }; systemctl --user daemon-reload && systemctl --user enable --now claude-remote.service && for u in $$(systemctl --user list-unit-files "claude-remote@*.service" --state=enabled --no-legend | cut -d" " -f1); do systemctl --user start "$$u"; done; sleep 3; bash -lc remote-ls'
+claude-remote: ## after `claude auth login`: start the generic `work` server and every enabled project server (list-unit-files does not list template instances, the wants/ symlinks do)
+	$(SSH) $(VM_HOST) 'test -f ~/.claude/.credentials.json || { echo "run: ssh $(VM_HOST) -t claude auth login"; exit 1; }; systemctl --user daemon-reload && systemctl --user enable --now claude-remote.service && for f in ~/.config/systemd/user/default.target.wants/claude-remote@*.service; do test -e "$$f" && systemctl --user start "$$(basename "$$f")"; done; sleep 3; bash -lc remote-ls'
 
 remote-add: ## per-project Remote Control server: NAME=<dir under ~/work> [URL=<git url>] [OPTS="--worktree"]; add it to box/remotes.list to survive a rebuild
 	$(need_name)
