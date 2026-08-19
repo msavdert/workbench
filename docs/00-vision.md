@@ -154,4 +154,9 @@ each; no emoji; comments say why, not what.
   network; OrbStack is local; a cloud VM needs a firewall or the same
   overlay. Documented as an expectation, not automated here.
 - Sizing: 4 vCPU / 32 GB / 200 GB is the reference; smaller substrates work
-  with fewer parallel harnesses.
+  with fewer parallel harnesses (OrbStack: 4 / 8 GB / 100 GB caps, thin).
+- OrbStack machines are not full VMs: `systemd-detect-virt` says `lxc`, the
+  kernel is OrbStack's shared one, `agent` gets the mac uid (501), the mac
+  home is mounted at `/mnt/mac`, and OrbStack's own `ssh agent-vm@orb`
+  path exists next to sshd on port 22. systemd, Docker, swap and
+  `bootstrap.sh verify` all work unchanged (measured 2026-08-19, arm64).

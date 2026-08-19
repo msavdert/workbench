@@ -12,7 +12,13 @@
 SHELL    := /bin/bash
 PROVIDER ?= proxmox
 PVE_HOST ?= pve-vm-ssh
+# proxmox: an ssh config alias to the box (mise run ssh:sync). orbstack: the
+# machine reached through OrbStack's own ssh config (`Include ~/.orbstack/ssh/config`).
+ifeq ($(PROVIDER),orbstack)
+VM_HOST  ?= agent@agent-vm@orb
+else
 VM_HOST  ?= agent-vm-ssh
+endif
 VMID     ?= 105
 NAME     ?=
 STEPS    ?=
@@ -41,9 +47,13 @@ RSYNC     = rsync -az --delete --exclude .git
 help:
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
 
-vm-create: ## copy providers/$(PROVIDER)/ to the PVE host and create/start the VM
+vm-create: ## create/start the VM: PROVIDER=proxmox (default) on the PVE host, PROVIDER=orbstack on this mac
+ifeq ($(PROVIDER),orbstack)
+	bash providers/orbstack/create-vm.sh
+else
 	$(RSYNC) providers/$(PROVIDER)/ $(PVE_HOST):/root/workbench/providers/$(PROVIDER)/
 	$(SSH) $(PVE_HOST) "VMID=$$VMID bash /root/workbench/providers/$(PROVIDER)/create-vm.sh"
+endif
 
 vm-wait: ## block until the VM answers ssh and cloud-init is done
 	@until $(SSH) -o ConnectTimeout=5 $(VM_HOST) true 2>/dev/null; do printf .; sleep 5; done; echo
@@ -54,9 +64,10 @@ provision: ## rsync box/ to the VM and run bootstrap.sh (all steps, or STEPS="ap
 	$(RSYNC) box/ $(VM_HOST):~/workbench-box/
 	$(SSH) -t $(VM_HOST) "sudo ~/workbench-box/bootstrap.sh $$STEPS"
 
-secrets: ## push OP_SERVICE_ACCOUNT_TOKEN from this shell to ~/.config/op/env on the VM (before provision: step_tools needs it for the GitHub API)
-	@test -n "$$OP_SERVICE_ACCOUNT_TOKEN" || { echo "OP_SERVICE_ACCOUNT_TOKEN is not set in this shell"; exit 1; }
-	@$(SSH) $(VM_HOST) 'umask 077; mkdir -p ~/.config/op; cat > ~/.config/op/env' <<< "OP_SERVICE_ACCOUNT_TOKEN=$$OP_SERVICE_ACCOUNT_TOKEN"
+OP_TOKEN_REF ?= op://dotfiles/agent-vm-op-service-account/credential
+secrets: ## push OP_SERVICE_ACCOUNT_TOKEN (this shell, else `op read $(OP_TOKEN_REF)`) to ~/.config/op/env on the VM (before provision: step_tools needs it for the GitHub API)
+	@t="$$OP_SERVICE_ACCOUNT_TOKEN"; [ -n "$$t" ] || t="$$(op read '$(OP_TOKEN_REF)')"; [ -n "$$t" ] || { echo "no token: set OP_SERVICE_ACCOUNT_TOKEN or unlock 1Password"; exit 1; }; \
+	  $(SSH) $(VM_HOST) 'umask 077; mkdir -p ~/.config/op; cat > ~/.config/op/env' <<< "OP_SERVICE_ACCOUNT_TOKEN=$$t"
 	@$(SSH) $(VM_HOST) 'bash -lc "if command -v op >/dev/null; then op whoami >/dev/null && echo op: ok; else echo op: token written, op not installed yet; fi"'
 
 bootstrap-all: vm-create vm-wait secrets provision ## fresh VM end to end
@@ -91,12 +102,17 @@ vm-status: ## qm status + guest agent ping
 	$(SSH) $(PVE_HOST) "qm status $$VMID; qm agent $$VMID ping && echo 'guest agent: ok'"
 
 vm-destroy: ## stop and destroy the VM (asks for confirmation)
+ifeq ($(PROVIDER),orbstack)
+	@read -p "delete OrbStack machine agent-vm? type the name to confirm: " a && test "$$a" = agent-vm
+	orb delete -f agent-vm
+else
 	@read -p "destroy VMID $$VMID on $(PVE_HOST)? type the VMID to confirm: " a && test "$$a" = "$$VMID"
 	$(SSH) $(PVE_HOST) "qm stop $$VMID || true; qm destroy $$VMID --purge 1"
+endif
 
 ssh: ## interactive shell on the VM (tmux session "main")
 	ssh -t $(VM_HOST) 'bash -lc agent-session'
 
 lint: ## shellcheck + shfmt check
-	shellcheck -e SC1091 providers/proxmox/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
-	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh
+	shellcheck -e SC1091 providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
+	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh

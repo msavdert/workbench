@@ -117,11 +117,20 @@ output stay clean because they have no TTY or run with `TERM=dumb`.
 
 ## Providers contract (P2)
 
-A provider must deliver: Ubuntu 24.04 cloud image, user `agent` uid 1000 with
-the operator's ssh key and passwordless sudo, ssh reachable, qemu-guest-agent or
-equivalent, hostname set. Nothing else. `make provision` then runs
-`box/bootstrap.sh` over ssh, which ends with `home/install.sh box` and the
-`agents/` links, then `verify`.
+A provider must deliver: Ubuntu 24.04 cloud image, user `agent` (uid 1000
+where the substrate allows it; OrbStack maps it to the mac uid, 501) with
+the operator's ssh key and passwordless sudo, ssh reachable, `rsync` present,
+hostname set. Nothing else. `make provision` then runs `box/bootstrap.sh`
+over ssh, which ends with `home/install.sh box` and the `agents/` links,
+then `verify`. `bootstrap.sh` itself has no provider branch: it installs
+`openssh-server` and `qemu-guest-agent` everywhere and `verify` requires
+the guest agent only where its virtio port exists.
+
+Provider quirks are absorbed in `providers/<name>/`, never in `box/`:
+OrbStack's Ubuntu image ships without `rsync` and with a one-line
+`/etc/ssh/sshd_config` (no `Include`, no `UsePAM`) that would make the
+packaged sshd refuse the passwordless `agent` account, so its cloud-init
+installs `rsync` and removes that file before `openssh-server` lands.
 
 ## Operator surface (Makefile, run on the laptop)
 

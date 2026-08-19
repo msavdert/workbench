@@ -103,7 +103,9 @@ agents (`omp`, a second `claude`) run in further tmux windows or sessions.
 ## Secrets
 
 - `make secrets` writes `OP_SERVICE_ACCOUNT_TOKEN` to `~/.config/op/env`
-  from the operator's current shell environment.
+  from the operator's shell environment, or, when unset, from 1Password
+  (`op read op://dotfiles/agent-vm-op-service-account/credential`, the
+  1Password app unlocked on the mac). Override with `OP_TOKEN_REF=`.
 - `opwith git gh ...` for gh; `git push` over HTTPS needs nothing extra.
 - Adding a secret: put it in the `dotfiles` vault, add an `op://` line to a
   file in `home/op-env/`, push, `make provision STEPS=home` (the box links
@@ -149,6 +151,28 @@ After a rebuild the ssh host key changes; the operator's ssh config uses
 `StrictHostKeyChecking accept-new`, so remove the old entry:
 `ssh-keygen -R 10.0.0.11`.
 
+### OrbStack (the box on the laptop)
+
+Same targets with `PROVIDER=orbstack`; nothing goes through the PVE host.
+`VM_HOST` defaults to `agent@agent-vm@orb`, OrbStack's ssh path (mac
+`~/.ssh/config` includes `~/.orbstack/ssh/config`); sshd on port 22 with
+the 1Password key also works on the machine's LAN address (`orb info
+agent-vm -f json`, `ip4`), useful for anything that expects a plain host.
+`make secrets` reads the token from 1Password when it is not in the shell.
+
+```
+make bootstrap-all PROVIDER=orbstack     # orb create + provision + verify
+make provision     PROVIDER=orbstack     # re-converge
+make ssh           PROVIDER=orbstack
+make vm-destroy    PROVIDER=orbstack     # orb delete
+```
+
+"Roll back" on OrbStack means delete and rebuild (a few minutes, from
+scratch); there is no snapshot target. Sizing caps live in
+`providers/orbstack/vm.env`. Measured 2026-08-19 on an M-series mac,
+arm64: `orb create` 12 s, `bootstrap-all` end to end about 3 minutes.
+The first `claude auth login` on it is manual, as on every substrate.
+
 ## Troubleshooting
 
 - **`permission denied ... docker.sock` right after provisioning** - the ssh
@@ -175,7 +199,8 @@ After a rebuild the ssh host key changes; the operator's ssh config uses
 
 ## Verification checklist (what `bootstrap.sh verify` covers)
 
-docker active and usable by `agent`, qemu-guest-agent active, `mise node gh op
+docker active and usable by `agent`, sshd active (or socket-activated),
+qemu-guest-agent active where its virtio port exists, `mise node gh op
 uv go bun omp claude jq rg fd tmux` on PATH, passwordless sudo, swap on,
 needrestart non-interactive. Smoke tests done at build time:
 `docker run hello-world`, `opwith git gh auth status`, `git clone` of this

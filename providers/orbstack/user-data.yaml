@@ -1,0 +1,33 @@
+#cloud-config
+# First-boot config for the box as an OrbStack machine. `orb create --user
+# agent` already creates the user with passwordless sudo and OrbStack's own
+# ssh path (`ssh agent-vm@orb`); this file adds what the other substrates
+# also get so the machine looks the same to `make provision`
+# (docs/01-architecture.md "A provider must deliver"). Everything else lives
+# in box/bootstrap.sh.
+users:
+  - name: agent
+    gecos: AI agent runtime user
+    shell: /bin/bash
+    groups: [sudo, adm]
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      # 1Password item dotfiles/agent-vm-ssh (op ssh:sync host "agent-vm-ssh")
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMOw7Wg55Am1Pu6iO3ycaRPudjSDrW/frLjHBJzR2or+
+
+ssh_pwauth: false
+disable_root: true
+
+# `make provision` rsyncs box/ in; the OrbStack Ubuntu image ships without it.
+package_update: true
+packages:
+  - rsync
+
+# OrbStack seeds a one-line /etc/ssh/sshd_config (no Include, no UsePAM) that
+# would survive the openssh-server install in box/bootstrap.sh and make sshd
+# refuse the passwordless `agent` account. Drop it so the package default lands.
+runcmd:
+  - [sh, -c, "grep -q sshd_config.d /etc/ssh/sshd_config 2>/dev/null || rm -f /etc/ssh/sshd_config"]
+
+final_message: "agent-vm cloud-init finished after $UPTIME seconds"
