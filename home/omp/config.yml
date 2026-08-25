@@ -32,7 +32,7 @@
 # deliberate choice for this box.
 # =============================================================================
 
-setupVersion: 1
+setupVersion: 2
 
 # --- Model roles -------------------------------------------------------------
 # The whole point of this setup: one large model is the ARCHITECT and the QA
@@ -439,7 +439,10 @@ compaction:
   # at `slow` above. Kimi-K3 (librarian, docs) does take images; GLM-5.2 (audit,
   # security-reviewer) does not, and those subagents are short-lived and rarely
   # compact, so their degradation is free.
-  strategy: snapcompact
+  methodOrder:
+    - snapcompact
+    - remote
+    - soft
   # Compact at safe tool-loop boundaries mid-turn rather than only between
   # turns. Long agentic turns are exactly where this session blows its window.
   midTurnEnabled: true
@@ -751,6 +754,8 @@ symbolPreset: nerd
 theme:
   dark: dark-catppuccin
   light: light-catppuccin
+composer:
+  shape: claude
 
 # --- Autolearn ---------------------------------------------------------------
 # Off. Enabling it would (a) run an extra capture turn after the agent stops,
