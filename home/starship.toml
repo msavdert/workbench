@@ -4,8 +4,7 @@
 # (mac/Brewfile, mac/ghostty/config). The box is only ever reached from that
 # same terminal over ssh, so Nerd Font glyphs are safe on both profiles.
 # Profile differences come from starship's own context detection, not from
-# per-machine files: hostname and username appear only over ssh or as root,
-# language and cloud modules appear only inside a matching directory.
+# per-machine files: hostname and username appear only over ssh or as root.
 #
 # The prompt is never rendered under TERM=dumb; home/zsh/.zshrc guards the
 # `starship init` call so captured and agent-spawned shells stay plain.
@@ -14,7 +13,7 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
 add_newline = true
-# git and language modules shell out; 500 ms (the default) is too tight on
+# git modules shell out; 500 ms (the default) is too tight on
 # a large repo over ssh and surfaces as "timed out" warnings in the prompt.
 command_timeout = 1000
 scan_timeout = 30
@@ -29,15 +28,6 @@ $git_branch\
 $git_commit\
 $git_state\
 $git_status\
-$docker_context\
-$kubernetes\
-$aws\
-$gcloud\
-$terraform\
-$python\
-$nodejs\
-$golang\
-$rust\
 $direnv\
 $sudo\
 $jobs\
@@ -133,65 +123,6 @@ deleted = '✘${count}'
 # Submodule walks are the expensive part of git_status on a monorepo and
 # never change what an agent needs to know at a glance.
 ignore_submodules = true
-
-[docker_context]
-symbol = ' '
-style = 'cloud'
-# Only when a compose file or Dockerfile is in scope; the default shows the
-# context in every directory once DOCKER_CONTEXT is set.
-only_with_files = true
-
-[kubernetes]
-# Disabled upstream by default; cheap enough here because it only reads the
-# kubeconfig, and the box runs docker, not a cluster, so it stays silent there.
-disabled = false
-symbol = '󱃾 '
-style = 'cloud'
-format = '[$symbol$context( \($namespace\))]($style) '
-detect_files = ['k8s', 'kustomization.yaml', 'skaffold.yaml', 'Chart.yaml']
-detect_folders = ['k8s', 'charts', 'manifests']
-
-[aws]
-symbol = ' '
-style = 'cloud'
-format = '[$symbol($profile )(\($region\) )(\[$duration\] )]($style)'
-expiration_symbol = '(expired) '
-
-[gcloud]
-symbol = ' '
-style = 'cloud'
-format = '[$symbol$account(@$domain)(\($region\))]($style) '
-
-[terraform]
-symbol = ' '
-style = 'cloud'
-# Workspace name is the signal; the version lookup spawns terraform itself.
-format = '[$symbol$workspace]($style) '
-
-[python]
-symbol = ' '
-style = 'warn'
-# A venv name says more than the interpreter version.
-format = '[$symbol$pyenv_prefix($virtualenv )]($style)'
-detect_extensions = []
-detect_files = ['pyproject.toml', 'requirements.txt', '.python-version', 'Pipfile', 'setup.py']
-
-[nodejs]
-symbol = ' '
-style = 'ok'
-format = '[$symbol($version )]($style)'
-detect_extensions = []
-detect_files = ['package.json', '.node-version', '.nvmrc']
-
-[golang]
-symbol = ' '
-style = 'cloud'
-format = '[$symbol($version )]($style)'
-
-[rust]
-symbol = '󱘗 '
-style = 'err'
-format = '[$symbol($version )]($style)'
 
 [direnv]
 disabled = false
