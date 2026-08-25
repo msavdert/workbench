@@ -16,19 +16,11 @@ java = "temurin-24"
 rust = "latest"
 cargo-binstall = "latest"
 
-# --- editor and multiplexer (interactive only; config under home/nvim,
-#     home/zellij; tmux itself is apt for agent-session) ---
-neovim = "latest"
+# --- multiplexer (interactive only; config under home/zellij; tmux itself is apt for agent-session) ---
 zellij = "latest"
-
 # --- terminal utilities beyond the shared base ---
 yazi = "latest"
 
-# Neovim language servers and formatters. mason is disabled in
-# home/nvim/lua/plugins/box.lua so these come from mise instead of being
-# downloaded at runtime. Add a server here AND in that file.
-lua-language-server = "latest"
-stylua = "latest"
 "npm:bash-language-server" = "latest"
 "npm:yaml-language-server" = "latest"
 "npm:tldr" = "latest"

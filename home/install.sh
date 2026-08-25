@@ -257,10 +257,9 @@ manifest() {
     link "omp/$f" "$HOME/.omp/agent/$f"
   done
 
-  # editor and multiplexer: box only, the mac never had them (mise installs
-  # neovim and zellij from config.box.toml)
+  # multiplexer: box only, the mac never had it (mise installs
+  # zellij from config.box.toml)
   if [[ $PROFILE == box ]]; then
-    link nvim "$HOME/.config/nvim"
     link zellij "$HOME/.config/zellij"
   fi
 

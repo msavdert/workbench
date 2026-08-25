@@ -211,16 +211,10 @@ fi
 # per-file symlinks from home/install.sh (home/omp/).
 
 # --- Aliases -----------------------------------------------------------------
-# Editors (Guarded: Fallback to system vim/vi on macOS if nvim is not installed)
-if (( $+commands[nvim] )); then
-    alias vim='nvim'           # Full Neovim (all plugins & config loaded)
-    alias vi='nvim --clean'    # Super light Vi mode (0 plugins, instant startup)
-    alias v='nvim --clean'     # Super light Vi mode shortcut
-elif (( $+commands[vim] )); then
-    alias vi='vim -u NONE'     # Clean Vim without config/plugins
-    alias v='vim'              # Standard Vim
-else
-    alias v='vi'
+# Editors
+if (( $+commands[vim] )); then
+    alias vi='vim'
+    alias v='vim'
 fi
 alias ..='cd ..'
 alias ...='cd ../..'

@@ -42,7 +42,7 @@ workbench/
     claude/
       CLAUDE.md  settings.base.json  settings.box.json  settings.mac.json
       statusline.sh  agents/  skills/  hooks/
-    herdr/  agy/  omp/  nvim/  zellij/
+    herdr/  agy/  omp/  zellij/
   providers/
     proxmox/  orbstack/        (cloud/ is backlog)
   docs/
@@ -68,7 +68,7 @@ workbench/
 | `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`) | `home/herdr/ agy/ omp/` | `home/install.sh` |
 | `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
-| `~/.config/nvim`, `~/.config/zellij` (box only) | `home/nvim/`, `home/zellij/` | `home/install.sh box` |
+| `~/.config/zellij` (box only) | `home/zellij/` | `home/install.sh box` |
 | `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/boundary-gate.sh` | `home/claude/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
 | `~/.ssh/config`, `~/.ssh/config.macos`, `~/.config/ghostty/config` (mac only) | `mac/ssh/`, `mac/ghostty/` | `mac/setup.sh` |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |

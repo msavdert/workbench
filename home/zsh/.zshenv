@@ -31,10 +31,7 @@ path=("$HOME/.local/bin" "$HOME/.local/share/mise/shims" $path)
 export PATH
 
 # --- Defaults ---
-if (( $+commands[nvim] )); then
-    export EDITOR="nvim"
-    export VISUAL="nvim"
-elif (( $+commands[vim] )); then
+if (( $+commands[vim] )); then
     export EDITOR="vim"
     export VISUAL="vim"
 else

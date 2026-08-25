@@ -50,7 +50,7 @@ app.thinking.toggle:
 app.plan.toggle: Alt+Shift+P
 
 # --- Composing ---------------------------------------------------------------
-# Drop the draft into $VISUAL/$EDITOR (neovim here) for anything longer than a
+# Drop the draft into $VISUAL/$EDITOR for anything longer than a
 # line or two.
 app.editor.external:
   - Ctrl+G

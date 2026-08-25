@@ -204,8 +204,8 @@ that runs inside it, on the mac or over ssh on the box, either inherits the
 foreground, never 256-colour or truecolor codes) or follows the terminal
 background it detects through OSC 11 and picks the matching Catppuccin
 variant (Claude Code `theme: auto` on both profiles, herdr `auto_switch`
-with catppuccin/catppuccin-latte, omp dark-catppuccin/light-catppuccin,
-nvim catppuccin). Catppuccin was chosen over Modus/Selenized because it is
+with catppuccin/catppuccin-latte, omp dark-catppuccin/light-catppuccin).
+Catppuccin was chosen over Modus/Selenized because it is
 the only pair every tool ships natively; its bright-black slot stays
 readable on both variants, which is what made the old 256-colour status
 bars unreadable by day. The font is JetBrainsMono Nerd Font 13.5 on the
