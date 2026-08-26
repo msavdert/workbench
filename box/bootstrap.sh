@@ -40,7 +40,10 @@ as_user() { # as_user <user> <cmd...>
   shift
   uid="$(id -u "$user")"
   uhome="$(getent passwd "$user" | cut -d: -f6)"
-  sudo -u "$user" -H env HOME="$uhome" \
+  # --chdir: never inherit bootstrap's cwd (the rsync staging dir lives in
+  # the agent home, which other users cannot read - uv's project discovery
+  # walks up from cwd and dies on the permission boundary)
+  sudo -u "$user" -H env --chdir="$uhome" HOME="$uhome" \
     XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
     PATH="$uhome/.local/bin:/usr/local/bin:/usr/bin:/bin" "$@"
 }
@@ -328,16 +331,21 @@ step_hermes() {
   for user in agent savdert; do
     uhome="$(getent passwd "$user" | cut -d: -f6)"
 
-    if ! as_user "$user" bash -lc 'command -v hermes' >/dev/null 2>&1; then
+    # `hermes --version` exercises the venv, so a half-finished install (a
+    # launcher without working deps) triggers a repair run, not a skip.
+    # UV_NO_CONFIG: the agent user's global uv config (exclude-newer) must
+    # not leak into hermes' own `uv sync --locked` (it changes resolution
+    # and the locked install refuses).
+    if ! as_user "$user" bash -lc 'hermes --version' >/dev/null 2>&1; then
       log "hermes: installing for $user (this downloads node, python, deps)"
       if [[ $user == savdert ]]; then
         # browserless: the family bot needs no Playwright/Chromium, and the
         # savdert user has no sudo for the system libraries anyway
         as_user "$user" bash -lc \
-          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser' >/dev/null
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | UV_NO_CONFIG=1 bash -s -- --skip-browser' >/dev/null
       else
         as_user "$user" bash -lc \
-          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' >/dev/null
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | UV_NO_CONFIG=1 bash' >/dev/null
       fi
     fi
     install -d -o "$user" -g "$user" -m 0700 "$uhome/.hermes"
