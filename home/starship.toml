@@ -28,7 +28,6 @@ $git_branch\
 $git_commit\
 $git_state\
 $git_status\
-$direnv\
 $sudo\
 $jobs\
 $cmd_duration\
@@ -123,17 +122,6 @@ deleted = '✘${count}'
 # Submodule walks are the expensive part of git_status on a monorepo and
 # never change what an agent needs to know at a glance.
 ignore_submodules = true
-
-[direnv]
-disabled = false
-symbol = ' '
-format = '[$symbol$loaded/$allowed]($style) '
-style = 'muted'
-allowed_msg = 'ok'
-not_allowed_msg = 'blocked'
-denied_msg = 'denied'
-loaded_msg = 'on'
-unloaded_msg = 'off'
 
 [sudo]
 disabled = false

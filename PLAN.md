@@ -124,3 +124,7 @@ history. Older entries are condensed; `git log` has the full trail.
 - 2026-08-19: colour audit (D16): Ghostty moved to Catppuccin Latte/Mocha
   auto pair; status lines dropped hardcoded 256-colour codes for the 16
   ANSI slots; Claude box theme auto; omp/nvim on the catppuccin pair.
+- 2026-08-25: starship: drop direnv module from format to eliminate context
+  directory scanning and context timeout warnings on large repos.
+- 2026-08-25: omp: add no-polling rule to AGENTS.md and delegation skill to
+  prevent turn-looping on background tasks.
