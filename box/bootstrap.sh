@@ -356,6 +356,7 @@ step_hermes() {
     # savdert install is browserless). Cheap guard: libnss3 is the canonical
     # first missing dependency.
     if [[ $user == agent ]] && ! dpkg -s libnss3 >/dev/null 2>&1; then
+      # shellcheck disable=SC2016 # $HOME must expand in the target user's shell
       as_user "$user" bash -c \
         'cd ~/.hermes/hermes-agent && sudo env PATH="$HOME/.hermes/node/bin:$PATH" npx playwright install-deps chromium' >/dev/null
       echo "  installed chromium system libraries"
