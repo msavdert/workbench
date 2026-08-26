@@ -2,7 +2,9 @@
 # renders this to /home/savdert/.hermes/.env, mode 600, on every provision).
 # The savdert user itself holds no 1Password token; rendering happens during
 # provisioning with the agent user's service account. Public repository:
-# secrets and personal identifiers are op:// references only.
+# secrets and personal identifiers stay in 1Password, referenced below.
+# NOTE for editors: never write the literal reference prefix inside a
+# comment - op inject scans the whole file and refuses malformed refs.
 
 TELEGRAM_BOT_TOKEN={{ op://dotfiles/Hermes/telegram-bot-savdert }}
 TELEGRAM_ALLOWED_USERS={{ op://dotfiles/Hermes/telegram-users-savdert }}
