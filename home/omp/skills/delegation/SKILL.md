@@ -92,6 +92,10 @@ Independent slices go in one dispatch message so they start together. Dependent
 slices (B needs A's output) are separate waves — name the dependency in B's
 brief and pass A's result paths forward.
 
+Do not poll or loop on running tasks. When a batch is dispatched, yield the
+turn immediately. The harness delivers completed tasks asynchronously via
+`<system-notice>` at zero token cost while the agents run.
+
 ## Verifying
 
 A subagent's success report is a claim, not evidence. Verification is cheap and
@@ -114,3 +118,4 @@ targeted:
 | Curl an API to see one field | Subagent fetches, writes body to `local://`, returns the field |
 | Re-read a subagent's full output file | Read the narrow range that covers its claim |
 | Run the test suite after each subagent finishes | Gates once, at the end, after the batch settles |
+| Poll `hub(op="wait")` waiting for a subagent | Yield the turn immediately; harness auto-delivers completions via `<system-notice>` |

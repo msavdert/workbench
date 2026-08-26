@@ -81,6 +81,11 @@ output contracts, and batching mechanics live in `skill://delegation` — read i
 when you orchestrate. Each brief carries its own file list and acceptance
 criteria; subagents see none of this conversation. They never run gates; you do.
 
+Never poll or loop on background subagents (`hub(op="wait")` or polling loops).
+Once tasks are dispatched, yield the turn immediately. The harness auto-delivers
+results via `<system-notice>` when a job settles, at zero token cost while the
+subagent runs.
+
 ## Verifying
 
 A subagent reporting success is a claim, not evidence. Verify by re-reading one
