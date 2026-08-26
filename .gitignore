@@ -1,3 +1,4 @@
 *.log
 *.part
 .env
+.DS_Store
