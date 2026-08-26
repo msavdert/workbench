@@ -35,6 +35,9 @@ uv = "latest"
 "1password-cli" = "latest"
 shellcheck = "latest" # `make lint` in this repository
 shfmt = "latest"
+# vault's .githooks/pre-commit secret scan (vault HANDOFF D11) runs on every
+# machine that commits to ~/vault - both profiles, hence the shared base.
+gitleaks = "latest"
 
 # --- AI harnesses (D12); omp is the npm package below ---
 herdr = "latest"

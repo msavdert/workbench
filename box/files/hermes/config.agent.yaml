@@ -1,0 +1,37 @@
+# Hermes config seed for the agent user's personal gateway. Installed only
+# if ~/.hermes/config.yaml is absent (runtime-owned after that: hermes setup,
+# config set and migrations write to it; see docs/reference/hermes.md).
+# `hermes config migrate` runs after seeding and fills schema defaults.
+# Provider values migrated from the previous hermes-vm install 2026-08-26.
+model:
+  provider: custom
+  base_url: https://api.synthetic.new/openai/v1
+  api_key: ${HERMES_CUSTOM_API_SYNTHETIC_NEW_API_KEY}
+  default: syn:large:text
+  vision: syn:large:vision
+fallback_providers:
+  - provider: custom
+    base_url: https://api.synthetic.new/openai/v1
+    key_env: HERMES_CUSTOM_API_SYNTHETIC_NEW_API_KEY
+    model: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4
+database:
+  journal_mode: wal
+agent:
+  max_turns: 150
+  reasoning_effort: medium
+  verify_on_stop: false
+terminal:
+  backend: local
+  cwd: .
+  timeout: 180
+web:
+  backend: ddgs
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  write_approval: false
+tts:
+  provider: edge
+browser:
+  headed: false
+  inactivity_timeout: 120

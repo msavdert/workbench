@@ -1,0 +1,9 @@
+[Unit]
+Description=Nightly vault compile at 03:00 New York time
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 America/New_York
+Persistent=true
+
+[Install]
+WantedBy=timers.target

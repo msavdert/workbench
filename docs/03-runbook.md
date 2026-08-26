@@ -322,3 +322,16 @@ this check makes their absence visible. Smoke tests that need the
 operator's logins (`docker run hello-world`, `opwith git gh api user`,
 `op whoami`, `claude --version`) are run by hand after `make claude-remote`;
 the rebuild checklist above lists them.
+
+## Hermes gateways and the nightly vault compile
+
+Two always-on Telegram assistants (personal under `agent`, family under the
+isolated `savdert` user) and the `vault-compile.timer` live on the box;
+`docs/reference/hermes.md` is the full reference (secret rotation, re-seed,
+update, troubleshooting). Day-2 essentials:
+
+| What | How |
+|---|---|
+| Gateway status/logs | as the owning user: `systemctl --user status hermes-gateway`, `journalctl --user -u hermes-gateway -f` |
+| Re-provision hermes only | `make provision STEPS=hermes` (re-renders `.env` from 1Password `dotfiles/Hermes`) |
+| Run the compile now | `ssh agent-vm-ssh 'systemctl --user start vault-compile.service'`; then check `~/work/vault/.state/compile.report` |

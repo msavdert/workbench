@@ -1,0 +1,15 @@
+[Unit]
+Description=Nightly vault compiler (distill + retire, vault HANDOFF D4/D7)
+
+[Service]
+Type=oneshot
+# The script pulls, compiles via headless claude (sonnet), commits and
+# pushes; errors land in ~/work/vault/.state/compile.err, never on stderr
+# alone. VAULT_HOOKS_OFF guards the vault's own Claude hooks from firing
+# inside the compile call chain.
+Environment=VAULT_HOOKS_OFF=1
+# git's credential helper shells out to `op read` (home/git/config), and the
+# compile script finds claude in ~/.local/bin: neither is on the systemd
+# user-manager default PATH.
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 %h/work/vault/.claude/scripts/compile.py

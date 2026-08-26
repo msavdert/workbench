@@ -10,3 +10,6 @@ workbench https://github.com/msavdert/workbench.git --clone-only
 ai-hub https://github.com/msavdert/ai-hub.git --clone-only
 dba-to-dbre https://github.com/msavdert/dba-to-dbre.git --clone-only
 suhuf https://github.com/msavdert/suhuf.git --clone-only
+# private second-brain repo: written to by hermes (00-inbox) and the nightly
+# vault-compile timer; brain sessions live on the mac (vault HANDOFF D7/D9)
+vault https://github.com/msavdert/vault.git --clone-only

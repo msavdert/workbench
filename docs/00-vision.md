@@ -213,6 +213,21 @@ mac only; the box renders nothing. To try another scheme change the Ghostty
 line and the three per-tool pairs named here; nothing else carries colour.
 tmux and zellij are not used interactively and keep their defaults.
 
+D17 Hermes gateways run on the box, as two isolated OS users. The box's
+first always-on daemons beyond Remote Control: `hermes-gateway` under
+`agent` (the operator's personal Telegram assistant, with a clone of the
+private vault repository as its write target) and `hermes-gateway` under
+`savdert` (the shared family assistant). This deliberately extends the
+"agent-driven, no extra daemons" doctrine because the alternative was a
+second, unmanaged pet VM (`hermes-vm`, retired 2026-08-26 - see
+`docs/reference/hermes.md`). Isolation between the two is
+filesystem-level, not prompt-level: `savdert` has no sudo, no 1Password
+token, and cannot read `/home/agent` (0750), so the family bot cannot
+reach the personal vault even if instructed to. Provisioning is
+`box/bootstrap.sh step_hermes`; secrets render from `op://` templates at
+provision time. The nightly `vault-compile.timer` (step_vault) is part of
+the same design: the box is always on, the mac is not (vault HANDOFF D7).
+
 ## Known differences between substrates (accepted, documented)
 
 - Snapshots: Proxmox has ZFS snapshots and `make snapshot` / `make rollback`;

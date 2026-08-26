@@ -68,6 +68,9 @@ every keystroke twice. No active phase; work is backlog-driven.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-08-26: Hermes moved in (D17): step_hermes provisions two isolated
+  gateways (agent personal+vault, savdert family), step_vault arms the
+  nightly vault-compile timer; hermes-vm retired (docs/reference/hermes.md).
 - 2026-08-19: `remoteControlAtStartup` on in the box overlay so herdr
   sessions are app-visible; surface handoff = PLAN.md + push (D8, D11, runbook).
 - 2026-08-18/19: phases 0-6 executed in sequence (founding docs, agent-vm

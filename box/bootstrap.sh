@@ -32,6 +32,18 @@ as_agent() {
     XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
     PATH="$AGENT_HOME/.local/bin:$AGENT_HOME/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin" "$@"
 }
+# Same idea for an arbitrary user: step_hermes runs commands as the isolated
+# family-gateway user too. No mise shims on purpose - only the agent user is
+# mise-managed.
+as_user() { # as_user <user> <cmd...>
+  local user=$1 uid uhome
+  shift
+  uid="$(id -u "$user")"
+  uhome="$(getent passwd "$user" | cut -d: -f6)"
+  sudo -u "$user" -H env HOME="$uhome" \
+    XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
+    PATH="$uhome/.local/bin:/usr/local/bin:/usr/bin:/bin" "$@"
+}
 # install(1) wrapper that only reports when the file actually changed.
 # Mode is converged even when content matches: a hand chmod on sudoers or
 # sshd drop-ins must not survive a re-run.
@@ -299,6 +311,85 @@ step_remotes() {
 }
 
 # ---------------------------------------------------------------------------
+step_hermes() {
+  log "hermes: two isolated Telegram gateways (agent: personal+vault, savdert: family)"
+  # The family gateway runs as its own OS user: no sudo, no 1Password token,
+  # and /home/agent (0750) is unreadable to it - the personal vault stays
+  # filesystem-isolated from the shared family bot (docs/reference/hermes.md).
+  if ! id savdert &>/dev/null; then
+    useradd -m -s /bin/bash savdert
+    echo "  created user savdert"
+  fi
+  chmod 0750 /home/savdert
+  # user services survive logout and start at boot
+  loginctl enable-linger savdert
+
+  local user uhome
+  for user in agent savdert; do
+    uhome="$(getent passwd "$user" | cut -d: -f6)"
+
+    if ! as_user "$user" bash -lc 'command -v hermes' >/dev/null 2>&1; then
+      log "hermes: installing for $user (this downloads node, python, deps)"
+      if [[ $user == savdert ]]; then
+        # browserless: the family bot needs no Playwright/Chromium, and the
+        # savdert user has no sudo for the system libraries anyway
+        as_user "$user" bash -lc \
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser' >/dev/null
+      else
+        as_user "$user" bash -lc \
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' >/dev/null
+      fi
+    fi
+    install -d -o "$user" -g "$user" -m 0700 "$uhome/.hermes"
+
+    # .env: rendered from the tracked op:// template on EVERY provision
+    # (secret rotation = rotate in 1Password, re-provision). op runs as the
+    # agent user - its login shell has the service-account token - and the
+    # result is installed root-side, so savdert itself never touches op.
+    local tmp
+    install -d -o "$AGENT_USER" -g "$AGENT_USER" "$AGENT_HOME/.cache"
+    tmp="$AGENT_HOME/.cache/hermes-env.$user.$$"
+    as_agent bash -lc "op inject -f -i '$files/hermes/env.$user.tpl' -o '$tmp'" >/dev/null ||
+      die "op inject failed for hermes env.$user.tpl"
+    install -o "$user" -g "$user" -m 0600 "$tmp" "$uhome/.hermes/.env"
+    rm -f "$tmp"
+
+    # config.yaml and SOUL.md are seeded ONCE (the installer writes its own
+    # defaults; the running agent owns them afterwards). The marker file is
+    # the memory of that first seeding.
+    if [[ ! -f "$uhome/.hermes/.workbench-seeded" ]]; then
+      install -o "$user" -g "$user" -m 0644 "$files/hermes/config.$user.yaml" "$uhome/.hermes/config.yaml"
+      install -o "$user" -g "$user" -m 0644 "$files/hermes/SOUL.$user.md" "$uhome/.hermes/SOUL.md"
+      as_user "$user" touch "$uhome/.hermes/.workbench-seeded"
+      echo "  seeded config.yaml + SOUL.md for $user"
+    fi
+    # fill schema defaults / migrate after an update; harmless when current
+    as_user "$user" bash -lc 'hermes doctor --fix' >/dev/null 2>&1 || true
+
+    # hermes writes ~/.config/systemd/user/hermes-gateway.service itself
+    as_user "$user" bash -lc 'hermes gateway install' >/dev/null 2>&1 || true
+    as_user "$user" systemctl --user daemon-reload
+    as_user "$user" systemctl --user enable --now hermes-gateway >/dev/null 2>&1 ||
+      echo "  WARN: hermes-gateway not active for $user yet (check journalctl --user -u hermes-gateway)"
+  done
+}
+
+# ---------------------------------------------------------------------------
+step_vault() {
+  log "vault: nightly compile timer against ~/work/vault (clone via remotes.list)"
+  [[ -d $AGENT_HOME/work/vault/.git ]] ||
+    echo "  WARN: ~/work/vault missing; step_remotes should have cloned it"
+  put 0644 "$files/vault-compile.service" "$AGENT_HOME/.config/systemd/user/vault-compile.service"
+  put 0644 "$files/vault-compile.timer" "$AGENT_HOME/.config/systemd/user/vault-compile.timer"
+  chown "$AGENT_USER:$AGENT_USER" \
+    "$AGENT_HOME/.config/systemd/user/vault-compile.service" \
+    "$AGENT_HOME/.config/systemd/user/vault-compile.timer"
+  as_agent systemctl --user daemon-reload
+  as_agent systemctl --user enable --now vault-compile.timer >/dev/null 2>&1 ||
+    echo "  WARN: vault-compile.timer not active"
+}
+
+# ---------------------------------------------------------------------------
 step_verify() {
   log "verify"
   local ok=1
@@ -331,10 +422,19 @@ step_verify() {
   check as_agent bash -lc 'test "$MISE_ENV" = box'
   check command -v zsh
   check test -f /etc/claude-code/CLAUDE.md
+  # hermes gateways: one per user, isolated (docs/reference/hermes.md)
+  check as_agent bash -lc 'systemctl --user is-active hermes-gateway'
+  check as_user savdert bash -lc 'systemctl --user is-active hermes-gateway'
+  check as_user savdert bash -lc 'command -v hermes'
+  # the family user must NOT see the agent home (vault isolation)
+  check sudo -u savdert bash -c '! test -r /home/agent/work'
+  # vault: clone present, nightly compile armed
+  check test -d "$AGENT_HOME/work/vault/.git"
+  check as_agent bash -lc 'systemctl --user is-active vault-compile.timer'
   [[ $ok == 1 ]] || die "verification failed"
 }
 
-STEPS=(system apt docker user home tools remotes verify)
+STEPS=(system apt docker user home tools remotes hermes vault verify)
 if [[ $# -gt 0 ]]; then STEPS=("$@"); fi
 for s in "${STEPS[@]}"; do
   declare -F "step_$s" >/dev/null || die "unknown step: $s"
