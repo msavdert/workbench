@@ -333,19 +333,21 @@ step_hermes() {
 
     # `hermes --version` exercises the venv, so a half-finished install (a
     # launcher without working deps) triggers a repair run, not a skip.
-    # UV_NO_CONFIG: the agent user's global uv config (exclude-newer) must
-    # not leak into hermes' own `uv sync --locked` (it changes resolution
-    # and the locked install refuses).
-    if ! as_user "$user" bash -lc 'hermes --version' >/dev/null 2>&1; then
+    # Plain `bash -c` everywhere in this step, never a login shell: the
+    # agent's login env puts mise's uv (0.12.x, newer) ahead of hermes'
+    # bundled uv, and hermes' uv.lock (relative exclude-newer-span) makes
+    # the newer uv re-resolve and refuse `uv sync --locked`. as_user's PATH
+    # is mise-free on purpose.
+    if ! as_user "$user" bash -c 'hermes --version' >/dev/null 2>&1; then
       log "hermes: installing for $user (this downloads node, python, deps)"
       if [[ $user == savdert ]]; then
         # browserless: the family bot needs no Playwright/Chromium, and the
         # savdert user has no sudo for the system libraries anyway
-        as_user "$user" bash -lc \
-          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | UV_NO_CONFIG=1 bash -s -- --skip-browser' >/dev/null
+        as_user "$user" bash -c \
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser' >/dev/null
       else
-        as_user "$user" bash -lc \
-          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | UV_NO_CONFIG=1 bash' >/dev/null
+        as_user "$user" bash -c \
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' >/dev/null
       fi
     fi
     install -d -o "$user" -g "$user" -m 0700 "$uhome/.hermes"
@@ -372,10 +374,10 @@ step_hermes() {
       echo "  seeded config.yaml + SOUL.md for $user"
     fi
     # fill schema defaults / migrate after an update; harmless when current
-    as_user "$user" bash -lc 'hermes doctor --fix' >/dev/null 2>&1 || true
+    as_user "$user" bash -c 'hermes doctor --fix' >/dev/null 2>&1 || true
 
     # hermes writes ~/.config/systemd/user/hermes-gateway.service itself
-    as_user "$user" bash -lc 'hermes gateway install' >/dev/null 2>&1 || true
+    as_user "$user" bash -c 'hermes gateway install' >/dev/null 2>&1 || true
     as_user "$user" systemctl --user daemon-reload
     as_user "$user" systemctl --user enable --now hermes-gateway >/dev/null 2>&1 ||
       echo "  WARN: hermes-gateway not active for $user yet (check journalctl --user -u hermes-gateway)"
