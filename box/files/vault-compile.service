@@ -10,6 +10,9 @@ Type=oneshot
 Environment=VAULT_HOOKS_OFF=1
 # git's credential helper shells out to `op read` (home/git/config), and the
 # compile script finds claude in ~/.local/bin: neither is on the systemd
-# user-manager default PATH.
+# user-manager default PATH. The op service-account token normally enters
+# through the login shell (bashrc reads ~/.config/op/env); a systemd unit
+# has no login shell, so the same file is loaded here.
 Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=%h/.config/op/env
 ExecStart=/usr/bin/python3 %h/work/vault/.claude/scripts/compile.py

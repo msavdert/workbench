@@ -352,6 +352,15 @@ step_hermes() {
     fi
     install -d -o "$user" -g "$user" -m 0700 "$uhome/.hermes"
 
+    # Chromium system libraries for the agent gateway's browser stack (the
+    # savdert install is browserless). Cheap guard: libnss3 is the canonical
+    # first missing dependency.
+    if [[ $user == agent ]] && ! dpkg -s libnss3 >/dev/null 2>&1; then
+      as_user "$user" bash -c \
+        'cd ~/.hermes/hermes-agent && sudo env PATH="$HOME/.hermes/node/bin:$PATH" npx playwright install-deps chromium' >/dev/null
+      echo "  installed chromium system libraries"
+    fi
+
     # .env: rendered from the tracked op:// template on EVERY provision
     # (secret rotation = rotate in 1Password, re-provision). op runs as the
     # agent user - its login shell has the service-account token - and the
@@ -387,8 +396,13 @@ step_hermes() {
 # ---------------------------------------------------------------------------
 step_vault() {
   log "vault: nightly compile timer against ~/work/vault (clone via remotes.list)"
-  [[ -d $AGENT_HOME/work/vault/.git ]] ||
+  if [[ -d $AGENT_HOME/work/vault/.git ]]; then
+    # the vault's gitleaks pre-commit gate is a tracked .githooks dir; the
+    # hooksPath setting is per-clone and must be converged here
+    as_agent git -C "$AGENT_HOME/work/vault" config core.hooksPath .githooks
+  else
     echo "  WARN: ~/work/vault missing; step_remotes should have cloned it"
+  fi
   put 0644 "$files/vault-compile.service" "$AGENT_HOME/.config/systemd/user/vault-compile.service"
   put 0644 "$files/vault-compile.timer" "$AGENT_HOME/.config/systemd/user/vault-compile.timer"
   chown "$AGENT_USER:$AGENT_USER" \
