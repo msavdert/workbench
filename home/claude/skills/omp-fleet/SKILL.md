@@ -29,12 +29,22 @@ by alias as the vendor recommends; what each alias resolves to is recorded in
 | Task | Model | Why |
 |---|---|---|
 | Default for every delegated task: research with citations, demand research with quotes, extraction, summaries | `google-antigravity/gemini-3.7-flash:high` | As accurate as any model measured on facts, 18/18 verbatim quotes in both demand-research runs, uses all allowed source types, fastest, and the Google pool is the least loaded |
-| Second pool for facts, extraction, summaries | `synthetic/syn:small:vision:high` (Qwen3.6-27B) | Same accuracy on facts, respects limits; but 7 of 16 quotes were near-verbatim, not verbatim - not for quote work |
+| Second pool for facts, extraction, summaries | `synthetic/syn:small:vision:high` (**Qwen3.8-27B since ~2026-08-27; benchmarked as Qwen3.6-27B**) | Same accuracy on facts, respects limits; but 7 of 16 quotes were near-verbatim, not verbatim - not for quote work. **Do not use while the agentshard shard is running: see the collision note below.** |
 | Second pool for demand research / verbatim quotes | `synthetic/syn:large:text:high` (GLM-5.2) | 19/20 verbatim quotes; over word limits on summaries |
 | Terse tables, one URL per row | `google-antigravity/gemini-3.1-pro:high` | Correct and minimal; narrower source use than flash |
 | Overflow only | `synthetic/syn:large:vision:high` (Kimi-K3) | Faithful when it delivers, but 2.5-3.5x slower than flash and delivered 6 quotes in one run and 15 in the next |
 | Never for web-facing work | `synthetic/syn:small:text:high` (GLM-4.7-Flash) | The only model that produced wrong facts and fabricated table rows |
 | Never | Antigravity Anthropic models | Operator reserves that allowance |
+
+**`syn:small:vision` collides with a live system on this box.** The agentshard
+shard runs an LLM-driven character (`bruk`) on `hf:Qwen/Qwen3.8-27B`, which is
+what `syn:small:vision` now resolves to, on this same Synthetic subscription.
+Synthetic allows **one request per model per subscription**; requests to
+different models run in parallel. So a fleet run on `syn:small:vision` queues a
+live character behind it for as long as the run lasts, and at his 45 s timeout
+that means he fails and stands still. Use `syn:large:text:high` as the Synthetic
+arm instead while that shard is up. Check with
+`systemctl --user is-active agentshard-mind@bruk.service`.
 
 Pick from this table; do not re-derive the choice from the benchmark history.
 Every model here can ship a wrong figure, so the model choice never removes
@@ -45,6 +55,14 @@ rule 8. Evidence and history: `references/benchmarks.md`.
 Each rule exists because its absence has already cost real quota or a real
 result; the incidents are in `references/operations.md`.
 
+0. **Check search works before launching.** `omp search "<any query>"` returns
+   its provider and result count in seconds. A run whose search silently fails
+   is not a slow run, it is a discarded one - see the fabrication incident in
+   `references/operations.md`. `omp search --provider=<name>` switches provider
+   if the default is down. Confirmed working 2026-08-27 via Mojeek. Note this
+   is `omp`'s own search, which egresses from this box; a Claude Code session's
+   `WebSearch` runs on Anthropic infrastructure and is unaffected by anything
+   that blocks the box, so the two can disagree.
 1. **Always run in the background** (`run_in_background: true`). Research takes
    5-15 minutes; the Bash tool caps at 10 and a foreground kill wastes the run.
 2. **The delegate writes to a file and replies in at most five lines.** If
@@ -115,6 +133,11 @@ subagents and do NOT use the task tool - you are a single process and
 parallelism here drains a shared quota. Do NOT write your own scraper, do NOT
 use Playwright, do NOT write Python to fetch pages. If web_search fails twice
 on the same query, record the failure in the report and move on.
+
+If search is unavailable, say so and return a short report. Do NOT answer from
+your own knowledge and present it as retrieved material. Every claim must come
+from a page fetched during THIS run and must carry the URL it came from. A
+short sourced report is a success; a long unsourced one is a discarded run.
 
 RULES:
 - Every number, quote, and claim gets a source URL.

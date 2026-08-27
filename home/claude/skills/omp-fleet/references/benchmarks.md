@@ -72,10 +72,30 @@ Full record: `lab/experiments/010-omp-fleet-delegate-models/EXPERIMENT.md`.
 Ground truth was independent of the delegates (vendor API, vendor pages read by
 a separate agent, the source document). One run per cell.
 
-Alias resolution on 2026-08-16 (https://dev.synthetic.new/docs/api/models):
-`syn:large:text` = GLM-5.2, `syn:small:text` = GLM-4.7-Flash,
-`syn:large:vision` = Kimi-K3, `syn:small:vision` = Qwen3.6-27B. Aliases can be
-repointed by the vendor; re-check before trusting an old row.
+Alias resolution, re-measured 2026-08-27 by sending a one-token completion to
+each alias and reading the `model` field back off the response (more reliable
+than the docs page, which is what the 2026-08-16 row below used):
+
+| Alias | 2026-08-16 | 2026-08-27 |
+|---|---|---|
+| `syn:large:text` | GLM-5.2 | GLM-5.2 |
+| `syn:small:text` | GLM-4.7-Flash | GLM-4.7-Flash |
+| `syn:large:vision` | Kimi-K3 | Kimi-K3 |
+| `syn:small:vision` | Qwen3.6-27B | **Qwen3.8-27B** |
+
+`syn:small:vision` moved in eleven days with no notice. This is not a footnote:
+the benchmark rows for that alias were measured against Qwen3.6-27B and are
+now describing a model nobody has benchmarked. Aliases can be repointed by the
+vendor; re-check before trusting an old row, and pin `hf:<org>/<model>` rather
+than an alias whenever the result has to stay comparable over time.
+
+Re-measure with:
+
+    for A in syn:large:text syn:small:text syn:large:vision syn:small:vision; do
+      curl -s -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+        -d "{\"model\":\"$A\",\"max_tokens\":300,\"messages\":[{\"role\":\"user\",\"content\":\"Say OK.\"}]}" \
+        https://api.synthetic.new/openai/v1/chat/completions | jq -r .model
+    done
 
 | Model | Research 9 facts | Extraction 29 rows | Summary 6 Q / word limit | Wall s (research / summary) |
 |---|---|---|---|---|

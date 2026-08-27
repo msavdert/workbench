@@ -36,6 +36,7 @@ always correct.
 | Symptom | Cause | Fix |
 |---|---|---|
 | Run produces scrapers and `.html` debris | `web_search` not mentioned in prompt | Rule 3 |
+| Report reads as sourced research but the URLs do not support it, or carries no URLs at all | The delegate's search failed and it answered from its own knowledge instead of reporting the failure. Cost a whole discarded agentshard research run, 2026-08-27. | Rule 0 (check search first) and the "do NOT answer from your own knowledge" block in the prompt template |
 | Foreground call killed at 10 min | Bash timeout cap | Rule 1 |
 | Empty output file, `exit=1`, `run.log` says `No such file or directory` | Relative prompt path; the wrapper `cd`s before reading it. Fixed 2026-08-14 | Nothing to do; the wrapper now absolutises the path. No quota is spent when this happens |
 | `prompt file not found`, exit 2, workdir never created | The shell's cwd was not the repo root, and `$REPO` is derived from cwd. The Bash tool keeps cwd across calls, so an earlier `cd` into a work directory silently poisons the next launch | **Always pass the prompt as an absolute path**, and `cd` to the repo root in the same command as the launch |
