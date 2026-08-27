@@ -41,6 +41,21 @@ four per-project servers were disabled on the box (D11 updated). Ghostty
 terminfo shipped in `box/files/` after ssh sessions from the mac echoed
 every keystroke twice. No active phase; work is backlog-driven.
 
+2026-08-27: `make provision STEPS=hermes` hung with no output.
+`hermes gateway install` asks two questions when the answers are not on the
+command line, and provisioning runs under a tty (`ssh -t`) with the prompt
+swallowed by `>/dev/null`; the prompts come before the "already installed"
+early exit, so even a converged box hangs. `step_hermes` now answers both
+(`--no-start-now --start-on-login`) and redirects stdin from `/dev/null` for
+every hermes call. Verified under a forced pty: 14s, exit 0, both gateways
+active. Two doctor findings from the same session: savdert's live config
+still carried `web.backend: ddgs` because config.yaml is seeded once and
+1de6554 only changed the seed (cleared with `hermes config unset
+web.backend`; the savdert gateway restart is still pending), and doctor's
+"No API key found in ~/.hermes/.env" is a false positive - its hint list is
+28 fixed vendor keys and does not know the `HERMES_CUSTOM_API_*` convention
+that `provider: custom` uses.
+
 ## Next
 
 1. Pick from the backlog below; nothing else is scheduled.
@@ -68,6 +83,8 @@ every keystroke twice. No active phase; work is backlog-driven.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-08-27: step_hermes made non-interactive (`gateway install` prompts
+  under provisioning's tty were the hang); savdert's ddgs backend cleared.
 - 2026-08-26: Hermes moved in (D17): step_hermes provisions two isolated
   gateways (agent personal+vault, savdert family), step_vault arms the
   nightly vault-compile timer; hermes-vm retired (docs/reference/hermes.md).

@@ -344,10 +344,12 @@ step_hermes() {
         # browserless: the family bot needs no Playwright/Chromium, and the
         # savdert user has no sudo for the system libraries anyway
         as_user "$user" bash -c \
-          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser' >/dev/null
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser' \
+          </dev/null >/dev/null
       else
         as_user "$user" bash -c \
-          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' >/dev/null
+          'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' \
+          </dev/null >/dev/null
       fi
     fi
     install -d -o "$user" -g "$user" -m 0700 "$uhome/.hermes"
@@ -383,11 +385,19 @@ step_hermes() {
       as_user "$user" touch "$uhome/.hermes/.workbench-seeded"
       echo "  seeded config.yaml + SOUL.md for $user"
     fi
-    # fill schema defaults / migrate after an update; harmless when current
-    as_user "$user" bash -c 'hermes doctor --fix' >/dev/null 2>&1 || true
+    # fill schema defaults / migrate after an update; harmless when current.
+    # </dev/null everywhere below: `make provision` runs bootstrap under a
+    # tty, so a hermes subcommand that decides to ask something would block
+    # forever with its prompt swallowed by the >/dev/null.
+    as_user "$user" bash -c 'hermes doctor --fix' </dev/null >/dev/null 2>&1 || true
 
-    # hermes writes ~/.config/systemd/user/hermes-gateway.service itself
-    as_user "$user" bash -c 'hermes gateway install' >/dev/null 2>&1 || true
+    # hermes writes ~/.config/systemd/user/hermes-gateway.service itself.
+    # Both install questions (start now? start on login?) must be answered on
+    # the command line - without them the prompts come before the "already
+    # installed" check, so even a converged box hangs. The unit is enabled
+    # and started below, which is why --no-start-now is the right answer.
+    as_user "$user" bash -c \
+      'hermes gateway install --no-start-now --start-on-login' </dev/null >/dev/null 2>&1 || true
     as_user "$user" systemctl --user daemon-reload
     as_user "$user" systemctl --user enable --now hermes-gateway >/dev/null 2>&1 ||
       echo "  WARN: hermes-gateway not active for $user yet (check journalctl --user -u hermes-gateway)"

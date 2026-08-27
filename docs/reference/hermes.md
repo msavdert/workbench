@@ -127,6 +127,12 @@ need"); the backup preserves everything regardless.
   with Telegram's single-poller rule if another process still holds the
   bot token (the old VM's gateway, a stray `hermes gateway run`). Stop the
   other poller, `systemctl --user restart hermes-gateway`.
+- `make provision STEPS=hermes` hangs with no output: `hermes gateway
+  install` asks "start now?" and "start on login?" when the answers are not
+  on the command line, and provisioning runs under a tty (`ssh -t`) with the
+  prompt swallowed by `>/dev/null`. `step_hermes` passes
+  `--no-start-now --start-on-login` and redirects stdin from `/dev/null` for
+  every hermes call; keep both when adding one.
 - `hermes doctor` says Node.js not found: the launcher expects
   `~/.hermes/node/bin` reachable; run through a login shell (`bash -lc`)
   or re-run `step_hermes`, which uses login shells throughout.
