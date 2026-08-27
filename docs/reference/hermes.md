@@ -63,11 +63,15 @@ no git credentials at all.
 The seed configs enable the officially recommended feature set (checked
 against the docs on 2026-08-26, hermes-agent v0.20.5): persistent memory
 (`memory_enabled` + `user_profile_enabled`, no write approval), skills
-(bundled set auto-seeds), ddgs web search, edge TTS, local terminal
-backend, and the synthetic.new custom OpenAI-compatible provider
-(`syn:large:text` default, `syn:large:vision` vision, Nemotron fallback)
-carried over from the old install. Cron jobs are available through the
-`cronjob` tool at runtime; nothing is pre-scheduled.
+(bundled set auto-seeds), keyless web search (no backend set, no API
+key), edge TTS, local terminal backend, and the synthetic.new custom
+OpenAI-compatible provider (`syn:large:text` default, `syn:large:vision`
+vision, Nemotron fallback) carried over from the old install. Cron jobs
+are available through the `cronjob` tool at runtime; nothing is
+pre-scheduled. The agent gateway also gets `GITHUB_TOKEN` in `.env`
+(resolved from `op://dotfiles/GitHub/admintoken`) so `hermes skills`
+and `gh` CLI authenticate without the git credential helper; the savdert
+gateway does not (no git operations).
 
 ## Vault integration (agent gateway only)
 

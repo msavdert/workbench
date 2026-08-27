@@ -2,6 +2,7 @@
 # if ~/.hermes/config.yaml is absent; runtime-owned after that. The family
 # install is browserless (--skip-browser) and fully isolated from the agent
 # user's data: separate OS user, no vault clone, no 1Password token.
+# Web search uses the keyless tier (no backend set = no API key needed).
 model:
   provider: custom
   base_url: https://api.synthetic.new/openai/v1
@@ -23,8 +24,6 @@ terminal:
   backend: local
   cwd: .
   timeout: 180
-web:
-  backend: ddgs
 memory:
   memory_enabled: true
   user_profile_enabled: true

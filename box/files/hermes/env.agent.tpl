@@ -11,6 +11,7 @@ TELEGRAM_HOME_CHANNEL={{ op://dotfiles/Hermes/telegram-home-melih }}
 
 HERMES_CUSTOM_API_SYNTHETIC_NEW_API_KEY={{ op://dotfiles/Hermes/synthetic-api-key }}
 FIRECRAWL_API_KEY={{ op://dotfiles/Hermes/firecrawl-api-key }}
+GITHUB_TOKEN={{ op://dotfiles/GitHub/admintoken }}
 
 TERMINAL_ENV=local
 TERMINAL_TIMEOUT=60

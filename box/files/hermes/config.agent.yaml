@@ -3,6 +3,9 @@
 # config set and migrations write to it; see docs/reference/hermes.md).
 # `hermes config migrate` runs after seeding and fills schema defaults.
 # Provider values migrated from the previous hermes-vm install 2026-08-26.
+# Web search uses the keyless tier (no backend set = no API key needed);
+# the ddgs backend was removed because the package is not bundled and
+# `hermes tools` is never run during provisioning (docs/reference/hermes.md).
 model:
   provider: custom
   base_url: https://api.synthetic.new/openai/v1
@@ -24,8 +27,6 @@ terminal:
   backend: local
   cwd: .
   timeout: 180
-web:
-  backend: ddgs
 memory:
   memory_enabled: true
   user_profile_enabled: true
