@@ -55,7 +55,6 @@ cask "microsoft-edge"
 cask "obsidian"
 cask "google-drive"
 cask "dbeaver-community"
-cask "syncthing-app"
 
 # --- Fonts -------------------------------------------------------------------
 cask "font-jetbrains-mono"
@@ -70,6 +69,13 @@ cask "font-jetbrains-mono-nerd-font"
 # cleanup` proposing to uninstall them is the intended outcome:
 #
 #   fd, fzf, gh, ripgrep, shellcheck, uv   -> home/mise/config.toml
+#
+# Retired 2026-08-26 by vault D13: sync is git-only everywhere, the Syncthing
+# channel on hermes-vm is gone and nothing on this Mac needs the app any more.
+# Re-adding it would put a second sync system on trees git already owns, which
+# is the conflict problem D13 exists to avoid:
+#
+#   syncthing-app
 #
 # Removed during the tier split because the box provides them:
 #
