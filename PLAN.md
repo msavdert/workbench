@@ -72,9 +72,16 @@ box: `home/bin/brain` (note into `00-inbox/` from any repo, either machine)
 and `vault-sessions.timer` at 02:50 New York, which runs the vault's new
 `.claude/scripts/sessions.py` (vault commit a84aa5a) over the previous day's
 `~/.claude/projects` transcripts. Both timers are armed on the box; the box
-filter turns 70 raw sessions into 11 real ones (3 repos, 22k chars). The
-first live `sessions.py` run has NOT been executed yet - it writes and pushes
-to the vault, which needs the operator.
+filter turns 70 raw sessions into 7 real ones (3 repos, 9k chars). The first
+live run (operator, vault commit c77f468) worked and exposed three defects,
+all fixed in vault commits 13bc8a1 and 5308561: machine messages that arrive
+as user turns were summarized as if typed; only prompts were sent, so every
+bullet read "istendi" and never said what came of it; and a re-run appended a
+second section to an append-only log. Thresholding now counts characters
+typed, not prompts - counting prompts kept 11 sessions on 2026-08-26 that
+only cleared the bar through machine messages. Tonight's 02:50 run is a
+no-op because 2026-08-26 is already digested; the first digest under the new
+logic is 2026-08-28 02:50, for 2026-08-27.
 
 ## Next
 
