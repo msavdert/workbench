@@ -97,11 +97,22 @@ repository:
 - `vault-sessions.timer` (02:50 New York, ten minutes before the compiler)
   runs the vault's `.claude/scripts/sessions.py`: it reads the previous day's
   Claude Code transcripts from `~/.claude/projects`, keeps the sessions that
-  look like a human working (main session, at least four real prompts, not
-  the vault itself) and appends ONE `### kod gunu` section to that day's
-  daily log. Only prompts are sent to the model, capped per prompt, per
-  session and in total. Ownership follows the same split as the compiler:
-  this repository owns the units, the vault owns the script.
+  look like a human working, and appends ONE `### kod gunu` section to that
+  day's daily log. A session qualifies when it is a main session (not a
+  subagent sidechain), is not the vault itself (those are already flushed),
+  and the operator actually typed at least 50 characters into it -
+  `SESSIONS_MIN_PROMPT_CHARS`. Counting prompts was tried first and measured
+  wrong: "devam edelim" counts as a prompt and says nothing, while a single
+  paragraph asking for a project review is a whole day's thread. Machine
+  messages that arrive as user turns (a loaded skill, a finished background
+  task, a `!` command and its output) are filtered before the threshold, or
+  they inflate it. The material is the prompts plus each session's closing
+  assistant message, so a bullet can say what came of the request and not
+  only that it was made; everything is capped per prompt, per answer, per
+  session and in total. A day that already carries the section is skipped
+  (`--force` overrides), because the timer is `Persistent=true` and the daily
+  log is append-only. Ownership follows the same split as the compiler: this
+  repository owns the units, the vault owns the script.
 
 The nightly compiler (`vault-compile.timer`) then distills daily logs into
 `50-knowledge/` notes and retires aged material. Its logic, locking and
