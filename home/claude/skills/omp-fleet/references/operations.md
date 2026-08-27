@@ -80,3 +80,53 @@ Flags and why:
 - `--max-time` - hard stop; set it below the `timeout` you wrap it in
 - `NO_COLOR=1` - output is parsed, and ANSI escapes make logs unreadable
 
+## Launching a run without killing it: the four ways this has gone wrong
+
+All four happened in a single session on 2026-08-27 and cost three research
+runs and two external audits. They are written out because each one *looks*
+like it worked at the time.
+
+**1. Never run `omp` in the foreground of a Bash tool call.** The Bash tool
+caps at 10 minutes and a research or audit run takes 5-20. The call is killed
+with exit 143 and the run dies with it, having spent its quota. This is rule 1;
+the way to violate it is to use the fleet without loading this skill first.
+
+**2. Never add a trailing `&` inside a `run_in_background` Bash call.** The
+harness already detaches the call. The extra `&` puts the wrapper in a child
+process group that gets cleaned up when the outer command exits, so the run
+dies seconds after it starts. The right shape is exactly one command:
+
+    Bash(run_in_background: true, command: "exec ~/.claude/skills/omp-fleet/omp-run.sh <topic> <abs-prompt-path> <model> <seconds>")
+
+One Bash call per run. Launch three runs as three separate background calls,
+not one call with three `&`s.
+
+**3. `$OMP_RUN status` and `run.log` are NOT liveness signals, and believing
+they are is how you get duplicate runs.** `status` has shown "none" while two
+runs were working, and `run.log` sits at 11 bytes ("Working...") until the run
+exits, because `omp -p` buffers. Concluding "it died" from either one, and
+relaunching, produces two runs on the same topic writing to the same output
+file - they race and you get a corrupted or truncated report.
+
+The only liveness signal is process CPU:
+
+    ps -eo pid,etime,time,args --no-headers | grep '[o]mp -p --model'
+
+A growing `etime` with non-zero CPU is a working run. Before relaunching
+anything, check that no wrapper for that topic is already alive:
+
+    pgrep -af "omp-run.sh <topic>"
+
+Each live launch shows about two wrapper processes. Four means you launched it
+twice.
+
+**4. Killing one run by its wrapper PID cascades.** `kill <wrapper-pid>` takes
+the wrapper's whole child chain (`timeout` -> `omp` -> `bun`) with it, and in
+practice took out sibling runs too. If you must stop everything, use
+`$OMP_RUN reap` and accept that it stops everything; then verify with
+`pgrep -af omp-run` (note that `pgrep -c -f omp-run.sh` matches your own
+command line and will report phantom survivors - use `pgrep -af` and read it).
+
+**The shortest correct recipe.** Load this skill. Check `omp search` works.
+One background Bash call per run, `exec` the wrapper, no `&`. Then wait, and
+verify liveness with CPU if you are unsure. Waiting is nearly always correct.

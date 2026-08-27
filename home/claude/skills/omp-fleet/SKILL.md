@@ -63,8 +63,25 @@ result; the incidents are in `references/operations.md`.
    is `omp`'s own search, which egresses from this box; a Claude Code session's
    `WebSearch` runs on Anthropic infrastructure and is unaffected by anything
    that blocks the box, so the two can disagree.
-1. **Always run in the background** (`run_in_background: true`). Research takes
-   5-15 minutes; the Bash tool caps at 10 and a foreground kill wastes the run.
+1. **Always run in the background, as ONE Bash call per run, with no trailing
+   `&`.** Research takes 5-15 minutes; the Bash tool caps at 10 and a foreground
+   kill wastes the run. The exact shape:
+
+       Bash(run_in_background: true,
+            command: "exec ~/.claude/skills/omp-fleet/omp-run.sh <topic> <abs-prompt-path> <model> <seconds>")
+
+   The harness already detaches it. An extra `&` inside that call puts the
+   wrapper in a child process group that dies when the outer command exits, and
+   the run is gone seconds after it starts.
+
+1a. **Liveness is process CPU. `$OMP_RUN status` and `run.log` are not.**
+   `status` has reported "none" while two runs were working, and `run.log`
+   stays at 11 bytes until the run exits because `omp -p` buffers. Do not
+   relaunch on either signal - you get two runs racing on one output file.
+   Check `ps -eo pid,etime,time,args --no-headers | grep '[o]mp -p --model'`
+   for growing etime and non-zero CPU, and `pgrep -af "omp-run.sh <topic>"`
+   before relaunching anything. Details and the kill-cascade trap are in
+   `references/operations.md`.
 2. **The delegate writes to a file and replies in at most five lines.** If
    findings come back as prose, the token saving that justifies the mechanism
    is gone.
