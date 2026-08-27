@@ -60,6 +60,12 @@ were initialized by hand, so the line only bites on a fresh install. The two
 remaining browser warnings are by design: with `browser.backend` unset hermes
 defaults to the Browser Use CLI, which hides the built-in `browser` and
 `browser-cdp` toolsets - Playwright Chromium itself is recognized.
+The box was still on `Etc/UTC`: D15's `timedatectl` line was committed
+(8e048c0, 16:23 UTC 2026-08-19) one minute after `step_system` last ran, so
+it had never executed. Applied; the box is `America/New_York` (EDT) now and
+`vault-compile.timer` stayed at 03:00 local because its `OnCalendar` pins
+the zone. cloud-init's conflicting `timezone: Etc/UTC` removed from
+`providers/proxmox/user-data.yaml` - one setting, one owner.
 
 ## Next
 
@@ -88,6 +94,8 @@ defaults to the Browser Use CLI, which hides the built-in `browser` and
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-08-27: box moved to America/New_York (D15 finally applied; cloud-init
+  no longer sets a second, conflicting zone).
 - 2026-08-27: step_hermes made non-interactive (`gateway install` prompts
   under provisioning's tty were the hang); savdert's ddgs backend cleared.
 - 2026-08-26: Hermes moved in (D17): step_hermes provisions two isolated

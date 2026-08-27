@@ -5,7 +5,9 @@
 # re-run and versioned without rebuilding the VM.
 hostname: agent-vm
 manage_etc_hosts: true
-timezone: Etc/UTC
+# No `timezone:` here on purpose: the zone is one setting with one owner,
+# `step_system` in box/bootstrap.sh (America/New_York, D15). cloud-init's
+# first-boot default is UTC and provisioning converges it minutes later.
 locale: C.UTF-8
 
 users:
