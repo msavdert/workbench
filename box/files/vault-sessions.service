@@ -1,0 +1,15 @@
+[Unit]
+Description=Nightly coding-session digest into the vault daily log
+
+[Service]
+Type=oneshot
+# Reads the day's Claude Code transcripts from ~/.claude/projects, summarizes
+# them with headless claude (sonnet) and appends one section to the daily log;
+# errors land in ~/work/vault/.state/sessions.err, never on stderr alone.
+# Same environment as vault-compile.service and for the same reasons: the git
+# credential helper shells out to `op read`, claude lives in ~/.local/bin, and
+# a systemd unit has no login shell to load the op token.
+Environment=VAULT_HOOKS_OFF=1
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=%h/.config/op/env
+ExecStart=/usr/bin/python3 %h/work/vault/.claude/scripts/sessions.py

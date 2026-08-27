@@ -66,6 +66,15 @@ it had never executed. Applied; the box is `America/New_York` (EDT) now and
 `vault-compile.timer` stayed at 03:00 local because its `OnCalendar` pins
 the zone. cloud-init's conflicting `timezone: Etc/UTC` removed from
 `providers/proxmox/user-data.yaml` - one setting, one owner.
+Two ways to feed the vault from outside a brain session, since its hooks are
+project-scoped and the operator never opens a session inside the vault on the
+box: `home/bin/brain` (note into `00-inbox/` from any repo, either machine)
+and `vault-sessions.timer` at 02:50 New York, which runs the vault's new
+`.claude/scripts/sessions.py` (vault commit a84aa5a) over the previous day's
+`~/.claude/projects` transcripts. Both timers are armed on the box; the box
+filter turns 70 raw sessions into 11 real ones (3 repos, 22k chars). The
+first live `sessions.py` run has NOT been executed yet - it writes and pushes
+to the vault, which needs the operator.
 
 ## Next
 
@@ -94,6 +103,8 @@ the zone. cloud-init's conflicting `timezone: Etc/UTC` removed from
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-08-27: vault gains two outside-in feeds: `brain` CLI and the 02:50
+  sessions digest (workbench owns the units, vault owns the script).
 - 2026-08-27: box moved to America/New_York (D15 finally applied; cloud-init
   no longer sets a second, conflicting zone).
 - 2026-08-27: step_hermes made non-interactive (`gateway install` prompts

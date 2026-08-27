@@ -86,6 +86,23 @@ SOUL.md instructs it to:
 - answer questions from vault content only, saying so when the vault holds
   no evidence (the vault's anti-hallucination rule).
 
+Two things feed the vault from OUTSIDE a brain session, because the vault's
+own hooks are project-scoped and never fire for a session opened in another
+repository:
+
+- `brain "..."` (`home/bin/brain`, linked to `~/.local/bin`) writes one note
+  into `00-inbox/` from any repository on either machine, records which host
+  and repo it came from, commits and pushes. It takes text from arguments or
+  stdin and needs no Claude session at all.
+- `vault-sessions.timer` (02:50 New York, ten minutes before the compiler)
+  runs the vault's `.claude/scripts/sessions.py`: it reads the previous day's
+  Claude Code transcripts from `~/.claude/projects`, keeps the sessions that
+  look like a human working (main session, at least four real prompts, not
+  the vault itself) and appends ONE `### kod gunu` section to that day's
+  daily log. Only prompts are sent to the model, capped per prompt, per
+  session and in total. Ownership follows the same split as the compiler:
+  this repository owns the units, the vault owns the script.
+
 The nightly compiler (`vault-compile.timer`) then distills daily logs into
 `50-knowledge/` notes and retires aged material. Its logic, locking and
 error discipline live in the vault repo itself

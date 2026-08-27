@@ -218,6 +218,7 @@ manifest() {
   link git/allowed_signers "$HOME/.config/git/allowed_signers"
   link op-env "$HOME/.config/op-env"
   link bin/opwith "$HOME/.local/bin/opwith"
+  link bin/brain "$HOME/.local/bin/brain"
 
   # Claude Code (D8): settings composed, statusline linked, nothing else
   merge_settings claude "$HOME/.claude/settings.json"

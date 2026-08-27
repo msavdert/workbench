@@ -118,5 +118,5 @@ ssh: ## interactive shell on the VM (tmux session "main")
 	ssh -t $(VM_HOST) 'bash -lc agent-session'
 
 lint: ## shellcheck + shfmt check
-	shellcheck -e SC1091 providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/bin/timeout home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
-	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh home/bin/opwith home/bin/timeout box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
+	shellcheck -e SC1091 providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/bin/timeout home/bin/brain home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls
+	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/agy/statusline.sh home/bash/interactive.sh home/bin/opwith home/bin/timeout home/bin/brain box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls

@@ -412,7 +412,7 @@ step_hermes() {
 
 # ---------------------------------------------------------------------------
 step_vault() {
-  log "vault: nightly compile timer against ~/work/vault (clone via remotes.list)"
+  log "vault: nightly sessions digest + compile timers against ~/work/vault"
   if [[ -d $AGENT_HOME/work/vault/.git ]]; then
     # the vault's gitleaks pre-commit gate is a tracked .githooks dir; the
     # hooksPath setting is per-clone and must be converged here
@@ -420,14 +420,19 @@ step_vault() {
   else
     echo "  WARN: ~/work/vault missing; step_remotes should have cloned it"
   fi
-  put 0644 "$files/vault-compile.service" "$AGENT_HOME/.config/systemd/user/vault-compile.service"
-  put 0644 "$files/vault-compile.timer" "$AGENT_HOME/.config/systemd/user/vault-compile.timer"
-  chown "$AGENT_USER:$AGENT_USER" \
-    "$AGENT_HOME/.config/systemd/user/vault-compile.service" \
-    "$AGENT_HOME/.config/systemd/user/vault-compile.timer"
+  local unit
+  for unit in vault-compile.service vault-compile.timer \
+    vault-sessions.service vault-sessions.timer; do
+    put 0644 "$files/$unit" "$AGENT_HOME/.config/systemd/user/$unit"
+    chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.config/systemd/user/$unit"
+  done
   as_agent systemctl --user daemon-reload
-  as_agent systemctl --user enable --now vault-compile.timer >/dev/null 2>&1 ||
-    echo "  WARN: vault-compile.timer not active"
+  # sessions digest first (02:50), compiler second (03:00): the digest must be
+  # in yesterday's daily log before the compiler distills it
+  for unit in vault-sessions.timer vault-compile.timer; do
+    as_agent systemctl --user enable --now "$unit" >/dev/null 2>&1 ||
+      echo "  WARN: $unit not active"
+  done
 }
 
 # ---------------------------------------------------------------------------

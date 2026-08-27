@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# brain - capture one note into the vault's 00-inbox, from anywhere.
+#
+# The vault is fed from OUTSIDE, not only from Claude sessions opened inside
+# it: the vault's hooks are project-scoped, so a session in any other repo
+# never reaches them (docs/reference/hermes.md). This command closes that gap
+# without hooks - it runs in any repository, on either machine, and leaves
+# the note in the same shape Hermes uses: one file per note, then push.
+#
+#   brain "one sentence"        note from the arguments
+#   somecommand | brain         note from stdin
+#   brain -t "title" "body"     explicit title
+#
+# Vault location: $BRAIN_VAULT, else ~/vault (mac), else ~/work/vault (box).
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'EOF'
+usage: brain [-t title] <text...>
+       <text> | brain [-t title]
+EOF
+  exit 2
+}
+
+die() {
+  printf 'brain: %s\n' "$*" >&2
+  exit 1
+}
+
+title=""
+while getopts ":t:h" opt; do
+  case $opt in
+    t) title=$OPTARG ;;
+    h) usage ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+# Arguments win; otherwise stdin, but only when it is not the terminal - a
+# bare `brain` on a tty must print usage, never hang waiting for input.
+if [[ $# -gt 0 ]]; then
+  text="$*"
+elif [[ ! -t 0 ]]; then
+  text="$(cat)"
+else
+  usage
+fi
+[[ -n ${text//[[:space:]]/} ]] || die "empty note"
+
+vault="${BRAIN_VAULT:-}"
+if [[ -z $vault ]]; then
+  for candidate in "$HOME/vault" "$HOME/work/vault"; do
+    [[ -d $candidate/.git ]] && vault=$candidate && break
+  done
+fi
+[[ -n $vault && -d $vault/.git ]] || die "no vault clone found (set BRAIN_VAULT)"
+
+# The first line is the title unless -t said otherwise; the body is what is
+# left. A one-line note is therefore a heading and nothing else, instead of
+# the same sentence printed twice. Slugging happens in
+# python3 because the title is Turkish more often than not and neither tr nor
+# sed transliterates multibyte characters portably across mac and box.
+body=$text
+if [[ -z $title ]]; then
+  title="$(printf '%s\n' "$text" | head -1)"
+  # `/./,$!d` drops the blank lines a "title\n\nbody" note leaves behind
+  body="$(printf '%s\n' "$text" | tail -n +2 | sed -e '/./,$!d')"
+fi
+slug="$(printf '%s' "$title" | python3 -c '
+import re, sys, unicodedata
+
+text = sys.stdin.read()
+table = {"ı": "i", "İ": "i", "ğ": "g", "Ğ": "g", "ş": "s", "Ş": "s"}
+text = "".join(table.get(ch, ch) for ch in text)
+text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+text = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
+print(text[:40].strip("-") or "not")
+')"
+
+# Pull BEFORE writing: a rebase with the new file already in the tree would
+# have to stash it, and a note is not worth that risk. Failure is fatal here
+# on purpose - writing into a stale clone is how duplicate notes are born.
+git -C "$vault" pull --rebase --autostash --quiet ||
+  die "git pull failed; the vault clone is not in a state to receive a note"
+
+stamp="$(date +%Y-%m-%d-%H%M)"
+path="$vault/00-inbox/$stamp-$slug.md"
+n=2
+while [[ -e $path ]]; do
+  path="$vault/00-inbox/$stamp-$slug-$n.md"
+  n=$((n + 1))
+done
+
+# Provenance: which machine and which repository the thought came from. This
+# is the part a note typed inside the vault can never carry, and it is what
+# makes the note findable again later.
+origin="$(hostname -s)"
+if repo="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  origin="$origin:$(basename "$repo")"
+else
+  origin="$origin:$(basename "$PWD")"
+fi
+
+{
+  printf '# %s\n' "$title"
+  [[ -n ${body//[[:space:]]/} ]] && printf '\n%s\n' "$body"
+  printf '\n---\n\nKaynak: brain, %s, %s\n' "$origin" "$(date +%Y-%m-%d\ %H:%M\ %Z)"
+} >"$path"
+
+git -C "$vault" add "$path"
+git -C "$vault" commit --quiet -m "inbox: $title" ||
+  die "git commit failed (gitleaks hook?); the note is at $path"
+if git -C "$vault" push --quiet; then
+  printf 'brain: %s\n' "${path#"$vault"/}"
+else
+  printf 'brain: committed but not pushed: %s\n' "${path#"$vault"/}" >&2
+  exit 1
+fi

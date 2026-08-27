@@ -1,0 +1,11 @@
+[Unit]
+Description=Coding-session digest at 02:50 New York time
+
+[Timer]
+# Ten minutes ahead of vault-compile.timer on purpose: the digest has to be in
+# yesterday's daily log before the 03:00 compiler distills that log.
+OnCalendar=*-*-* 02:50:00 America/New_York
+Persistent=true
+
+[Install]
+WantedBy=timers.target
