@@ -391,6 +391,12 @@ step_hermes() {
     # forever with its prompt swallowed by the >/dev/null.
     as_user "$user" bash -c 'hermes doctor --fix' </dev/null >/dev/null 2>&1 || true
 
+    # Skills Hub: `skills list` creates ~/.hermes/skills/.hub on its first
+    # run. Without it doctor warns and hub-installed skills have nowhere to
+    # land; the guard keeps this a first-install action only.
+    [[ -d "$uhome/.hermes/skills/.hub" ]] ||
+      as_user "$user" bash -c 'hermes skills list' </dev/null >/dev/null 2>&1 || true
+
     # hermes writes ~/.config/systemd/user/hermes-gateway.service itself.
     # Both install questions (start now? start on login?) must be answered on
     # the command line - without them the prompts come before the "already

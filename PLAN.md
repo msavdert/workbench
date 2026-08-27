@@ -51,10 +51,15 @@ every hermes call. Verified under a forced pty: 14s, exit 0, both gateways
 active. Two doctor findings from the same session: savdert's live config
 still carried `web.backend: ddgs` because config.yaml is seeded once and
 1de6554 only changed the seed (cleared with `hermes config unset
-web.backend`; the savdert gateway restart is still pending), and doctor's
+web.backend`, gateway restarted), and doctor's
 "No API key found in ~/.hermes/.env" is a false positive - its hint list is
 28 fixed vendor keys and does not know the `HERMES_CUSTOM_API_*` convention
-that `provider: custom` uses.
+that `provider: custom` uses. `step_hermes` also initializes the Skills Hub
+once (`hermes skills list` creates `~/.hermes/skills/.hub`); both live users
+were initialized by hand, so the line only bites on a fresh install. The two
+remaining browser warnings are by design: with `browser.backend` unset hermes
+defaults to the Browser Use CLI, which hides the built-in `browser` and
+`browser-cdp` toolsets - Playwright Chromium itself is recognized.
 
 ## Next
 
