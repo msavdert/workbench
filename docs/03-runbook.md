@@ -256,6 +256,16 @@ The first `claude auth login` on it is manual, as on every substrate.
   (`mise ls-remote aqua:<owner>/<repo>`); see `docs/00-vision.md` D7.
 - **VM unreachable** - `make vm-status`; console via
   `ssh pve-vm-ssh qm terminal 105` (exit with `Ctrl-O`).
+- **The box and `pve` unreachable at the same time** - not a coincidence, and
+  not the box. `pve` is the Tailscale peer, the subnet router advertising
+  `10.0.0.0/24` and the guest's NAT gateway, so its one onboard NIC takes
+  everything with it when it wedges. Signature in the host journal:
+  `e1000e 0000:00:1f.6 eno1: Detected Hardware Unit Hang`, repeating every
+  two seconds and never recovering. Since 2026-08-27 the chipset watchdog
+  resets the host instead of leaving it dark until a manual reset from the
+  Hetzner Robot console. Incident record, re-apply and rollback steps:
+  `docs/reference/pve-nic-hang.md`. The host is not managed by this
+  repository; that is deliberate.
 - **cloud-init did not run as expected** - on the VM:
   `sudo cloud-init status --long; sudo cat /var/log/cloud-init-output.log`.
 - **claude-remote fails with "Workspace not trusted" or loops on "Enable

@@ -83,6 +83,21 @@ only cleared the bar through machine messages. Tonight's 02:50 run is a
 no-op because 2026-08-26 is already digested; the first digest under the new
 logic is 2026-08-28 02:50, for 2026-08-27.
 
+2026-08-27, later: the box and `pve` went unreachable together four times
+since 2026-08-22. Not the box. The pve host's onboard Intel I219-LM wedges
+its transmit ring (`e1000e ... Detected Hardware Unit Hang`) and the driver
+never issues its recovering reset, which kills the Tailscale peer, the
+`10.0.0.0/24` subnet route and the guest NAT gateway in one stroke. Ruled
+out: SDN (its config predates the first hang by 18 days), kernel (started on
+7.0.6-2, continued across upgrades to -12 and -14), memory and heat (no MCE,
+no EDAC, no throttling), load (the host was idle for three minutes before the
+last hang). Two changes applied by hand on the host, which this repository
+deliberately does not manage: segmentation/receive offload and EEE off
+through a `post-up` hook, and softdog replaced by the Intel PCH TCO watchdog
+so a freeze resets itself instead of waiting for a Hetzner Robot console
+reset. Record, re-apply and rollback: `docs/reference/pve-nic-hang.md`; a
+ready-to-send ticket: `docs/reference/pve-nic-hang-ticket.md`.
+
 ## Next
 
 1. Pick from the backlog below; nothing else is scheduled.
@@ -91,11 +106,20 @@ logic is 2026-08-28 02:50, for 2026-08-27.
    relative paths were confirmed during the agy review.
 3. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
    should be present on the box again.
+4. After the next `pve` reboot, confirm
+   `cat /sys/class/watchdog/watchdog0/identity` still reports `iTCO_wdt`.
+   The switch was made on a live host and has not survived a boot yet.
 
 ## Open questions
 
-- none open; nvim/zellij (box only) and the statusline (one script, both
-  repos had the same) were decided in phase 2.
+- How to learn that the NIC hang recurred, now that the chipset watchdog
+  resets `pve` on its own. A frozen host cannot send its own alert, so the
+  only design covering both severities is an external dead man's switch: pve
+  pings out every minute and the absence raises the alarm. Channel undecided
+  - the Hermes Telegram bots already exist, while pve's builtin
+  `mail-to-root` has no relayhost and would not deliver from a Hetzner IP.
+- nvim/zellij (box only) and the statusline (one script, both repos had the
+  same) were decided in phase 2.
 
 ## Backlog (not scheduled)
 
@@ -110,6 +134,8 @@ logic is 2026-08-28 02:50, for 2026-08-27.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-08-27: box+pve outages traced to the pve host's I219-LM e1000e TX
+  hang (four since 08-22); offloads/EEE off, chipset watchdog over softdog.
 - 2026-08-27: vault gains two outside-in feeds: `brain` CLI and the 02:50
   sessions digest (workbench owns the units, vault owns the script).
 - 2026-08-27: box moved to America/New_York (D15 finally applied; cloud-init
