@@ -4,6 +4,11 @@
 
 [tools]
 claude-code = "latest" # on the box Claude Code comes from the native installer (D7)
+# macOS has no coreutils `timeout`; the omp-fleet skill and other callers need
+# it on PATH. This is uutils (Rust), shipped as ONE multi-call binary, so
+# home/bin/timeout wraps it back into the expected name. Mac only: the box is
+# Linux and already has GNU coreutils.
+coreutils = "latest"
 
 # Pulls SSH hosts tagged ssh-host from the 1Password dotfiles vault into
 # ~/.ssh/config.local. Keys stay in 1Password's native SSH agent; this task

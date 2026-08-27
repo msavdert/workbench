@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# timeout <duration> <command...>  (home/bin, linked to ~/.local/bin on the
+# mac only by home/install.sh)
+#
+# macOS ships no coreutils `timeout`. mise's `coreutils` (aqua:uutils/coreutils)
+# provides one, but only inside a single multi-call binary: the package
+# contains just `coreutils`, so nothing lands in PATH under the name callers
+# expect. This shim restores that name.
+#
+# An alias would not do: aliases exist only in interactive shells, so a script
+# with a `#!/bin/sh` line, an execve from another program, `command -v timeout`
+# or `find -exec` would all still miss it. The omp-fleet skill needs the real
+# name on PATH.
+#
+# The resolve chain below exists for the same reason: mise's PATH activation is
+# interactive-only, so the callers that most need this shim - background jobs,
+# hooks, execve from another process - do not have mise on PATH at all and a
+# bare `exec coreutils` fails with 127 there (verified 2026-08-26).
+#
+# It resolves the install directory BEFORE `command -v`, and never through
+# mise's shim: a mac-profile tool lives in config.mac.toml, which mise only
+# loads when MISE_ENV=mac is exported. A process without that variable but with
+# the shim directory on PATH gets "No version is set for shim: coreutils" and
+# exit 1 - a wrong answer, worse than a missing one (verified 2026-08-26).
+# home/install.sh links the same install tree, so the path below is as
+# declarative as the shim would have been.
+#
+# uutils is a reimplementation, not GNU. Verified compatible for the usage that
+# matters here (2026-08-26, uutils 0.10.0): exit 124 on expiry, exit status of
+# the child passed through, `-f/--foreground`, and s/m/h/d duration suffixes.
+# Exotic GNU flags are not guaranteed - check `coreutils timeout --help` first.
+#
+# The box is Linux and already has GNU timeout, which is why install.sh links
+# this on the mac profile only; shadowing the real one there would be a
+# downgrade.
+set -euo pipefail
+
+resolve_coreutils() {
+  local cand
+  for cand in "$HOME"/.local/share/mise/installs/coreutils/latest/*/coreutils \
+    "$HOME"/.local/share/mise/installs/coreutils/*/*/coreutils; do
+    if [[ -x $cand && ! -L $cand ]]; then
+      printf '%s\n' "$cand"
+      return 0
+    fi
+  done
+  if cand="$(command -v coreutils 2>/dev/null)" && [[ $cand != *"/mise/shims/"* ]]; then
+    printf '%s\n' "$cand"
+    return 0
+  fi
+  return 1
+}
+
+if ! cu="$(resolve_coreutils)"; then
+  echo "timeout: uutils coreutils not found; declare it in home/mise/config.mac.toml and run mise install" >&2
+  exit 127
+fi
+
+exec "$cu" timeout "$@"

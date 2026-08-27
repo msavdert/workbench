@@ -263,6 +263,13 @@ manifest() {
     link zellij "$HOME/.config/zellij"
   fi
 
+  # `timeout` shim: mac only. macOS ships no coreutils timeout and mise's
+  # uutils package installs a single multi-call binary, so the name has to be
+  # restored by hand. The box has GNU timeout already and must not be shadowed.
+  if [[ $PROFILE == mac ]]; then
+    link bin/timeout "$HOME/.local/bin/timeout"
+  fi
+
   profile_env
 }
 
