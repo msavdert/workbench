@@ -121,8 +121,10 @@ disappears and `watchdog-mux` fails to start. The order that works is: stop
 start `watchdog-mux`. At boot the question does not arise, because
 `watchdog-mux` now loads only `iTCO_wdt`.
 
-Not yet verified across a reboot (the host has not been restarted since the
-change): confirm `watchdog0` is still `iTCO_wdt` after the next one.
+Verified across a reboot on 2026-08-27 05:40 UTC: `watchdog0` is `iTCO_wdt`,
+`softdog` is not loaded at all, and no second watchdog registers, so the
+live-switch ordering problem above does not recur at boot. The `post-up` hook
+had applied the offloads by the time the host was reachable again.
 
 Consequence to be aware of: `watchdog-mux` has `Restart=no`. If it dies, the
 TCO resets the host within its 10 s timeout. That was already true with
@@ -162,16 +164,35 @@ Rolling back only the watchdog is enough if the suspicion is a spurious
 reset; rolling back only the offloads is enough if throughput on the host
 matters more than the hang. They are independent.
 
+## Noticing a recurrence
+
+The chipset watchdog now resets the host on its own, so an outage can pass
+unnoticed. Nothing was wired up to announce it. A frozen host cannot send its
+own alert, so the only design covering both severities would be an external
+dead man's switch - pve pinging out every minute, the absence raising the
+alarm - and the operator judged that not worth the moving parts for a fault
+this rare. The check is manual and weekly instead:
+
+```
+ssh pve-vm-ssh last -x -n 10 reboot
+ssh pve-vm-ssh "journalctl -b -1 -k --no-pager | grep -c 'Hardware Unit Hang'"
+```
+
+A boot nobody ordered, with a non-zero hang count in the boot before it, is a
+recurrence.
+
 ## If it happens again
 
-`docs/reference/pve-nic-hang-ticket.md` is a ready-to-send Hetzner ticket
-with the hardware identification, the log signature, the timeline and what
-has been ruled out. Fill in the server number from the Robot console before
-sending. The ask is a switch port and cabling check, then a NIC or mainboard
-replacement, or an additional PCIe card so the onboard I219 leaves the path.
+One more occurrence and a Hetzner ticket goes out (operator's decision,
+2026-08-27). The draft lives in the operator's own notes rather than in this
+repository; what it needs is all above - the hardware identification, the log
+signature, the incident timeline and the list of what has been ruled out. The
+server number comes from the Robot console. The ask is a switch port and
+cabling check, then a NIC or mainboard replacement, or an additional PCIe
+card so the onboard I219 leaves the path.
 
-Update the timeline table above with the new incident first, so the ticket
-and this record stay in step.
+Add the new incident to the timeline table above first, so this record stays
+the source the ticket is written from.
 
 ## `nic-tuning.sh`
 

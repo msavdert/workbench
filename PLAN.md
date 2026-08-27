@@ -95,8 +95,13 @@ last hang). Two changes applied by hand on the host, which this repository
 deliberately does not manage: segmentation/receive offload and EEE off
 through a `post-up` hook, and softdog replaced by the Intel PCH TCO watchdog
 so a freeze resets itself instead of waiting for a Hetzner Robot console
-reset. Record, re-apply and rollback: `docs/reference/pve-nic-hang.md`; a
-ready-to-send ticket: `docs/reference/pve-nic-hang-ticket.md`.
+reset. Record, re-apply and rollback: `docs/reference/pve-nic-hang.md`. No
+alerting: the operator tracks `pve` reboots by hand, weekly, and a second
+recurrence opens a Hetzner ticket from notes kept outside this repository.
+Both changes verified across a reboot the same day (05:40 UTC): `watchdog0`
+comes up as `iTCO_wdt` with no `softdog` loaded, the `post-up` hook has the
+offloads and EEE off before the host is reachable, and the box returned on
+its own with no failed units.
 
 ## Next
 
@@ -106,20 +111,13 @@ ready-to-send ticket: `docs/reference/pve-nic-hang-ticket.md`.
    relative paths were confirmed during the agy review.
 3. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
    should be present on the box again.
-4. After the next `pve` reboot, confirm
-   `cat /sys/class/watchdog/watchdog0/identity` still reports `iTCO_wdt`.
-   The switch was made on a live host and has not survived a boot yet.
 
 ## Open questions
 
-- How to learn that the NIC hang recurred, now that the chipset watchdog
-  resets `pve` on its own. A frozen host cannot send its own alert, so the
-  only design covering both severities is an external dead man's switch: pve
-  pings out every minute and the absence raises the alarm. Channel undecided
-  - the Hermes Telegram bots already exist, while pve's builtin
-  `mail-to-root` has no relayhost and would not deliver from a Hetzner IP.
-- nvim/zellij (box only) and the statusline (one script, both repos had the
-  same) were decided in phase 2.
+- none open. The pve alerting question was closed on 2026-08-27: no dead
+  man's switch, the operator watches the host's reboots by hand (weekly) and
+  a second recurrence opens the ticket. nvim/zellij (box only) and the
+  statusline (one script, both repos had the same) were decided in phase 2.
 
 ## Backlog (not scheduled)
 
