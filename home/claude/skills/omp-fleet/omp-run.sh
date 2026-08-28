@@ -155,6 +155,10 @@ RC=$?
 set -e
 
 echo "exit=$RC log=$WORKDIR/run.log" >&2
+# Name every file the run left behind, so a session never has to guess
+# where a delegate wrote its report (models have mis-nested relative
+# paths; foreground shell views can lag the real filesystem).
+echo "workdir files: $(cd "$WORKDIR" && ls -m 2>/dev/null)" >&2
 grep -qiE '429|RESOURCE_EXHAUSTED|quota' "$WORKDIR/run.log" 2>/dev/null \
   && echo "QUOTA ERROR in run.log - check before retrying" >&2
 

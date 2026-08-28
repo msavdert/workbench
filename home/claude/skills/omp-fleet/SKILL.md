@@ -122,13 +122,21 @@ carries the tool allowlist, the quota gate and the orphan reaper (internals in
 `references/operations.md`). It treats the current directory as the project
 root; override with `OMP_PROJECT_ROOT`.
 
-```bash
-cd <repo-root>                       # same command as the launch: an earlier cd poisons $REPO
-mkdir -p research/_work/<topic>
-cat > research/_work/<topic>/prompt.txt <<'PROMPT'
-<the prompt, from the template below>
-PROMPT
-$OMP_RUN <topic> "$PWD/research/_work/<topic>/prompt.txt" [model] [max-seconds]
+**Write the prompt file with the harness Write tool, never a shell
+heredoc.** Measured 2026-08-28: a Claude Code session's sandboxed foreground
+shell held a `cat > ... <<'PROMPT'` write in an overlay the detached
+background run could not see - two launches died with "prompt file not
+found" while a foreground `ls` showed the file. The Write tool writes
+through the harness to the real filesystem (and creates the directory);
+shell heredocs only look equivalent. The same divergence runs the other
+way: a foreground `ls`/`find` can lag files the background run wrote, so
+verify outputs with the Read tool or a `run_in_background` `ls`, never
+conclude from the foreground view alone.
+
+```
+Write(file_path: <abs-repo>/research/_work/<topic>/prompt.txt, content: <template below>)
+Bash(run_in_background: true,
+     command: "exec $OMP_RUN <topic> <abs-repo>/research/_work/<topic>/prompt.txt [model] [max-seconds]")
 ```
 
 Rules that bite here: the prompt path is **absolute**; the launch is
@@ -166,10 +174,18 @@ RULES:
 - End with a CONFIDENCE section: which findings are well-sourced, which are
   thin, and what you could not find.
 
-OUTPUT: Write the full report to ./<outfile>.md in the current directory.
-Then reply with AT MOST 5 lines: what you found, how many sourced figures,
-and anything you failed to get. Nothing else.
+OUTPUT: Write the full report to <ABSOLUTE path:
+/...repo.../research/_work/<topic>/<outfile>.md>. Then reply with AT MOST 5
+lines: what you found, how many sourced figures, and anything you failed to
+get. Nothing else.
 ```
+
+Give the output path ABSOLUTE, always. The wrapper runs the delegate with
+the topic dir as its cwd, but a delegate handed "./report.md in the current
+directory" has still re-derived a repo-relative path from context and nested
+it under `research/_work/<topic>/research/_work/<topic>/` (2026-08-28). If
+the file is not where you asked, `find` the topic dir (in a background call)
+before declaring the run lost - so far the report has always existed.
 
 ### SOURCE RULES block - add verbatim for demand research
 
