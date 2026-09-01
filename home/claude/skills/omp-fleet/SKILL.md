@@ -30,21 +30,27 @@ by alias as the vendor recommends; what each alias resolves to is recorded in
 |---|---|---|
 | Default for every delegated task: research with citations, demand research with quotes, extraction, summaries | `google-antigravity/gemini-3.7-flash:high` | As accurate as any model measured on facts, 18/18 verbatim quotes in both demand-research runs, uses all allowed source types, fastest, and the Google pool is the least loaded |
 | Second pool for facts, extraction, summaries | `synthetic/syn:small:vision:high` (**Qwen3.8-27B since ~2026-08-27; benchmarked as Qwen3.6-27B**) | Same accuracy on facts, respects limits; but 7 of 16 quotes were near-verbatim, not verbatim - not for quote work. **Do not use while the agentshard shard is running: see the collision note below.** |
-| Second pool for demand research / verbatim quotes | `synthetic/syn:large:text:high` (GLM-5.2) | 19/20 verbatim quotes; over word limits on summaries |
+| Second pool for demand research / verbatim quotes | `synthetic/hf:zai-org/GLM-5.2:high` - the DIRECT name, never the `syn:large:text` alias | 19/20 verbatim quotes; over word limits on summaries. Alias remapped without notice: `syn:large:text` resolves to GLM-5.3-Flash since ~2026-08-30, a live agentshard mind (see collision note) |
 | Terse tables, one URL per row | `google-antigravity/gemini-3.1-pro:high` | Correct and minimal; narrower source use than flash |
 | Overflow only | `synthetic/syn:large:vision:high` (Kimi-K3) | Faithful when it delivers, but 2.5-3.5x slower than flash and delivered 6 quotes in one run and 15 in the next |
 | Never for web-facing work | `synthetic/syn:small:text:high` (GLM-4.7-Flash) | The only model that produced wrong facts and fabricated table rows |
 | Never | Antigravity Anthropic models | Operator reserves that allowance |
 
-**`syn:small:vision` collides with a live system on this box.** The agentshard
-shard runs an LLM-driven character (`bruk`) on `hf:Qwen/Qwen3.8-27B`, which is
-what `syn:small:vision` now resolves to, on this same Synthetic subscription.
-Synthetic allows **one request per model per subscription**; requests to
-different models run in parallel. So a fleet run on `syn:small:vision` queues a
-live character behind it for as long as the run lasts, and at his 45 s timeout
-that means he fails and stands still. Use `syn:large:text:high` as the Synthetic
-arm instead while that shard is up. Check with
-`systemctl --user is-active agentshard-mind@bruk.service`.
+**Synthetic aliases collide with a live system on this box.** The agentshard
+shard runs its whole LLM cast on this same Synthetic subscription (since
+window 25, 2026-08-30): `hf:Qwen/Qwen3.8-27B` (= what `syn:small:vision`
+resolves to, bruk), `hf:zai-org/GLM-5.3-Flash` (= what `syn:large:text`
+NOW resolves to, ada) and `hf:openai/gpt-oss-120b` (doran). Synthetic
+allows **one request per model per subscription**; requests to different
+models run in parallel. So a fleet run on any of those models - or on an
+alias that silently remaps onto one, which Synthetic does without notice -
+queues a live character behind it for as long as the run lasts, and at a
+45 s timeout that means the character fails and stands still. While the
+shard is up (`systemctl --user is-active agentshard-mind@bruk.service`),
+name Synthetic models by DIRECT name only, use
+`synthetic/hf:zai-org/GLM-5.2:high` as the Synthetic arm, and check the
+live cast in `~/work/agentshard/ops/config/mind/*.llm.json` before naming
+anything else.
 
 Pick from this table; do not re-derive the choice from the benchmark history.
 Every model here can ship a wrong figure, so the model choice never removes
