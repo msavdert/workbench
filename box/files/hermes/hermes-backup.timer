@@ -1,0 +1,9 @@
+[Unit]
+Description=Nightly hermes backup at 04:30 New York time
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 America/New_York
+Persistent=true
+
+[Install]
+WantedBy=timers.target

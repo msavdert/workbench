@@ -408,6 +408,29 @@ step_hermes() {
     as_user "$user" systemctl --user enable --now hermes-gateway >/dev/null 2>&1 ||
       echo "  WARN: hermes-gateway not active for $user yet (check journalctl --user -u hermes-gateway)"
   done
+
+  # Nightly encrypted backup, agent gateway only (the savdert install holds
+  # the shared family bot, has no op access, and its state lives on the
+  # same disk via its own user dir - out of scope by design).
+  # Script + units land in the agent home; uv resolves the script's PEP 723
+  # deps (boto3) on first run. The unit runs the script through
+  # `opwith hermes-backup`, which resolves the op:// refs in
+  # ~/.config/op-env/hermes-backup.env (home/op-env, linked by
+  # home/install.sh) at RUNTIME - no secrets on disk. The age PRIVATE key
+  # never leaves 1Password.
+  local bfiles="$files/hermes"
+  install -o "$AGENT_USER" -g "$AGENT_USER" -m 0755 \
+    "$bfiles/hermes-backup.py" "$AGENT_HOME/.hermes/hermes-backup.py"
+  install -o "$AGENT_USER" -g "$AGENT_USER" -m 0644 \
+    "$bfiles/hermes-backup.service" "$bfiles/hermes-backup.timer" \
+    "$AGENT_HOME/.config/systemd/user/"
+  chown "$AGENT_USER:$AGENT_USER" \
+    "$AGENT_HOME/.config/systemd/user/hermes-backup.service" \
+    "$AGENT_HOME/.config/systemd/user/hermes-backup.timer"
+  rm -f "$AGENT_HOME/.hermes/backup.env" # retired: secrets now resolve at runtime
+  as_agent systemctl --user daemon-reload
+  as_agent systemctl --user enable --now hermes-backup.timer
+  echo "  installed hermes-backup (timer 04:30 America/New_York)"
 }
 
 # ---------------------------------------------------------------------------

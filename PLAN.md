@@ -103,6 +103,22 @@ comes up as `iTCO_wdt` with no `softdog` loaded, the `post-up` hook has the
 offloads and EEE off before the host is reachable, and the box returned on
 its own with no failed units.
 
+2026-08-31: Nightly encrypted hermes backup to OCI S3.
+`box/files/hermes/hermes-backup.py` (PEP 723, uv runs it) zips `~/.hermes`
+with `hermes backup`, encrypts with age (mise tool, commit 3dcbd09;
+recipient only - the identity lives in op://dotfiles/Hermes/age-identity)
+and uploads to `s3://general/hermes/backup/` via boto3 - the aws CLI v2
+always sends aws-chunked encoding, which OCI's compat layer rejects
+(NotImplemented); boto3 turns it off with
+`request_checksum_calculation=when_required`. systemd user timer at
+04:30 America/New_York, 30-day remote retention, 7 local copies.
+Secrets resolve at runtime via `opwith hermes-backup`
+(`home/op-env/hermes-backup.env`, op:// refs only - nothing sensitive
+on disk); the private key never leaves 1Password. First run verified
+end to end: 105 MB zip.age uploaded, downloaded back, decrypted with
+the op identity, zip opened (3447 entries, config.yaml + .env
+present). Agent gateway only - savdert has no op access by design.
+
 ## Next
 
 1. Pick from the backlog below; nothing else is scheduled.
@@ -132,6 +148,8 @@ its own with no failed units.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-08-31: nightly encrypted hermes backup to OCI S3 (age + boto3,
+  04:30 timer; aws CLI cannot write to OCI - aws-chunked).
 - 2026-08-27: box+pve outages traced to the pve host's I219-LM e1000e TX
   hang (four since 08-22); offloads/EEE off, chipset watchdog over softdog.
 - 2026-08-27: vault gains two outside-in feeds: `brain` CLI and the 02:50

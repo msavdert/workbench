@@ -1,0 +1,20 @@
+[Unit]
+Description=Nightly hermes backup (zip -> age-encrypt -> OCI S3)
+
+[Service]
+Type=oneshot
+# mise installs age and the shims live there; op's service-account token
+# normally enters through the login shell, which a systemd unit does not
+# have - the same EnvironmentFile pattern as vault-compile.service.
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=%h/.config/op/env
+# opwith resolves the op:// refs in ~/.config/op-env/hermes-backup.env into
+# this process only - secrets are fetched from 1Password at runtime and
+# never stored on disk (the plain-text backup.env approach was removed).
+# uv is a mise shim (a shell wrapper), so ExecStart goes through bash; a
+# systemd unit cannot exec a shim directly. uv reads the PEP 723 header
+# (boto3 pin) and runs the script in an isolated env; the system python3
+# has an old botocore that rejects the checksum config this endpoint needs.
+ExecStart=%h/.local/bin/opwith hermes-backup /usr/bin/env bash -lc '%h/.local/share/mise/shims/uv run --quiet %h/.hermes/hermes-backup.py'
+# secrets flow only through the unit's environment; never log it
+SyslogIdentifier=hermes-backup

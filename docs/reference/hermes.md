@@ -121,6 +121,26 @@ error discipline live in the vault repo itself
 docs); this repository only owns the systemd wiring, so the mac and the
 box always run whatever the vault repo currently defines.
 
+## Backup (agent gateway, nightly)
+
+`hermes-backup.timer` (04:30 America/New_York) runs
+`~/.hermes/hermes-backup.py`: `hermes backup` full zip (~100 MB), age
+encryption with the recipient from `op://dotfiles/Hermes/age-recipient`
+(the private `age-identity` never leaves 1Password), upload to
+`s3://general/hermes/backup/hermes-backup-<date>.zip.age` via boto3,
+30-day remote retention, 7 local copies in `~/backup/hermes/`. boto3
+instead of the aws CLI because OCI's compat layer rejects aws-chunked
+encoding; boto3 disables it with
+`request_checksum_calculation=when_required`. `hermes backup -q` exits 0
+without producing a zip (0.20.5 bug), so the script always runs full
+mode. Restoring a backup:
+
+    op read 'op://dotfiles/Hermes/age-identity' > identity.txt   # 0600, delete after
+    aws s3api get-object --bucket general \
+      --key hermes/backup/hermes-backup-<date>.zip.age out.zip.age \
+      --endpoint-url "$S3_URL" --region us-ashburn-1
+    age -d -i identity.txt -o restored.zip out.zip.age && hermes import restored.zip
+
 ## Operations
 
 | What | How |
@@ -132,6 +152,8 @@ box always run whatever the vault repo currently defines.
 | Rotate a secret | edit `dotfiles/Hermes` in 1Password, `make provision STEPS=hermes`, restart both gateways |
 | Re-seed config/SOUL | as the user: `rm ~/.hermes/.workbench-seeded ~/.hermes/config.yaml ~/.hermes/SOUL.md`, then `make provision STEPS=hermes` |
 | Compile now | `ssh agent-vm-ssh 'systemctl --user start vault-compile.service'`; report lands in `~/work/vault/.state/compile.report`, errors in `.state/compile.err` |
+| Backup now | `ssh agent-vm-ssh 'systemctl --user start hermes-backup.service'`; log: `journalctl --user -u hermes-backup.service` |
+| Backup health | `ssh agent-vm-ssh 'systemctl --user list-timers hermes-backup.timer'`; last key in `~/backup/hermes/hermes-backup-state.json` |
 | Vault health | `~/work/vault/.claude/scripts/doktor.sh` on any clone |
 
 ## Migration record (2026-08-26)

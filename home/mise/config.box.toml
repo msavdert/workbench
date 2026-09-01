@@ -37,6 +37,7 @@ lazygit = "latest"
 delta = "latest"
 
 # --- cloud, kubernetes and infrastructure ---
+age = "latest" # hermes backup encryption (client-side, before OCI S3 upload)
 aws-cli = "latest"
 kubectl = "latest"
 helm = "latest"
