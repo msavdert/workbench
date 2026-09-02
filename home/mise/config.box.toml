@@ -33,6 +33,11 @@ gping = "latest"
 btop = "latest"
 
 # --- version control ---
+# git-crypt encrypts the vault's private/ subtree (vault HANDOFF D16). The
+# aqua package downloads AGWA's own release binary, which exists for
+# linux/amd64 only; the mac gets it from mac/Brewfile. Pinned: the box never
+# unlocks, but the on-disk format must match what the mac writes.
+"aqua:AGWA/git-crypt" = "0.8.0"
 lazygit = "latest"
 delta = "latest"
 

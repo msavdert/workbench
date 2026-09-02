@@ -29,7 +29,7 @@ distills all six daily logs. Vault content tiers decided (HANDOFF D16):
 SOUL refuses third-party/health captures (repo + live file), failure
 notices to Telegram via `unit-failure-notify@` (self-test delivered), five
 hand-started project checkouts added to `remotes.list` as clone-only,
-git-crypt in apt and Brewfile.
+git-crypt via mise (aqua, linux-only binary) on the box and brew on the mac.
 
 Migration complete (2026-08-19). From-scratch rebuild test of the Proxmox
 box done the same day: `make snapshot` from the mac worked, VM 105

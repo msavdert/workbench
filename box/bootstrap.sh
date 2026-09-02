@@ -151,9 +151,6 @@ step_apt() {
     vim-nox tmux
     # search / files / text
     ripgrep fd-find jq tree ncdu moreutils bc file gettext-base
-    # git-crypt: encrypts the vault's private/ subtree (vault HANDOFF D16);
-    # no mise backend ships a binary, so apt here and brew on the mac
-    git-crypt
     # archives
     unzip zip p7zip-full xz-utils zstd bzip2
     # transfer / sync
