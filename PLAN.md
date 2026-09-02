@@ -19,7 +19,7 @@ definition and record is `docs/02-migration.md`.
 ## Now
 
 2026-09-01 architecture review (workbench + vault) and its first fixes, all
-uncommitted in both repos at session end. Vault: the nightly compile had
+committed and pushed in both repos. Vault: the nightly compile had
 never distilled a note (marker off-by-one, compile.py) and the sessions
 digest was reading its own headless runs (cwd=$HOME; now a dedicated
 ~/.cache/vault/headless dir); both fixed, marker reset so the next 03:00 run
@@ -134,11 +134,8 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
-1. Operator, before the 02:50 New York jobs: commit both repos (the vault's
-   nightly units run `git add -A`, so uncommitted vault changes would land
-   in an automated commit), then on the box `git -C ~/work/vault` ...
-   `git-crypt lock` so the clone holds no key; on the mac `brew install
-   git-crypt` and unlock per `private/README.md`.
+1. Closed 2026-09-01: both repos committed and pushed, box clone locked
+   (git-crypt from mise), mac unlocked with the 1Password key.
 2. Closed 2026-09-01: the moved medical note stays in vault history; the
    operator judged it minor and the repo is private, so no history rewrite.
 3. Verify the morning after: `~/work/vault/.state/compile.report` lists six
