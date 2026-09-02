@@ -19,10 +19,10 @@ Layout:
   in one of these.
 - `~/work/workbench` how this machine is built and how the operator's
   environment and agents are configured (`home/`).
-- `~/work/ai-hub` doctrine, experiments and journal about working with AI;
-  it holds no configuration since workbench phase 3.
-- `agent-vm` and `dotfiles`, the predecessors of workbench, are archived on
-  GitHub and are not checked out here.
+- `~/work/vault` the operator's knowledge base and agent memory; doctrine
+  and journal about working with AI are under `50-knowledge/ai/`.
+- `agent-vm`, `dotfiles` and `ai-hub`, the predecessors of workbench, are
+  archived on GitHub and are not checked out here.
 
 ## Secrets and auth
 

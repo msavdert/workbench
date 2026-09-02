@@ -86,8 +86,10 @@ under `home/omp/` and `home/agy/` (omp's `agents/`, `skills/`, `AGENTS.md`,
 `RULES.md`, `WATCHDOG.md`, `hooks/`). Everything there is in a tool-specific
 format and lands in one dotdir (`~/.claude`, `~/.omp/agent/`,
 `~/.gemini/antigravity-cli/`), so splitting behaviour from settings across
-two repo trees would buy nothing. `ai-hub` owns its own project-level
-skills, templates and protocol docs; they do not live in workbench.
+two repo trees would buy nothing. The former ai-hub project skills
+(`skill-creator`, `youtube-whisper-transcriber`, `oss-project-eval`) are
+global skills here since 2026-09-02; ai-hub's templates and overnight
+protocol stayed in the archived repository.
 
 `home/install.sh` has two kinds of target: links (a `$HOME` path is a
 symlink into `home/`) and generated files (`~/.claude/settings.json`,

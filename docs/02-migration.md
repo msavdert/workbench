@@ -62,7 +62,7 @@ not migrated.
 | `runtime/claude/CLAUDE.md`, `agents/`, `skills/`, `hooks/` | `agents/` |
 | `runtime/project-templates/`, `runtime/overnight/` | `agents/templates/`, `agents/overnight/` |
 | `install.sh` | absorbed into `home/install.sh` (same symlink pattern, same boundary-gate self-check) |
-| `doctrine/`, `lab/`, `journal/`, README | stay in ai-hub |
+| `doctrine/`, `lab/`, `journal/`, README | stayed in ai-hub until 2026-09-02, then the vault (see below) |
 
 ## Phases
 
@@ -189,3 +189,15 @@ commit pending the operator): `skills/oss-project-eval` and
 `skills/youtube-whisper-transcriber` plus `skills/README.md` to
 `ai-hub/.claude/skills/`, `templates/quant-research` to
 `ai-hub/lab/templates/`, `overnight/PROTOCOL.md` to `ai-hub/lab/overnight/`.
+
+## 2026-09-02: ai-hub retired
+
+`ai-hub` is archived on GitHub (read-only, history intact, not imported
+anywhere, per D1). Its text moved to the vault as `50-knowledge/ai/`:
+`doctrine/`, `journal/` and `lab/experiments/` as `experiments/`. Its three
+project skills (`skill-creator`, `youtube-whisper-transcriber`,
+`oss-project-eval`) plus `.claude/skills/README.md` moved to
+`home/claude/skills/` and are linked globally by `home/install.sh`.
+`lab/templates/`, `lab/overnight/` and `lab/runs/TEMPLATE.md` were not
+taken. The box checkout and the `ai-hub` line in `box/remotes.list` are
+gone; the generic `work` environment covers what the checkout was for.

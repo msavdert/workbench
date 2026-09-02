@@ -7,7 +7,6 @@
 # operator's machine, so the entries are `--clone-only`. Drop the flag on a
 # line to give that project its own server (claude-remote@<name>).
 workbench https://github.com/msavdert/workbench.git --clone-only
-ai-hub https://github.com/msavdert/ai-hub.git --clone-only
 dba-to-dbre https://github.com/msavdert/dba-to-dbre.git --clone-only
 suhuf https://github.com/msavdert/suhuf.git --clone-only
 # private second-brain repo: written to by hermes (00-inbox) and the nightly
@@ -20,4 +19,3 @@ agentshard https://github.com/msavdert/agentshard.git --clone-only
 dipladder https://github.com/msavdert/dipladder.git --clone-only
 dryrun https://github.com/msavdert/dryrun.git --clone-only
 quant-research https://github.com/msavdert/quant-research.git --clone-only
-traderx https://github.com/msavdert/traderx.git --clone-only

@@ -41,8 +41,8 @@ ambiguity for years, not months.
 - Running the box as a container (D3).
 - A general-purpose framework. This is one operator's environment; the
   structure is meant to be copied and adapted, not parameterised.
-- Learning notes, experiments and journals about AI usage. Those stay in
-  `ai-hub`.
+- Learning notes, experiments and journals about AI usage. Those live in
+  the vault (`50-knowledge/ai/`, from `ai-hub` until 2026-09-02).
 
 ## Principles
 
@@ -67,8 +67,10 @@ D1 One repository, clean start. `workbench` starts from an empty tree and
 takes files from the predecessor repositories by hand, per the source map in
 `docs/02-migration.md`. Their git history stays readable in the archived
 repositories; importing it would carry three incompatible layouts into a
-fourth. `ai-hub` remains a separate repository for doctrine, experiments and
-journal; its runtime artifacts move here (D9).
+fourth. `ai-hub` stayed a separate repository for doctrine, experiments and
+journal until 2026-09-02, when that text moved into the vault
+(`50-knowledge/ai/`) and the repository was archived; its runtime
+artifacts had already moved here (D9).
 
 D2 One box, VM only, Ubuntu 24.04 LTS. Substrates: Proxmox VM (primary),
 OrbStack Linux VM on the laptop, generic cloud VM via cloud-init. An LTS
@@ -128,10 +130,11 @@ operator's choice or every check cries wolf.
 D9 Claude behaviour (global CLAUDE.md, subagents, skills, hooks) lives in
 `home/claude/` next to its settings, the same way omp and agy keep their
 behaviour files under `home/omp/` and `home/agy/`, and is linked into
-`~/.claude` by `home/install.sh`. `ai-hub` keeps doctrine, lab and journal -
-text a person reads, not files a machine loads - plus its own project-level
-skills. Changed 2026-08-19: the top-level `agents/` tree was dissolved;
-see `docs/02-migration.md`.
+`~/.claude` by `home/install.sh`. Doctrine, experiments and journal - text a
+person reads, not files a machine loads - live in the vault, not here.
+Changed 2026-08-19: the top-level `agents/` tree was dissolved. Changed
+2026-09-02: `ai-hub` was archived; its three project skills became global
+skills here and its text went to the vault; see `docs/02-migration.md`.
 
 D10 Secrets: only the 1Password service-account token is on the box
 (`~/.config/op/env`, pushed by `make secrets`). git over HTTPS uses a

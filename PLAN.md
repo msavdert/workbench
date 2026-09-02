@@ -18,6 +18,11 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-02: `ai-hub` retired. Its doctrine, journal and experiments are in
+the vault under `50-knowledge/ai/`, its three project skills are global
+skills in `home/claude/skills/`, the GitHub repo is archived, the box
+checkout is gone. Earlier state follows.
+
 2026-09-01 architecture review (workbench + vault) and its first fixes, all
 committed and pushed in both repos. Vault: the nightly compile had
 never distilled a note (marker off-by-one, compile.py) and the sessions
@@ -142,9 +147,12 @@ present). Agent gateway only - savdert has no op access by design.
    inputs and at least one note under `50-knowledge/`; the 2026-09-01 daily
    log carries no "prompt injection" alarm.
 4. Review debt from the same session (not started): PLAN.md `Now` and `Log`
-   back to the two-line rule, a threat model and dependency inventory under
-   docs/, ~/work backup before rollback, agentshard world reports out of
-   `30-projects/` into `90-agent/`.
+   back to the two-line rule; a threat model and dependency inventory under
+   docs/. Dropped 2026-09-02 by the operator: a pre-rollback ~/work check
+   (the operator commits and pushes routinely) and moving the agentshard
+   reports out of `30-projects/` (the vault is agent-managed throughout, so
+   authorship does not decide placement; project content stays in
+   `30-projects/`).
 2. agy: run the $HOME instruction-layer probe (does agy read ~/AGENTS.md or
    ~/GEMINI.md?) and record the answer in docs/03-runbook.md; only workspace-
    relative paths were confirmed during the agy review.
@@ -171,6 +179,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-02: ai-hub retired: text to vault `50-knowledge/ai/`, skills to
+  `home/claude/skills/`, repo archived, remotes.list and docs updated.
 - 2026-09-01: architecture review; vault compile and sessions digest fixed,
   `private/` git-crypt tier (vault D16), Telegram failure notices, hermes SOUL rule.
 

@@ -2,7 +2,7 @@
 Deployed to ~/.claude/CLAUDE.md — loaded into EVERY Claude Code session, in
 every project, and re-sent on every turn. Each line here is paid for repeatedly
 and a long list trains the model to skim it. Hard operator preferences only.
-Rationale belongs in ai-hub/doctrine/, not here. If this file grows past ~30
+Rationale belongs in the vault (50-knowledge/ai/doctrine/), not here. If this file grows past ~30
 lines, something in it belongs somewhere else. Admission test: would the model
 derive this from the repo, or already do it by default? If yes, leave it out.
 -->

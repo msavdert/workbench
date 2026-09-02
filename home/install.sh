@@ -224,8 +224,8 @@ manifest() {
   merge_settings claude "$HOME/.claude/settings.json"
   link claude/statusline.sh "$HOME/.claude/statusline.sh"
 
-  # Claude behaviour (D9): global instructions, subagents, the one global
-  # skill and the boundary gate, all under home/claude/ next to the settings.
+  # Claude behaviour (D9): global instructions, subagents, the global
+  # skills and the boundary gate, all under home/claude/ next to the settings.
   # ~/.claude/agents is linked as a directory (nothing else writes there);
   # skills and hooks per entry, because other installers own siblings in
   # those directories. omp-fleet's fallback config sits at
@@ -234,6 +234,9 @@ manifest() {
   link claude/agents "$HOME/.claude/agents"
   link claude/skills/omp-fleet "$HOME/.claude/skills/omp-fleet"
   link claude/skills/omp-fleet/omp-delegate.yml "$HOME/.claude/omp-delegate.yml"
+  link claude/skills/skill-creator "$HOME/.claude/skills/skill-creator"
+  link claude/skills/youtube-whisper-transcriber "$HOME/.claude/skills/youtube-whisper-transcriber"
+  link claude/skills/oss-project-eval "$HOME/.claude/skills/oss-project-eval"
   link claude/hooks/boundary-gate.sh "$HOME/.claude/hooks/boundary-gate.sh"
 
   # parallel harnesses (D12): config only, per file; agy composed like Claude
