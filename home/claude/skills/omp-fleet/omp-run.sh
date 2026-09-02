@@ -94,7 +94,7 @@ case "${1:-}" in
     echo "--- running omp agents ---"
     ps -eo pid,etime,args 2>/dev/null \
       | grep -E "omp fetch|omp_worker_daemon|omp-python-runner" \
-      | grep -v grep | cut -c1-110 || echo "none"
+      | grep -v grep | sed -E 's/--api-key[= ]+[^ ]+/--api-key <masked>/g' | cut -c1-110 || echo "none"
     echo "--- quota ---"
     NO_COLOR=1 timeout 60 omp usage 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
     exit 0
@@ -139,12 +139,44 @@ trap 'reap "$BEFORE"' EXIT INT TERM
 
 echo "topic=$TOPIC model=$MODEL max=${MAXTIME}s tools=$TOOLS" >&2
 
+# Synthetic key. omp keeps its own copy of the Synthetic API key in its
+# runtime store (~/.omp/agent/agent.db), and that copy went stale on
+# 2026-09-02: every synthetic/* run got "401 Invalid API Key" and omp
+# silently walked its configured fallback chain (retry.fallbackChains in
+# config.yml) onto the Google pool - a run labelled GLM-5.2 was answered
+# by gemini-3.1-pro. The live agentshard cast never noticed because it
+# resolves the same key from 1Password at every start. Do the same here:
+# for synthetic/* models pass the key per run via --api-key, resolved from
+# the op:// reference unless the caller already exported OMP_API_KEY. The
+# value never touches a file; it is visible in this process's argv for the
+# run's duration (single-user box, accepted). The stored copy is ignored.
+API_KEY_ARGS=()
+case "$MODEL" in
+  synthetic/*)
+    SYN_KEY="${OMP_API_KEY:-}"
+    if [[ -z "$SYN_KEY" ]]; then
+      SYN_KEY="$(op read 'op://dotfiles/Synthetic/credential' 2>/dev/null || true)"
+    fi
+    if [[ -n "$SYN_KEY" ]]; then
+      API_KEY_ARGS=(--api-key "$SYN_KEY")
+    else
+      MSG="WARNING: could not read op://dotfiles/Synthetic/credential; omp will use its stored key, which may be stale (401 -> silent Google fallback)"
+      echo "$MSG" >&2
+      # run.log is truncated by the launch below, so the warning gets its own file
+      mkdir -p "$WORKDIR" && echo "$MSG" >> "$WORKDIR/warnings.log"
+    fi
+    ;;
+esac
+# Non-Synthetic models never receive a key from here, even if OMP_API_KEY is
+# exported in the calling shell (internal audit, 2026-09-02).
+
 set +e
 (
   cd "$WORKDIR"
   NO_COLOR=1 timeout --kill-after=30 "$((MAXTIME + 60))" \
     omp -p \
       --model "$MODEL" \
+      "${API_KEY_ARGS[@]}" \
       --config "$CONFIG" \
       --no-session --auto-approve --no-skills \
       --tools "$TOOLS" \

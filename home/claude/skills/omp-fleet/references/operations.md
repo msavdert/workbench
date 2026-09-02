@@ -49,6 +49,7 @@ always correct.
 | Quotes are real, sourced, and all agree with the hypothesis | Delegate quoted vendor marketing pages, which are written to match the query | Rule 9. Check the host of every source before believing any of it |
 | Quota drains long after a run "died" | Delegate used `task` to fan out; children outlive the parent and are owned by the worker daemon | Rule 6. Confirm with `$OMP_RUN status`, not with the parent's PID file - the parent showed as a reaped zombie while nine children were still burning quota |
 | 429 `RESOURCE_EXHAUSTED` in `run.log` | Pool was already empty at launch | Rule 7 |
+| 429 from Google on a `synthetic/*` run, or a GLM run whose omp log shows a `google-antigravity` turn | Synthetic answered `401 Invalid API Key` (stale stored key) and omp fell back along `retry.fallbackChains` | The wrapper passes the key from 1Password per run since 2026-09-02; check the omp log's `provider` lines before crediting a model; `omp auth-broker`/agent.db copies are disposable |
 
 ## Wrapper internals
 

@@ -52,6 +52,25 @@ name Synthetic models by DIRECT name only, use
 live cast in `~/work/agentshard/ops/config/mind/*.llm.json` before naming
 anything else.
 
+**Synthetic auth (learned 2026-09-02).** omp stores its own copy of the
+Synthetic API key in `~/.omp/agent/agent.db`, and that copy can go stale:
+on 2026-09-02 every `synthetic/*` run got `401 Invalid API Key` and omp
+walked its configured fallback chain (`retry.fallbackChains` in
+`config.yml`) onto the Google pool without saying so - a run launched as
+GLM-5.2 was answered by gemini-3.1-pro. The wrapper now resolves the key
+from `op://dotfiles/Synthetic/credential` per run for `synthetic/*` models
+and passes it with `--api-key` (override by exporting `OMP_API_KEY`; a
+failed `op read` is written to `research/_work/<topic>/warnings.log` as
+well as stderr, and `status` masks the key in argv). Two
+consequences: (1) **before crediting any model, read the run's omp log**
+(`~/.omp/logs/omp.<date>.<pid>.log`) for `"provider":"..."` lines and
+"agent turn ended with provider error"; a clean `run.log` proves nothing
+about which model answered; (2) the Synthetic docs warn that pinned model
+names can 404 when a model is rotated out - that is a different failure
+from this 401. Keep the direct names (the alias remap onto a live cast
+model is the worse risk); if a pinned name ever 404s, re-pin to the
+current name from https://dev.synthetic.new/docs/api/models.
+
 Pick from this table; do not re-derive the choice from the benchmark history.
 Every model here can ship a wrong figure, so the model choice never removes
 rule 8. Evidence and history: `references/benchmarks.md`.
