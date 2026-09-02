@@ -186,6 +186,9 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-02: dipladder and dryrun retired as remote-control environments
+  (systemd units and checkouts removed by hand); their `--clone-only` lines
+  dropped from `box/remotes.list` so a rebuild does not reconstitute them.
 - 2026-09-02: ai-hub retired: text to vault `50-knowledge/ai/`, skills to
   `home/claude/skills/`, repo archived, remotes.list and docs updated.
 - 2026-09-02: executor/auditor replace builder/reviewer, `audit` skill,
