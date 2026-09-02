@@ -127,6 +127,8 @@ practice took out sibling runs too. If you must stop everything, use
 `pgrep -af omp-run` (note that `pgrep -c -f omp-run.sh` matches your own
 command line and will report phantom survivors - use `pgrep -af` and read it).
 
-**The shortest correct recipe.** Load this skill. Check `omp search` works.
+**The shortest correct recipe.** Load this skill. If the run will search
+the web, check `timeout 30 omp search --provider=mojeek "<q>"` works (the
+bare form hangs after printing).
 One background Bash call per run, `exec` the wrapper, no `&`. Then wait, and
 verify liveness with CPU if you are unsure. Waiting is nearly always correct.

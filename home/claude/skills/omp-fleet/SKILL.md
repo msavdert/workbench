@@ -61,14 +61,20 @@ rule 8. Evidence and history: `references/benchmarks.md`.
 Each rule exists because its absence has already cost real quota or a real
 result; the incidents are in `references/operations.md`.
 
-0. **Check search works before launching.** `omp search "<any query>"` returns
-   its provider and result count in seconds. A run whose search silently fails
-   is not a slow run, it is a discarded one - see the fabrication incident in
-   `references/operations.md`. `omp search --provider=<name>` switches provider
-   if the default is down. Confirmed working 2026-08-27 via Mojeek. Note this
-   is `omp`'s own search, which egresses from this box; a Claude Code session's
-   `WebSearch` runs on Anthropic infrastructure and is unaffected by anything
-   that blocks the box, so the two can disagree.
+0. **Check search works before launching - but only for runs that will
+   search the web.** Run it as `timeout 30 omp search --provider=mojeek
+   "<any query>"`. It returns the provider and result count in about one
+   second. Do NOT run the bare `omp search "<q>"`: in its default form the
+   command prints its results and then never exits (measured 2026-09-02: a
+   foreground call blocked the session for the full tool timeout with the
+   results already on screen). A run whose search silently fails is not a
+   slow run, it is a discarded one - see the fabrication incident in
+   `references/operations.md`. `--provider=<name>` switches provider if
+   Mojeek is down. File-only delegates (audits, extraction from local files)
+   do not need this check at all. Note this is `omp`'s own search, which
+   egresses from this box; a Claude Code session's `WebSearch` runs on
+   Anthropic infrastructure and is unaffected by anything that blocks the
+   box, so the two can disagree.
 1. **Always run in the background, as ONE Bash call per run, with no trailing
    `&`.** Research takes 5-15 minutes; the Bash tool caps at 10 and a foreground
    kill wastes the run. The exact shape:

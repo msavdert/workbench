@@ -58,7 +58,8 @@ workbench/
 | `~/.config/systemd/user/claude-remote*.service`, `~/.local/bin/remote-*`, `~/.local/bin/agent-session` | `box/files/` | `box/bootstrap.sh` |
 | `/etc/claude-code/CLAUDE.md` | `box/files/machine-CLAUDE.md` | `box/bootstrap.sh` |
 | `~agent/.hermes/{.env,config.yaml,SOUL.md}` and `~savdert/.hermes/{...}` (env converged each run; config/SOUL seeded once, see `docs/reference/hermes.md`) | `box/files/hermes/` | `box/bootstrap.sh step_hermes` |
-| `~agent/.config/systemd/user/vault-compile.{service,timer}` | `box/files/` | `box/bootstrap.sh step_vault` |
+| `~agent/.config/systemd/user/vault-compile.{service,timer}`, `vault-sessions.{service,timer}`, `unit-failure-notify@.service`, `~/.local/bin/notify-telegram` | `box/files/` | `box/bootstrap.sh step_vault` |
+| `~/.config/systemd/user/agy-remote-control*.{service,timer}`, `~/.antigravity/` | not in repo; agy writes them (like hermes writes `hermes-gateway.service`) | the tool itself, on `agy` remote-control setup |
 | `~/.bashrc` (guard + non-interactive part), `~/.bash_profile`, `~/.tmux.conf` | `box/files/bashrc`, `bash_profile`, `tmux.conf` | `box/bootstrap.sh` |
 | `~/.config/bash/interactive.sh`, `~/.zshrc`, `~/.zshenv`, `~/.config/starship.toml` | `home/bash/`, `home/zsh/`, `home/starship.toml` | `home/install.sh` |
 | `~/.config/mise/config.toml`, `config.<profile>.toml` | `home/mise/` | `home/install.sh <profile>` |

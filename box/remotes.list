@@ -13,3 +13,11 @@ suhuf https://github.com/msavdert/suhuf.git --clone-only
 # private second-brain repo: written to by hermes (00-inbox) and the nightly
 # vault-compile timer; brain sessions live on the mac (vault HANDOFF D7/D9)
 vault https://github.com/msavdert/vault.git --clone-only
+# found running as per-project servers on 2026-09-01 (started by hand with
+# remote-add, never listed here): clone-only keeps the checkouts across a
+# rebuild; whether each deserves its own server is the operator's call
+agentshard https://github.com/msavdert/agentshard.git --clone-only
+dipladder https://github.com/msavdert/dipladder.git --clone-only
+dryrun https://github.com/msavdert/dryrun.git --clone-only
+quant-research https://github.com/msavdert/quant-research.git --clone-only
+traderx https://github.com/msavdert/traderx.git --clone-only

@@ -18,6 +18,19 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-01 architecture review (workbench + vault) and its first fixes, all
+uncommitted in both repos at session end. Vault: the nightly compile had
+never distilled a note (marker off-by-one, compile.py) and the sessions
+digest was reading its own headless runs (cwd=$HOME; now a dedicated
+~/.cache/vault/headless dir); both fixed, marker reset so the next 03:00 run
+distills all six daily logs. Vault content tiers decided (HANDOFF D16):
+`private/` is git-crypt encrypted, key is the 1Password document
+`vault-git-crypt-key`, one medical capture moved there. Workbench: hermes
+SOUL refuses third-party/health captures (repo + live file), failure
+notices to Telegram via `unit-failure-notify@` (self-test delivered), five
+hand-started project checkouts added to `remotes.list` as clone-only,
+git-crypt in apt and Brewfile.
+
 Migration complete (2026-08-19). From-scratch rebuild test of the Proxmox
 box done the same day: `make snapshot` from the mac worked, VM 105
 destroyed with all snapshots, `make bootstrap-all` green in 3m14s (47 ok,
@@ -121,7 +134,20 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
-1. Pick from the backlog below; nothing else is scheduled.
+1. Operator, before the 02:50 New York jobs: commit both repos (the vault's
+   nightly units run `git add -A`, so uncommitted vault changes would land
+   in an automated commit), then on the box `git -C ~/work/vault` ...
+   `git-crypt lock` so the clone holds no key; on the mac `brew install
+   git-crypt` and unlock per `private/README.md`.
+2. Closed 2026-09-01: the moved medical note stays in vault history; the
+   operator judged it minor and the repo is private, so no history rewrite.
+3. Verify the morning after: `~/work/vault/.state/compile.report` lists six
+   inputs and at least one note under `50-knowledge/`; the 2026-09-01 daily
+   log carries no "prompt injection" alarm.
+4. Review debt from the same session (not started): PLAN.md `Now` and `Log`
+   back to the two-line rule, a threat model and dependency inventory under
+   docs/, ~/work backup before rollback, agentshard world reports out of
+   `30-projects/` into `90-agent/`.
 2. agy: run the $HOME instruction-layer probe (does agy read ~/AGENTS.md or
    ~/GEMINI.md?) and record the answer in docs/03-runbook.md; only workspace-
    relative paths were confirmed during the agy review.
@@ -147,6 +173,9 @@ present). Agent gateway only - savdert has no op access by design.
 
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
+
+- 2026-09-01: architecture review; vault compile and sessions digest fixed,
+  `private/` git-crypt tier (vault D16), Telegram failure notices, hermes SOUL rule.
 
 - 2026-08-31: nightly encrypted hermes backup to OCI S3 (age + boto3,
   04:30 timer; aws CLI cannot write to OCI - aws-chunked).
