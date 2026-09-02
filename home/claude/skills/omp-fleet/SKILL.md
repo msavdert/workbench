@@ -37,10 +37,14 @@ by alias as the vendor recommends; what each alias resolves to is recorded in
 | Never | Antigravity Anthropic models | Operator reserves that allowance |
 
 **Synthetic aliases collide with a live system on this box.** The agentshard
-shard runs its whole LLM cast on this same Synthetic subscription (since
-window 25, 2026-08-30): `hf:Qwen/Qwen3.8-27B` (= what `syn:small:vision`
-resolves to, bruk), `hf:zai-org/GLM-5.3-Flash` (= what `syn:large:text`
-NOW resolves to, ada) and `hf:openai/gpt-oss-120b` (doran). Synthetic
+shard runs part of its LLM cast on this same Synthetic subscription
+(since window 25, 2026-08-30). As of window 43, 2026-09-02, only bruk is
+left there: `hf:Qwen/Qwen3.8-27B` (= what `syn:small:vision` resolves
+to). Ada is now OpenRouter `z-ai/glm-5.3-flash:floor` and doran the
+Gemini API `gemini-3.5-flash-lite`; neither touches Synthetic, but a
+fleet run must still avoid those two routes while the shard is up.
+Beware `hf:zai-org/GLM-5.3-Flash` (= what `syn:large:text` NOW resolves
+to): the same weights ada used to run, no longer a collision. Synthetic
 allows **one request per model per subscription**; requests to different
 models run in parallel. So a fleet run on any of those models - or on an
 alias that silently remaps onto one, which Synthetic does without notice -
