@@ -32,20 +32,29 @@ thinking, not on retrieval or mechanical edits.
 |--------------|----------------------|--------|--------|------------------|----------------------------------|
 | `Explore`    | isolation (reads)    | haiku  | low    | read-only        | locations as `file:line`         |
 | `grunt`      | isolation (logs)     | haiku  | low    | all              | exit codes, extracted failures   |
-| `builder`    | isolation (edits)    | sonnet | medium | all              | change summary + verification    |
-| `reviewer`   | isolation (fresh eye)| sonnet | high   | read-only        | verdict + defensible findings    |
+| `executor`   | isolation (edits)    | opus   | medium | all but Agent    | delivered paths + verification   |
+| `auditor`    | isolation (fresh eye)| sonnet | high   | read-only        | verdict + defensible findings    |
 | `researcher` | isolation (network)  | sonnet | medium | web + read-only  | sourced summary, no raw pages    |
 
 Rules that follow from the table:
 
 - A subagent's model is never `inherit` or `fable`. If a task needs the
   architect's model, it is architecture and belongs in the main session.
-- No agent uses `opus`. On a subscription plan every tier draws from one
-  usage budget, and that budget should be spent on the architect's
-  thinking, not duplicated in a helper. `reviewer` is the only candidate
-  for escalation: if it misses defects that a stronger model catches
-  (measure, do not assume), raise it to `opus` - one line, and record the
-  measurement in `lab/`.
+- `executor` is the one agent on `opus`. The earlier rule (no agent on
+  opus, the budget belongs to the architect) was overturned by the
+  operator's daily use through 2026-09-01, reported rather than measured:
+  a sonnet `builder` whose work went through about three audit rounds per
+  task cost more usage and more architect attention than one opus run
+  that passes audit, and the same contract on opus in agentshard did not
+  show the loop. If a measurement is ever taken, record it in the vault's
+  `50-knowledge/ai/experiments/`.
+  `auditor` stays on sonnet; if it misses defects a stronger model
+  catches (measure, do not assume), raise it - one line, and record the
+  measurement in the vault's `50-knowledge/ai/experiments/`.
+- No delegate spawns delegates. `executor` has `disallowedTools: Agent`
+  and `auditor` has a read-only allowlist, so neither can start its own
+  review chain; one delegate is one process, and the architect decides
+  when an audit happens (the `audit` skill).
 - `Explore` overrides the built-in agent of the same name (user-level
   `~/.claude/agents/` beats plugin definitions; project `.claude/agents/`
   beats both). Keep the name's capitalization so the override holds.
@@ -74,4 +83,6 @@ human/model to read, not in a schema a caller depends on.
 ---
 Source: Anthropic Applied AI talk "Tool, skill, or subagent: Decomposing
 an agent" (analyzed 2026-08-06). Full findings:
-`journal/2026-08-06-transkript-bulgulari.md`.
+vault `50-knowledge/ai/journal/2026-08-06-transkript-bulgulari.md`.
+`executor` and `auditor` were lifted from the agentshard project on
+2026-09-02, where they replaced the same builder/reviewer loop.

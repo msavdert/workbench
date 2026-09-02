@@ -32,6 +32,8 @@ means.
 | seed keys | Keys in a generated settings file that the repository sets once and the tool owns afterwards (agy's `model`, `trustedWorkspaces`); not drift when the tool changes them. D8. |
 | one source per setting | The rule that a managed path comes from exactly one file in this repository; the ownership table in `docs/01-architecture.md` lists them. |
 | boundary gate | `home/claude/hooks/boundary-gate.sh`, a Claude Code pre-tool hook that blocks force pushes and credential-shaped strings heading for disk. |
+| read gate | `home/claude/hooks/read-gate.sh`, a Claude Code pre-tool hook that refuses a whole-file Read or a bare `cat` over 200 lines; the mechanical form of the narrow-read rule in the global CLAUDE.md. |
+| audit skill | `home/claude/skills/audit/`: internal `auditor` subagent plus one external model on the omp fleet (two for risky code) before a requested commit. Lifted from agentshard's dual-audit rule on 2026-09-02. |
 | agent guard | The part of `box/files/bashrc` that keeps agent-spawned (non-interactive) shells plain; the interactive hand-off to zsh happens only with a TTY and a real `TERM`. |
 | agent-session | `~/.local/bin/agent-session`: attaches to the long-lived tmux session agents run in; the human entry point after ssh. |
 | verify | `step_verify` in `bootstrap.sh`: the list of checks that prove a box converged (services, tools, guard, drift). Transcript: `docs/reference/verify-2026-08-19.md`. |

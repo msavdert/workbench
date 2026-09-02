@@ -485,6 +485,7 @@ step_verify() {
   check test -f /etc/needrestart/conf.d/99-agent.conf
   check test -L "$AGENT_HOME/.claude/CLAUDE.md"
   check grep -q boundary-gate.sh "$AGENT_HOME/.claude/settings.json"
+  check grep -q read-gate.sh "$AGENT_HOME/.claude/settings.json"
   # the three herdr integration hooks; each fails open on its own, so without
   # a check here their absence after a rebuild is invisible (it was, once)
   check test -x "$AGENT_HOME/.claude/hooks/herdr-agent-state.sh"

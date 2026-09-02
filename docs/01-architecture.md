@@ -72,7 +72,7 @@ workbench/
 | `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/zellij` (box only) | `home/zellij/` | `home/install.sh box` |
-| `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/omp-fleet`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/boundary-gate.sh` | `home/claude/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
+| `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.claude/skills/{omp-fleet,audit,skill-creator,youtube-whisper-transcriber,oss-project-eval}`, `~/.claude/omp-delegate.yml`, `~/.claude/hooks/{boundary-gate,read-gate}.sh` | `home/claude/` | `home/install.sh` (links, both profiles; the gate self-check runs in every mode) |
 | `~/.ssh/config`, `~/.ssh/config.macos`, `~/.config/ghostty/config` (mac only) | `mac/ssh/`, `mac/ghostty/` | `mac/setup.sh` |
 | `~/.config/op/env` (the token) | not in repo | `make secrets` |
 | `~/.claude/hooks/herdr-agent-state.sh`, `~/.omp/agent/extensions/`, `~/.gemini/config/hooks.json` | not in repo; herdr generates them | `mise run herdr:integrations`, called by `box/bootstrap.sh` `step_tools` |

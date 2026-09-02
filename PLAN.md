@@ -21,7 +21,14 @@ definition and record is `docs/02-migration.md`.
 2026-09-02: `ai-hub` retired. Its doctrine, journal and experiments are in
 the vault under `50-knowledge/ai/`, its three project skills are global
 skills in `home/claude/skills/`, the GitHub repo is archived, the box
-checkout is gone. Earlier state follows.
+checkout is gone. Same day, the delegation setup changed: `builder` and
+`reviewer` are replaced by `executor` (opus, no Agent tool, delivery
+contract) and `auditor` (read-only), both lifted from agentshard; a global
+`audit` skill runs the internal auditor plus one external model (two for
+risky code) before a requested commit; `hooks/read-gate.sh` refuses a
+whole-file Read or bare `cat` over 200 lines. Installed on the box and
+verified with synthetic hook payloads; the mac needs `home/install.sh mac`.
+Earlier state follows.
 
 2026-09-01 architecture review (workbench + vault) and its first fixes, all
 committed and pushed in both repos. Vault: the nightly compile had
@@ -181,6 +188,8 @@ history. Older entries are condensed; `git log` has the full trail.
 
 - 2026-09-02: ai-hub retired: text to vault `50-knowledge/ai/`, skills to
   `home/claude/skills/`, repo archived, remotes.list and docs updated.
+- 2026-09-02: executor/auditor replace builder/reviewer, `audit` skill,
+  read-gate hook; the operator's per-session instructions become mechanism.
 - 2026-09-01: architecture review; vault compile and sessions digest fixed,
   `private/` git-crypt tier (vault D16), Telegram failure notices, hermes SOUL rule.
 

@@ -14,6 +14,16 @@
           }
         ],
         "matcher": "Bash|Write|Edit|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "h=$HOME/.claude/hooks/read-gate.sh; [ -x \"$h\" ] && exec bash \"$h\"; exit 0",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Read|Bash"
       }
     ],
     "SessionStart": [
