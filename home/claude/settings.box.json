@@ -1,4 +1,5 @@
 {
+  "agentPushNotifEnabled": true,
   "env": {
     "GIT_PAGER": "cat",
     "NO_COLOR": "1",
