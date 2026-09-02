@@ -19,6 +19,7 @@
 # Only what genuinely cannot come from mise.
 brew "tailscale"                # host-level VPN daemon; must run on the host
 brew "sshpass"                  # no mise backend, and occasionally unavoidable
+brew "git-crypt"                # vault private/ subtree (vault HANDOFF D16); no mise backend
 
 # mise is NOT installed via brew. It comes from the standalone installer
 # (https://mise.run) into ~/.local/bin; no second copy shadowing the first.

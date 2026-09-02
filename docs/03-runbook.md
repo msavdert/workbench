@@ -344,4 +344,6 @@ update, troubleshooting). Day-2 essentials:
 |---|---|
 | Gateway status/logs | as the owning user: `systemctl --user status hermes-gateway`, `journalctl --user -u hermes-gateway -f` |
 | Re-provision hermes only | `make provision STEPS=hermes` (re-renders `.env` from 1Password `dotfiles/Hermes`) |
+| A nightly unit failed | the box posts `<host>: <unit> FAILED` plus the unit's last journal lines to the operator's Telegram home chat (`unit-failure-notify@.service`, `OnFailure=` on vault-compile, vault-sessions, hermes-backup); test with `systemctl --user start unit-failure-notify@selftest.service` |
+| The vault's `private/` tier | git-crypt encrypted (vault HANDOFF D16); the box clone stays locked and needs no key. Key: 1Password document `vault-git-crypt-key` (dotfiles), fetched with `op document get` (never `op read`, it mangles binary). Unlock only on the mac; see `private/README.md` in the vault |
 | Run the compile now | `ssh agent-vm-ssh 'systemctl --user start vault-compile.service'`; then check `~/work/vault/.state/compile.report` |

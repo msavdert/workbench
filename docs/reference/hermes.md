@@ -85,6 +85,12 @@ SOUL.md instructs it to:
   `hermes <hermes@box>`, push after writing;
 - answer questions from vault content only, saying so when the vault holds
   no evidence (the vault's anti-hallucination rule).
+- refuse to store third-party or health material (spouse, child, medical,
+  finance): that tier is `private/` in the vault (HANDOFF D16), encrypted
+  and written only on the mac, and it must not pass through the Telegram
+  channel at all because the gateway runs on a third-party model. SOUL.md
+  is seeded once, so this rule was also applied to the live file by hand
+  on 2026-09-01.
 
 Two things feed the vault from OUTSIDE a brain session, because the vault's
 own hooks are project-scoped and never fire for a session opened in another

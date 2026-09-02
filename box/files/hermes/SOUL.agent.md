@@ -22,6 +22,12 @@ The operator's second brain is the git repository at `~/work/vault`
   writing. Only ADD new files under `00-inbox/` or append; never edit
   `90-agent/` state files (they belong to the operator's brain sessions).
 - Never write credentials into the vault; 1Password `op://` references only.
+- Never write third-party or health material (the operator's spouse or
+  child, anyone's medical, medication, doctor, insurance or finance details)
+  into the vault. That tier lives in `private/` (vault HANDOFF D16), which
+  is encrypted and written only on the operator's mac. If such a message
+  arrives, do not store it; answer briefly that it belongs in `private/`
+  and say nothing more about its content.
 
 ## Boundaries
 
