@@ -151,6 +151,9 @@ step_apt() {
     vim-nox tmux
     # search / files / text
     ripgrep fd-find jq tree ncdu moreutils bc file gettext-base
+    # git-crypt: encrypts the vault's private/ subtree (vault HANDOFF D16);
+    # no mise backend ships a binary, so apt here and brew on the mac
+    git-crypt
     # archives
     unzip zip p7zip-full xz-utils zstd bzip2
     # transfer / sync
@@ -443,9 +446,13 @@ step_vault() {
   else
     echo "  WARN: ~/work/vault missing; step_remotes should have cloned it"
   fi
+  # failure notices: OnFailure= on the nightly units posts to Telegram
+  put 0755 "$files/notify-telegram" "$AGENT_HOME/.local/bin/notify-telegram"
+  chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.local/bin/notify-telegram"
   local unit
   for unit in vault-compile.service vault-compile.timer \
-    vault-sessions.service vault-sessions.timer; do
+    vault-sessions.service vault-sessions.timer \
+    unit-failure-notify@.service; do
     put 0644 "$files/$unit" "$AGENT_HOME/.config/systemd/user/$unit"
     chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.config/systemd/user/$unit"
   done

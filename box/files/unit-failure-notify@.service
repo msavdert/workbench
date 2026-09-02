@@ -1,0 +1,11 @@
+[Unit]
+Description=Telegram notice that %i failed (OnFailure hook for the nightly units)
+
+[Service]
+Type=oneshot
+# Same op identity as the nightly units; the bot token and home chat id are
+# op:// references in home/op-env/notify.env, resolved for this one process.
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=%h/.config/op/env
+ExecStart=%h/.local/bin/opwith notify %h/.local/bin/notify-telegram %i
+SyslogIdentifier=unit-failure-notify

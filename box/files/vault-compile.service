@@ -1,5 +1,6 @@
 [Unit]
 Description=Nightly vault compiler (distill + retire, vault HANDOFF D4/D7)
+OnFailure=unit-failure-notify@%p.service
 
 [Service]
 Type=oneshot

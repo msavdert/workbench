@@ -1,5 +1,6 @@
 [Unit]
 Description=Nightly coding-session digest into the vault daily log
+OnFailure=unit-failure-notify@%p.service
 
 [Service]
 Type=oneshot

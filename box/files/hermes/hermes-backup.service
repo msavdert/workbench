@@ -1,5 +1,6 @@
 [Unit]
 Description=Nightly hermes backup (zip -> age-encrypt -> OCI S3)
+OnFailure=unit-failure-notify@%p.service
 
 [Service]
 Type=oneshot

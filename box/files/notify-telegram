@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# notify-telegram <unit>  (box/files, installed to ~/.local/bin by bootstrap)
+# Posts one line to the operator's Telegram home chat, through the personal
+# hermes bot, when a nightly unit fails. Wired as OnFailure= on the
+# vault-compile, vault-sessions and hermes-backup units, so a broken night is
+# seen the next morning instead of weeks later in a .state/*.err file.
+# Expects TELEGRAM_BOT_TOKEN and TELEGRAM_HOME_CHANNEL in the environment
+# (opwith notify ... resolves them from 1Password).
+set -euo pipefail
+unit="${1:?usage: notify-telegram <unit>}"
+: "${TELEGRAM_BOT_TOKEN:?not in environment}"
+: "${TELEGRAM_HOME_CHANNEL:?not in environment}"
+host=$(hostname -s)
+# the unit's last lines, so the message is actionable without a login
+tail=$(journalctl --user -u "$unit" -n 3 --no-pager -o cat 2>/dev/null | cut -c1-200 || true)
+text="$host: $unit FAILED $(date '+%Y-%m-%d %H:%M %Z')"
+[[ -n $tail ]] && text="$text"$'\n'"$tail"
+curl -fsS --max-time 20 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+  --data-urlencode "chat_id=${TELEGRAM_HOME_CHANNEL}" \
+  --data-urlencode "text=${text}" \
+  --data-urlencode "disable_notification=false" >/dev/null
