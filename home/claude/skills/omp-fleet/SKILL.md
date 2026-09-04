@@ -28,7 +28,7 @@ by alias as the vendor recommends; what each alias resolves to is recorded in
 
 | Task | Model | Why |
 |---|---|---|
-| Default for every delegated task: research with citations, demand research with quotes, extraction, summaries | `google-antigravity/gemini-3.7-flash:high` | As accurate as any model measured on facts, 18/18 verbatim quotes in both demand-research runs, uses all allowed source types, fastest, and the Google pool is the least loaded |
+| Default for every delegated task: research with citations, demand research with quotes, extraction, summaries | `google-antigravity/gemini-3.8-flash:high` | Owner switched the pin from 3.7 to 3.8 on 2026-09-04 (Google quota renewed; `omp models` lists gemini-3.8-flash, 1M ctx, high); 3.7 remains the measured baseline. | As accurate as any model measured on facts, 18/18 verbatim quotes in both demand-research runs, uses all allowed source types, fastest, and the Google pool is the least loaded |
 | Second pool for facts, extraction, summaries | `synthetic/syn:small:vision:high` (**Qwen3.8-27B since ~2026-08-27; benchmarked as Qwen3.6-27B**) | Same accuracy on facts, respects limits; but 7 of 16 quotes were near-verbatim, not verbatim - not for quote work. **Do not use while the agentshard shard is running: see the collision note below.** |
 | Second pool for demand research / verbatim quotes | `synthetic/hf:zai-org/GLM-5.2:high` - the DIRECT name, never the `syn:large:text` alias | 19/20 verbatim quotes; over word limits on summaries. Alias remapped without notice: `syn:large:text` resolves to GLM-5.3-Flash since ~2026-08-30, a live agentshard mind (see collision note) |
 | Terse tables, one URL per row | `google-antigravity/gemini-3.1-pro:high` | Correct and minimal; narrower source use than flash |
@@ -40,9 +40,10 @@ by alias as the vendor recommends; what each alias resolves to is recorded in
 shard runs part of its LLM cast on this same Synthetic subscription
 (since window 25, 2026-08-30). As of window 43, 2026-09-02, only bruk is
 left there: `hf:Qwen/Qwen3.8-27B` (= what `syn:small:vision` resolves
-to). Ada is now OpenRouter `z-ai/glm-5.3-flash:floor` and doran the
-Gemini API `gemini-3.5-flash-lite`; neither touches Synthetic, but a
-fleet run must still avoid those two routes while the shard is up.
+to). Since window 44, 2026-09-03, doran is Synthetic `hf:zai-org/GLM-5.3-Flash`
+(= what `syn:large:text` resolves to today) - OFF-LIMITS like Bruk's
+Qwen3.8-27B; ada is OpenRouter `z-ai/glm-5.3-flash:floor` (no per-model
+concurrency limit there). Audits: `synthetic/hf:zai-org/GLM-5.2:high`.
 Beware `hf:zai-org/GLM-5.3-Flash` (= what `syn:large:text` NOW resolves
 to): the same weights ada used to run, no longer a collision. Synthetic
 allows **one request per model per subscription**; requests to different

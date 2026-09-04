@@ -56,7 +56,7 @@ Pinned by direct name; aliases are remapped by the provider without notice.
 
 | Role | Model |
 |---|---|
-| external, always | `google-antigravity/gemini-3.7-flash:high` |
+| external, always | `google-antigravity/gemini-3.8-flash:high` |
 | second external, risky variant | `synthetic/hf:zai-org/GLM-5.2:high` |
 | never | `synthetic/syn:small:text:high` (fabricates findings; arbitrating a fabricated finding costs more than the audit saves) |
 
