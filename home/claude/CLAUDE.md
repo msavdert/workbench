@@ -18,8 +18,11 @@ derive this from the repo, or already do it by default? If yes, leave it out.
   If it is not confirmed in source or docs you actually read, say so.
 - Never commit or push unless explicitly asked. Never commit a red tree.
 - Before a commit the operator asked for, run the `audit` skill (internal
-  auditor plus one external model); code that deletes data, deploys, writes
-  live systems or handles secrets gets its two-external variant.
+  auditor plus one external model). All code, including code that deletes
+  data, deploys, writes live systems or handles secrets, gets exactly one
+  external audit on `google-antigravity/gemini-3.8-flash:high`; the former
+  second auditor GLM-5.2 is suspended by owner decision 2026-09-04 until the
+  owner re-enables it.
 - Never hardcode a secret. Credentials resolve from 1Password `op://`
   references injected per command; a literal value in a tracked file is a leak.
 - `git` over HTTPS is already authenticated by a credential helper. `gh` needs

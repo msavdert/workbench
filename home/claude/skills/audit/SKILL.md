@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Pre-commit audit of a change - an internal read-only auditor subagent plus one external model on the omp fleet, two external models for risky code. Use before any commit the operator asked for, when the operator says "audit", "denetle", "review before commit", or when a delegate reports a change as done. Do NOT use for style review, for work still in progress, or for doc-only edits under ten lines (the internal auditor alone is enough there).
+description: Pre-commit audit of a change - an internal read-only auditor subagent plus one external model on the omp fleet (one external model for all code, risky code included). Use before any commit the operator asked for, when the operator says "audit", "denetle", "review before commit", or when a delegate reports a change as done. Do NOT use for style review, for work still in progress, or for doc-only edits under ten lines (the internal auditor alone is enough there).
 ---
 
 # audit
@@ -12,7 +12,7 @@ arbitrates. Every finding is a claim until you verify it in the code.
 
 | Change touches | Variant |
 |---|---|
-| deletes data, deploys, writes to a live system, handles secrets or credentials | risky: internal + two external |
+| deletes data, deploys, writes to a live system, handles secrets or credentials | risky: internal + one external |
 | anything else with code or config | standard: internal + one external |
 | doc-only, under ten lines | internal only |
 
@@ -39,8 +39,7 @@ Decide from the diff, not from the task name. A "small script" that runs
    exec $OMP_RUN audit-<topic>-<model-short> <workdir>/prompt.txt <model> 900
    ```
 
-   Same prompt file for every external auditor, separate topics so the
-   output directories differ. Read the report file, not the reply.
+   One external auditor per round. Read the report file, not the reply.
 4. Arbitrate. For each finding, open the code and confirm the failure
    scenario. Verified findings are fixed (by `executor` or by you); the rest
    are recorded as rejected with one line why. Do not fix what you have not
@@ -48,7 +47,7 @@ Decide from the diff, not from the task name. A "small script" that runs
 5. Re-audit only the fix, with the previous findings in the prompt. Two
    rounds is the norm; a third means the spec was wrong, so stop and say so.
 6. The commit body gets one line: `Audit: internal <verdict>, <model>
-   <verdict>[, <model> <verdict>]; <n> findings fixed, <m> rejected.`
+   <verdict>; <n> findings fixed, <m> rejected.`
 
 ## Models
 
@@ -56,8 +55,8 @@ Pinned by direct name; aliases are remapped by the provider without notice.
 
 | Role | Model |
 |---|---|
-| external, always | `google-antigravity/gemini-3.8-flash:high` |
-| second external, risky variant | `synthetic/hf:zai-org/GLM-5.2:high` |
+| external, always (risky code included) | `google-antigravity/gemini-3.8-flash:high` |
+| second external | SUSPENDED by owner decision 2026-09-04 until re-enabled - was `synthetic/hf:zai-org/GLM-5.2:high`; do not run it |
 | never | `synthetic/syn:small:text:high` (fabricates findings; arbitrating a fabricated finding costs more than the audit saves) |
 
 Never use a `syn:*` alias for an audit. Check `$OMP_RUN status` first if a
