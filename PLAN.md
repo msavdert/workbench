@@ -18,6 +18,21 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-07 check-up (mac and box). `macshot` (brew cask) replaces the
+hand-installed flameshot on the mac and is listed in `mac/Brewfile`; the
+mac clones of workbench and vault were behind origin and are fast-forwarded.
+Open drift, none fixed this session: `~/.claude/settings.json` differs from
+the generated file on both machines and only in the `model` key (mac
+`fable[1m]`, box `claude-fable-5-1[1m]` plus a `modelSettings` effort
+block; base pins `claude-fable-5[1m]`) - Claude Code rewrites that key on
+`/model` and `/login`, so either the pin moves or the key gets seeded from
+the live file the way agy's `model` is. The box holds uncommitted edits of
+2026-09-04 in `home/claude/CLAUDE.md` and the audit and omp-fleet skills
+(second external auditor GLM-5.2 suspended by owner decision), a pending
+reboot, 7 apt upgrades and a failed system `motd-news.service`. Vault: the
+nightly compile ran 2026-09-07 03:01 UTC-4, exit 0, box clone current.
+Earlier state follows.
+
 2026-09-02: `ai-hub` retired. Its doctrine, journal and experiments are in
 the vault under `50-knowledge/ai/`, its three project skills are global
 skills in `home/claude/skills/`, the GitHub repo is archived, the box
@@ -146,6 +161,14 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
+0. Operator decisions from the 2026-09-07 check-up: (a) commit or drop the
+   box's 2026-09-04 skill edits (GLM-5.2 auditor suspension); (b) settle the
+   `model` key in `home/claude/settings.base.json` (move the pin or seed it
+   from the live file); (c) `make maintain` then an approved reboot of the
+   box, and `systemctl disable --now motd-news.timer` in `box/bootstrap.sh`
+   next to the chmod that strips the script it executes (the failed unit is
+   that timer firing, 203/EXEC); (d) `rm -r ~/.config/flameshot` on the mac, `CLEANUP=1 mac/setup.sh`
+   drops the orphaned `zlib` formula.
 1. Closed 2026-09-01: both repos committed and pushed, box clone locked
    (git-crypt from mise), mac unlocked with the 1Password key.
 2. Closed 2026-09-01: the moved medical note stays in vault history; the
@@ -186,6 +209,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-07: check-up of mac and box; macshot cask listed, mac clones
+  fast-forwarded, settings.json model-key drift and box debts recorded.
 - 2026-09-02: dipladder and dryrun retired as remote-control environments
   (systemd units and checkouts removed by hand); their `--clone-only` lines
   dropped from `box/remotes.list` so a rebuild does not reconstitute them.

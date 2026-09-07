@@ -56,6 +56,7 @@ cask "microsoft-edge"
 cask "obsidian"
 cask "google-drive"
 cask "dbeaver-community"
+cask "macshot"                  # screenshots; replaced flameshot (2026-09-07), which was a hand-installed dmg and never listed here
 
 # --- Fonts -------------------------------------------------------------------
 cask "font-jetbrains-mono"
