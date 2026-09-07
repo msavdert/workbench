@@ -121,7 +121,8 @@ terminal session is also reachable from the Claude app; `settings.mac.json`: int
 mode) is merged with jq by `home/install.sh`. `~/.claude` is never
 symlinked wholesale: it holds runtime state and credentials.
 Added 2026-08-19: a composed file may name seed keys that the tool owns
-after first install (agy: `model`, `trustedWorkspaces`). The repo supplies
+after first install (agy: `model`, `trustedWorkspaces`; Claude Code:
+`model`, and `modelSettings`, which only `/model` writes). The repo supplies
 the initial value; afterwards the value the tool wrote in-session is
 carried over on every provision and is not drift. Settings a tool rewrites
 live are otherwise unmanageable: either every provision resets the

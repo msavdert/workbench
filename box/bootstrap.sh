@@ -86,6 +86,10 @@ step_system() {
   if [[ -f /etc/default/motd-news ]]; then sed -i 's/^ENABLED=.*/ENABLED=0/' /etc/default/motd-news; fi
   if command -v pro >/dev/null; then pro config set apt_news=false >/dev/null 2>&1 || true; fi
   chmod -x /etc/update-motd.d/10-help-text /etc/update-motd.d/50-motd-news 2>/dev/null || true
+  # Without this the daily timer keeps executing the script made
+  # non-executable above and motd-news.service sits in "failed" (203/EXEC).
+  systemctl disable --now motd-news.timer >/dev/null 2>&1 || true
+  systemctl reset-failed motd-news.service >/dev/null 2>&1 || true
   # 4 GiB swap: not for capacity (32 GiB RAM) but so a runaway build gets
   # slow instead of getting the agent's tmux session OOM-killed.
   if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then

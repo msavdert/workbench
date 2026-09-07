@@ -39,7 +39,7 @@
       }
     ]
   },
-  "model": "claude-fable-5[1m]",
+  "model": "claude-fable-5-1[1m]",
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/.claude/statusline.sh",

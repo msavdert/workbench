@@ -161,7 +161,12 @@ merge_settings() {
   [[ -f $overlay ]] || overlay=/dev/null
   have='{}'
   if [[ -n $seed && -f $dst && ! -L $dst ]]; then
-    have="$(jq -c . "$dst" 2>/dev/null || printf '{}')"
+    # An unparseable live file (a crash mid-write) would silently reset the
+    # seed keys to the repo value; say so instead of hiding it.
+    have="$(jq -c . "$dst" 2>/dev/null)" || {
+      log WARN "$dst (not valid JSON; seed keys reset to the repo value)"
+      have='{}'
+    }
   fi
   tmp="$(mktemp)"
   jq -S -s --arg home "$HOME" --arg seed "$seed" --argjson have "$have" '
@@ -220,8 +225,10 @@ manifest() {
   link bin/opwith "$HOME/.local/bin/opwith"
   link bin/brain "$HOME/.local/bin/brain"
 
-  # Claude Code (D8): settings composed, statusline linked, nothing else
-  merge_settings claude "$HOME/.claude/settings.json"
+  # Claude Code (D8): settings composed, statusline linked, nothing else.
+  # `model` and `modelSettings` are seed keys: the repo supplies the first
+  # value, `/model` in a session owns them afterwards (D8, 2026-09-07).
+  merge_settings claude "$HOME/.claude/settings.json" model,modelSettings
   link claude/statusline.sh "$HOME/.claude/statusline.sh"
 
   # Claude behaviour (D9): global instructions, subagents, the global

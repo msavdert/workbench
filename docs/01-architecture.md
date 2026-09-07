@@ -98,7 +98,8 @@ symlink into `home/`) and generated files (`~/.claude/settings.json`,
 Generated settings may carry seed keys (`merge_settings <tool> <dst>
 <keys>`): the repo sets them once, the tool owns them afterwards (agy's
 `model` and `trustedWorkspaces`, which agy rewrites in its own form and
-extends from its UI). `--check` ignores their drift by design; everything
+extends from its UI; Claude Code's `model` and `modelSettings`, which
+`/model` rewrites). `--check` ignores their drift by design; everything
 else in the file stays repo-owned.
 A target is generated rather than linked whenever the tool that reads it also
 WRITES it: through a symlink such a write lands in a tracked file, which is
