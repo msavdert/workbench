@@ -150,6 +150,8 @@ echo "topic=$TOPIC model=$MODEL max=${MAXTIME}s tools=$TOOLS" >&2
 # the op:// reference unless the caller already exported OMP_API_KEY. The
 # value never touches a file; it is visible in this process's argv for the
 # run's duration (single-user box, accepted). The stored copy is ignored.
+# Empty-array expansion under `set -u` is an error in bash 3.2 (the mac), so
+# the launch line uses the ${a[@]+"${a[@]}"} form.
 API_KEY_ARGS=()
 case "$MODEL" in
   synthetic/*)
@@ -176,7 +178,7 @@ set +e
   NO_COLOR=1 timeout --kill-after=30 "$((MAXTIME + 60))" \
     omp -p \
       --model "$MODEL" \
-      "${API_KEY_ARGS[@]}" \
+      ${API_KEY_ARGS[@]+"${API_KEY_ARGS[@]}"} \
       --config "$CONFIG" \
       --no-session --auto-approve --no-skills \
       --tools "$TOOLS" \
