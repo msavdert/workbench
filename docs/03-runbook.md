@@ -34,6 +34,55 @@ named `agent-vm`. Working directory is `~/work`; clone projects there.
 To change the session name/capacity edit `box/files/claude-remote.service`
 and `make provision STEPS=user && ssh agent-vm-ssh 'systemctl --user daemon-reload && systemctl --user restart claude-remote'`.
 
+## agy Remote Control (the Antigravity hub)
+
+agy's model differs from Claude's: one daemon per machine, and the project
+(directory, repository) is chosen per session in the hub at
+https://antigravity.google.com, so there is no `remote-add` equivalent and
+nothing to list in `box/remotes.list`. The daemon is registered by agy
+itself, not by bootstrap:
+
+```
+ssh agent-vm-ssh
+agy                                   # once, if ~/.gemini/jetski-standalone-oauth-token is missing: sign in, quit
+agy remote-control start --name agent-vm-swift-nova
+agy remote-control status             # "active", instance name, journal hint
+systemctl --user daemon-reload && systemctl --user restart antigravity-cli-daemon
+journalctl --user -u antigravity-cli-daemon -n 20
+```
+
+The restart makes the unit pick up `box/files/antigravity-cli-daemon.override.conf`,
+which `make provision STEPS=user` installs as a drop-in: agy pins ExecStart
+to the versioned mise directory, the drop-in resolves the binary through
+`mise exec` so `mise up` + `mise prune` cannot strand the daemon. `agy
+remote-control stop` unregisters (removes the unit); the drop-in stays and
+is inert until the next `start`. Do not use the installer script from the
+docs (`agy-daemon.sh`): agy 1.1.27's `start` removes its units as
+deprecated, and its wrapper was overwritten on every re-install.
+
+Permissions: a hub project shows "Security Preset: Inherit General";
+"General" is the hub's global settings page (left sidebar, Settings). Set
+Security Preset there to "Turbo mode" once and every project inherits it;
+verified 2026-09-07, a `rm` ran without a prompt. The hub writes the choice
+to `userSettings` in `~/.gemini/config/config.json` on the box as four keys
+(`permissionPreset: AGENT_PERMISSION_PRESET_TURBO`, `autoExecutionPolicy:
+CASCADE_COMMANDS_AUTO_EXECUTION_EAGER`, `enableTerminalSandbox: false`,
+`nonWorkspaceFileAccessPolicy: AGENT_SETTING_POLICY_ALLOW`), and bootstrap
+seeds the same four so a rebuilt box should start in Turbo without the UI
+step. Assumption until the next rebuild: seeding `permissionPreset` alone
+was not enough (tried 2026-09-07, prompts stayed), so the seed carries all
+four; if a fresh box still asks, pick Turbo in the hub once and compare
+`config.json`. Also tried and dropped: `--dangerously-skip-permissions` in
+the daemon command line (local sessions only) and `autoExecutionPolicy:
+AUTO_EXECUTION_POLICY_NOT_ENFORCED` (wrong enum). Turbo does not cover URL
+reads: "Allow reading this URL?" is governed by Network Access Rules on the
+same page, add allow rules there if the prompts bother. Projects are files
+under `~/.gemini/config/projects/<id>.json`; `"settings": {}` means inherit.
+The seed is written once; whatever the hub sets afterwards is agy's. Same posture as `claude-remote` running with
+`bypassPermissions`: anyone signed in to the Google account drives the box
+without prompts, and the hub reaches it through Google's relay, not the
+tailnet.
+
 ## Working on a project (optional per-project Remote Control servers)
 
 Default policy (D11): the shared `work` server is the only one running.
@@ -290,6 +339,12 @@ The first `claude auth login` on it is manual, as on every substrate.
 - **Remote Control session missing from the app** - `systemctl --user status
   claude-remote`; if it loops on auth, `claude auth login` again (token
   expired) and `systemctl --user restart claude-remote`.
+- **`agy remote-control status` says inactive, or the daemon fails after
+  `mise up`** - `systemctl --user cat antigravity-cli-daemon` must show the
+  drop-in with `mise exec`; if only the pinned ExecStart is there, `make
+  provision STEPS=user` then `systemctl --user daemon-reload && systemctl
+  --user restart antigravity-cli-daemon`. If the unit is missing altogether,
+  `agy remote-control start --name agent-vm-swift-nova` (see above).
 - **`mise ls agy` and `agy --version` disagree** - expected, not drift. The
   agy backend replaces the binary inside the existing versioned install
   directory instead of creating a new one, so the directory name (and what

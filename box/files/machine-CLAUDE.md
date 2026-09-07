@@ -26,8 +26,10 @@ Layout:
 
 ## Secrets and auth
 
-The only secret on disk is the 1Password service-account token
+The only secret you use is the 1Password service-account token
 (`~/.config/op/env`, already in your environment as OP_SERVICE_ACCOUNT_TOKEN).
+The tools' own login tokens (Claude Code under `~/.claude`, agy under
+`~/.gemini`) are also on disk; leave them where they are.
 - `git` over HTTPS to github.com works as-is: the credential helper reads the
   token from 1Password on every call. Author is `msavdert`.
 - `gh`: a bare `gh` is intentionally not logged in. Use `opwith git gh <args>`.
@@ -49,6 +51,12 @@ available as an environment in the app:
 Do not hand-write systemd units for this. The generic environment `work`
 (`~/work`) is for exactly this bootstrapping. Environments that must survive
 a rebuild are listed in `~/work/workbench/box/remotes.list`.
+
+agy (Antigravity) works the other way round: one daemon for the whole
+machine, `antigravity-cli-daemon.service`, and the project directory is
+picked per session in the hub at https://antigravity.google.com. `agy
+remote-control status` shows it; there is no `remote-add` for agy and the
+`agy-daemon.sh` installer from the docs is deprecated, do not run it.
 
 ## Tools
 

@@ -226,7 +226,36 @@ step_user() {
   put 0755 "$files/remote-add" "$AGENT_HOME/.local/bin/remote-add"
   put 0755 "$files/remote-rm" "$AGENT_HOME/.local/bin/remote-rm"
   put 0755 "$files/remote-ls" "$AGENT_HOME/.local/bin/remote-ls"
+  # agy Remote Control: one daemon per machine, registered once by hand with
+  # `agy remote-control start --name <instance>` (needs the OAuth token). The
+  # drop-in only repoints ExecStart at mise; it is inert until that unit exists.
+  put 0644 "$files/antigravity-cli-daemon.override.conf" \
+    "$AGENT_HOME/.config/systemd/user/antigravity-cli-daemon.service.d/override.conf"
   as_agent systemctl --user daemon-reload 2>/dev/null || true
+  # The hub's General settings live in userSettings of this file; without them
+  # every tool call in a remote session asks for approval. Seed exactly the
+  # four keys the hub wrote when "Security Preset: Turbo mode" was picked
+  # (2026-09-07), once, and leave the rest (instance name, theme) to agy.
+  # ~/.gemini is created here only when missing: `install -d` applies -o/-g
+  # to the paths named, so a parent it creates on the way would stay root's
+  # and agy could not write its OAuth token there; an existing one is agy's
+  # (mode included), ownership converges in the chown loop below.
+  local gc="$AGENT_HOME/.gemini/config/config.json"
+  [[ -d "$AGENT_HOME/.gemini" ]] ||
+    install -d -o "$AGENT_USER" -g "$AGENT_USER" -m 0755 "$AGENT_HOME/.gemini"
+  install -d -o "$AGENT_USER" -g "$AGENT_USER" -m 0755 "$AGENT_HOME/.gemini/config"
+  [[ -f $gc ]] || echo '{}' >"$gc"
+  if ! jq -e '.userSettings.permissionPreset != null' "$gc" >/dev/null 2>&1; then
+    jq '.userSettings += {
+          permissionPreset: "AGENT_PERMISSION_PRESET_TURBO",
+          autoExecutionPolicy: "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
+          enableTerminalSandbox: false,
+          nonWorkspaceFileAccessPolicy: "AGENT_SETTING_POLICY_ALLOW"
+        }' "$gc" >"$gc.tmp" &&
+      mv "$gc.tmp" "$gc" && echo "  updated $gc (Turbo preset seeded)"
+  fi
+  chmod 0600 "$gc"
+  chown "$AGENT_USER:$AGENT_USER" "$gc"
   # ~/.claude.json holds two one-time consents that otherwise need a TTY and
   # would keep claude-remote.service from starting: workspace trust for
   # ~/work and the "Enable Remote Control? (y/n)" dialog. Merge them in,
@@ -244,7 +273,7 @@ step_user() {
   put 0644 "$files/machine-CLAUDE.md" /etc/claude-code/CLAUDE.md
   # Only what exists: .gitconfig and .claude appear in step_home, which runs later.
   local p
-  for p in .bashrc .bash_profile .tmux.conf .gitconfig .config .local .claude; do
+  for p in .bashrc .bash_profile .tmux.conf .gitconfig .config .local .claude .gemini; do
     if [[ -e "$AGENT_HOME/$p" ]]; then chown -R "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/$p"; fi
   done
 }
