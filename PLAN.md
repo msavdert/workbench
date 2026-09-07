@@ -41,10 +41,12 @@ wrapper with `--dangerously-skip-permissions`, hand symlink
 removed the installer's units itself. The daemon runs as
 `antigravity-cli-daemon.service`; workbench owns only a drop-in that
 resolves the binary via `mise exec` and a one-time seed of the hub's
-Turbo preset (four `userSettings` keys in `~/.gemini/config/config.json`,
-copied from what the hub wrote when the operator picked Turbo; remote
-sessions verified prompt-free for commands, URL reads still ask by design).
-Runbook section "agy Remote Control". Earlier state follows.
+Turbo preset plus a `read_url(*)` grant in `~/.gemini/config/config.json`,
+copied from what the hub wrote when the operator picked them. Verified the
+same evening that the seed alone, with the hub never touched, gives
+prompt-free remote sessions (search, URL read, file write, rm, curl,
+python). Instance renamed to `agent-vm`. Runbook section "agy Remote
+Control". Earlier state follows.
 
 2026-09-02: `ai-hub` retired. Its doctrine, journal and experiments are in
 the vault under `50-knowledge/ai/`, its three project skills are global
@@ -174,10 +176,6 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
-00. agy Remote Control follow-up: `make provision STEPS=user` from the mac
-    must be a no-op on the box (drop-in and seed already applied by hand).
-    Open item for the next rebuild: whether the seeded Turbo keys are
-    honoured before the hub has ever written them (runbook, "Assumption").
 0. Box side of the 2026-09-07 settings change: after the commits are
    pushed, `ssh agent-vm-ssh 'cd ~/work/workbench && git pull --ff-only &&
    home/install.sh --check box'` should print `no drift` (the box's
@@ -227,7 +225,9 @@ history. Older entries are condensed; `git log` has the full trail.
 - 2026-09-07: check-up closed: macshot cask, model as a seed key, motd-news
   timer off, box maintained, Proxmox host rebooted, omp-run.sh bash 3.2 fix.
   Later: agy Remote Control moved to `agy remote-control start`; drop-in,
-  Turbo-preset seed and runbook section added, hub sessions prompt-free.
+  Turbo-preset seed and runbook section added; seed verified sufficient
+  without the hub, read_url(*) grant joins the seed for the next rebuild
+  (the live box got it from the hub), instance renamed agent-vm.
 - 2026-09-02: dipladder and dryrun retired as remote-control environments
   (systemd units and checkouts removed by hand); their `--clone-only` lines
   dropped from `box/remotes.list` so a rebuild does not reconstitute them.

@@ -45,7 +45,7 @@ itself, not by bootstrap:
 ```
 ssh agent-vm-ssh
 agy                                   # once, if ~/.gemini/jetski-standalone-oauth-token is missing: sign in, quit
-agy remote-control start --name agent-vm-swift-nova
+agy remote-control start --name agent-vm
 agy remote-control status             # "active", instance name, journal hint
 systemctl --user daemon-reload && systemctl --user restart antigravity-cli-daemon
 journalctl --user -u antigravity-cli-daemon -n 20
@@ -68,17 +68,26 @@ to `userSettings` in `~/.gemini/config/config.json` on the box as four keys
 (`permissionPreset: AGENT_PERMISSION_PRESET_TURBO`, `autoExecutionPolicy:
 CASCADE_COMMANDS_AUTO_EXECUTION_EAGER`, `enableTerminalSandbox: false`,
 `nonWorkspaceFileAccessPolicy: AGENT_SETTING_POLICY_ALLOW`), and bootstrap
-seeds the same four so a rebuilt box should start in Turbo without the UI
-step. Assumption until the next rebuild: seeding `permissionPreset` alone
-was not enough (tried 2026-09-07, prompts stayed), so the seed carries all
-four; if a fresh box still asks, pick Turbo in the hub once and compare
-`config.json`. Also tried and dropped: `--dangerously-skip-permissions` in
-the daemon command line (local sessions only) and `autoExecutionPolicy:
-AUTO_EXECUTION_POLICY_NOT_ENFORCED` (wrong enum). Turbo does not cover URL
-reads: "Allow reading this URL?" is governed by Network Access Rules on the
-same page, add allow rules there if the prompts bother. Projects are files
-under `~/.gemini/config/projects/<id>.json`; `"settings": {}` means inherit.
-The seed is written once; whatever the hub sets afterwards is agy's. Same posture as `claude-remote` running with
+seeds the same four, so a rebuilt box starts in Turbo without the UI step.
+Verified 2026-09-07 in two steps: with the four keys deleted and the daemon
+restarted, a fresh hub session asked for every tool again; with the keys
+written back by `bootstrap.sh user` alone (the hub never touched), the next
+session ran search, file write, `rm`, `curl` and a python script without a
+prompt. The URL read in that session was silent because the `read_url(*)`
+grant below was already in the file, not because of the four keys. The
+file on the box is authoritative, the hub keeps no copy. Tried and dropped on the way: `permissionPreset` alone (prompts
+stayed), `--dangerously-skip-permissions` in the daemon command line (local
+sessions only), `autoExecutionPolicy: AUTO_EXECUTION_POLICY_NOT_ENFORCED`
+(wrong enum). Turbo does not cover the agent's built-in URL reader: "Allow
+reading this URL?" is governed by Network Access Rules on the same page; an
+allow rule `*` there lands in the same file as
+`globalPermissionGrants.allow: ["read_url(*)"]`, which bootstrap seeds too.
+Shell commands (`curl`, `wget`, `python3 ...`) are not URL reads; Turbo
+covers them. Projects are files under `~/.gemini/config/projects/<id>.json`;
+`"settings": {}` means inherit. The seed is written once; whatever the hub
+sets afterwards is agy's. `remoteControlHostname` (without `cli`) in the
+same file is the desktop editor's name and may lag behind a rename; the
+daemon uses `cliRemoteControlHostname`, which `start --name` rewrites. Same posture as `claude-remote` running with
 `bypassPermissions`: anyone signed in to the Google account drives the box
 without prompts, and the hub reaches it through Google's relay, not the
 tailnet.
@@ -344,7 +353,7 @@ The first `claude auth login` on it is manual, as on every substrate.
   drop-in with `mise exec`; if only the pinned ExecStart is there, `make
   provision STEPS=user` then `systemctl --user daemon-reload && systemctl
   --user restart antigravity-cli-daemon`. If the unit is missing altogether,
-  `agy remote-control start --name agent-vm-swift-nova` (see above).
+  `agy remote-control start --name agent-vm` (see above).
 - **`mise ls agy` and `agy --version` disagree** - expected, not drift. The
   agy backend replaces the binary inside the existing versioned install
   directory instead of creating a new one, so the directory name (and what

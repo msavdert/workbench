@@ -233,9 +233,10 @@ step_user() {
     "$AGENT_HOME/.config/systemd/user/antigravity-cli-daemon.service.d/override.conf"
   as_agent systemctl --user daemon-reload 2>/dev/null || true
   # The hub's General settings live in userSettings of this file; without them
-  # every tool call in a remote session asks for approval. Seed exactly the
-  # four keys the hub wrote when "Security Preset: Turbo mode" was picked
-  # (2026-09-07), once, and leave the rest (instance name, theme) to agy.
+  # every tool call in a remote session asks for approval. Seed exactly what
+  # the hub wrote when "Security Preset: Turbo mode" and a Network Access
+  # Rule "*" were picked (2026-09-07), once; the rest (instance name, theme)
+  # stays agy's. Verified the seed alone is honoured, no hub step needed.
   # ~/.gemini is created here only when missing: `install -d` applies -o/-g
   # to the paths named, so a parent it creates on the way would stay root's
   # and agy could not write its OAuth token there; an existing one is agy's
@@ -251,7 +252,9 @@ step_user() {
           autoExecutionPolicy: "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
           enableTerminalSandbox: false,
           nonWorkspaceFileAccessPolicy: "AGENT_SETTING_POLICY_ALLOW"
-        }' "$gc" >"$gc.tmp" &&
+        }
+        | .userSettings.globalPermissionGrants.allow =
+            (((.userSettings.globalPermissionGrants.allow | arrays) // []) + ["read_url(*)"] | unique)' "$gc" >"$gc.tmp" &&
       mv "$gc.tmp" "$gc" && echo "  updated $gc (Turbo preset seeded)"
   fi
   chmod 0600 "$gc"
