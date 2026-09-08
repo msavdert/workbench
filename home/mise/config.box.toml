@@ -11,7 +11,7 @@
 # --- language runtimes ---
 python = "3.14"
 node = "24"
-go = "1.26"
+go = "1.27"
 java = "temurin-24"
 dotnet = "10"
 rust = "latest"

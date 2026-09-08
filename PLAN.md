@@ -46,7 +46,11 @@ copied from what the hub wrote when the operator picked them. Verified the
 same evening that the seed alone, with the hub never touched, gives
 prompt-free remote sessions (search, URL read, file write, rm, curl,
 python). Instance renamed to `agent-vm`. Runbook section "agy Remote
-Control". Earlier state follows.
+Control". 2026-09-08: herdr 0.9.0 on mac and box; box `--check` prints
+`no drift`, every key in `home/herdr/config.toml` is still in the 0.9.0
+default config, `--remote` (the mac `box` alias) survives, the
+integrations task re-ran cleanly. Go pin moved to 1.27 (Go minors keep
+compatibility); node stays on 24 until 26 is LTS. Earlier state follows.
 
 2026-09-02: `ai-hub` retired. Its doctrine, journal and experiments are in
 the vault under `50-knowledge/ai/`, its three project skills are global
@@ -176,12 +180,13 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
-0. Box side of the 2026-09-07 settings change: after the commits are
-   pushed, `ssh agent-vm-ssh 'cd ~/work/workbench && git pull --ff-only &&
-   home/install.sh --check box'` should print `no drift` (the box's
-   `model` and effort choice are seed keys now). Then a fresh
+0. Box side of the 2026-09-07 settings change closed 2026-09-08:
+   `home/install.sh --check box` printed `no drift`. Still open: a fresh
    `home/install.sh --check mac` after the next `/model` switch, to prove
-   the rule holds on a change, not only on today's state.
+   the rule holds on a change, not only on today's state. Also open: on
+   the mac, `mise up` after the go 1.27 pin, and `node = "26"` in
+   `config.box.toml` once Node 26 enters LTS (expected October 2026,
+   unverified).
 1. Closed 2026-09-01: both repos committed and pushed, box clone locked
    (git-crypt from mise), mac unlocked with the 1Password key.
 2. Closed 2026-09-01: the moved medical note stays in vault history; the
@@ -222,6 +227,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-08: herdr 0.9.0 verified against the repo (config keys, hooks,
+  no drift on the box); go pinned to 1.27, node stays 24 until 26 is LTS.
 - 2026-09-07: check-up closed: macshot cask, model as a seed key, motd-news
   timer off, box maintained, Proxmox host rebooted, omp-run.sh bash 3.2 fix.
   Later: agy Remote Control moved to `agy remote-control start`; drop-in,
