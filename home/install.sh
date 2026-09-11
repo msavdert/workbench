@@ -50,10 +50,25 @@ log() {
 # ---------------------------------------------------------------------------
 # link <src-relative-to-home/> <dst-absolute>
 # link <path-under-home/> <dst>
+# Two targets can share a basename (a skill linked for Claude and for agy,
+# the two settings.json); a second backup onto the same name would nest a
+# directory or overwrite the first copy. Prints a free path under BACKUP_DIR.
+backup_slot() {
+  local base bak n=0
+  base="$BACKUP_DIR/$(basename "$1")"
+  bak=$base
+  while [[ -e $bak || -L $bak ]]; do
+    n=$((n + 1))
+    bak="$base.$n"
+  done
+  mkdir -p "$BACKUP_DIR"
+  printf '%s\n' "$bak"
+}
+
 link() { link_path "$HOME_SRC/$1" "home/$1" "$2"; }
 
 link_path() {
-  local src="$1" label="$2" dst="$3"
+  local src="$1" label="$2" dst="$3" bak
   if [[ ! -e $src ]]; then
     log SKIP "$dst (source missing: $label)"
     return 0
@@ -72,9 +87,9 @@ link_path() {
     return 0
   fi
   if [[ -e $dst || -L $dst ]]; then
-    mkdir -p "$BACKUP_DIR"
-    mv "$dst" "$BACKUP_DIR/$(basename "$dst")"
-    log moved "$dst -> $BACKUP_DIR/"
+    bak=$(backup_slot "$dst")
+    mv "$dst" "$bak"
+    log moved "$dst -> $bak"
   fi
   mkdir -p "$(dirname "$dst")"
   ln -sfn "$src" "$dst"
@@ -106,7 +121,7 @@ same_content() {
 }
 
 generate() {
-  local dst="$1" mode="$2" want
+  local dst="$1" mode="$2" want bak
   want="$(cat)"
   if same_content "$dst" "$want"; then
     log ok "$dst"
@@ -122,9 +137,9 @@ generate() {
     return 0
   fi
   if [[ -e $dst || -L $dst ]]; then
-    mkdir -p "$BACKUP_DIR"
-    cp -P "$dst" "$BACKUP_DIR/$(basename "$dst")"
-    log moved "$dst -> $BACKUP_DIR/ (previous version)"
+    bak=$(backup_slot "$dst")
+    cp -P "$dst" "$bak"
+    log moved "$dst -> $bak (previous version)"
   fi
   mkdir -p "$(dirname "$dst")"
   printf '%s\n' "$want" >"$dst.tmp"
@@ -257,6 +272,14 @@ manifest() {
   # seed keys, see merge_settings.
   merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json" model,trustedWorkspaces
   link agy/statusline.sh "$HOME/.gemini/antigravity-cli/statusline.sh"
+  # Tool-neutral skills are shared with agy through ~/.gemini/skills, the
+  # "Shared" tier agy's /skill screen names (symlinks followed). audit, omp-fleet and agy-fleet stay Claude-only:
+  # they drive Claude subagents or delegate to agy/omp from Claude. omp gets
+  # the same three via relative symlinks inside home/omp/skills/, since omp's
+  # skills.enableClaudeUser defaults to false.
+  link claude/skills/skill-creator "$HOME/.gemini/skills/skill-creator"
+  link claude/skills/youtube-whisper-transcriber "$HOME/.gemini/skills/youtube-whisper-transcriber"
+  link claude/skills/oss-project-eval "$HOME/.gemini/skills/oss-project-eval"
   # config.yml is generated, not linked. omp writes to
   # ~/.omp/agent/config.yml itself: `omp config set`, `omp config reset`, the
   # in-session /settings panel, and - the case that actually bit - a schema

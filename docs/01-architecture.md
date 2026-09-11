@@ -70,6 +70,7 @@ workbench/
 | `~/.claude/settings.json` | `home/claude/settings.base.json` + overlay | `home/install.sh` (jq merge) |
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
 | `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`) | `home/herdr/ agy/ omp/` | `home/install.sh` |
+| `~/.gemini/skills/{skill-creator,youtube-whisper-transcriber,oss-project-eval}` | `home/claude/skills/` (second link of the same tree) | `home/install.sh` |
 | `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/zellij` (box only) | `home/zellij/` | `home/install.sh box` |
@@ -91,6 +92,20 @@ two repo trees would buy nothing. The former ai-hub project skills
 (`skill-creator`, `youtube-whisper-transcriber`, `oss-project-eval`) are
 global skills here since 2026-09-02; ai-hub's templates and overnight
 protocol stayed in the archived repository.
+Those three carry no Claude-specific frontmatter beyond an informational
+`compatibility` line and no hard dependency on Claude subagents (two of
+them suggest an `Explore` subagent, which other harnesses ignore), so they
+are shared with the other two harnesses since 2026-09-11 without a second
+copy: `home/install.sh` links each into `~/.gemini/skills/` (agy's "Shared"
+tier; symlinks are followed), and `home/omp/skills/` holds a relative
+symlink per skill next to `delegation` (omp's `skills.enableClaudeUser`
+defaults to false, so `~/.claude/skills` is not read on its own). Verified
+with agy 1.2.1 and omp 18.1.16 in print mode: omp lists all three in its
+skill set; agy loads them on slash invocation (`/skill-creator ...`) but did
+not surface them when asked to list its skills, so in agy they are
+commands, not description-triggered behaviour. `audit`, `omp-fleet` and
+`agy-fleet` stay Claude-only: they call Claude subagents or delegate from
+Claude to agy/omp.
 
 `home/install.sh` has two kinds of target: links (a `$HOME` path is a
 symlink into `home/`) and generated files (`~/.claude/settings.json`,
