@@ -24,7 +24,8 @@ harnesses from one tree: agy via `~/.gemini/skills/` links, omp via relative
 symlinks in `home/omp/skills/` (its `skills.enableClaudeUser` default is
 false, so `~/.claude/skills` alone is not read). Verified in print mode on
 the mac: omp lists them, agy runs them by slash name only; `audit`, `omp-fleet`, `agy-fleet` stay Claude-only.
-The box needs `git pull && home/install.sh box` and the same two checks.
+The box got the same change the same day: `--check box` no drift, omp
+lists the three, agy answers `/oss-project-eval` from the linked file.
 Earlier state follows.
 
 2026-09-07 check-up (mac and box), closed the same day. `macshot` (brew
@@ -238,7 +239,7 @@ history. Older entries are condensed; `git log` has the full trail.
 
 - 2026-09-11: the three tool-neutral skills shared with agy (links into
   `~/.gemini/skills/`) and omp (relative symlinks in `home/omp/skills/`),
-  verified in print mode on the mac; agy-fleet pulled and applied.
+  verified in print mode on mac and box; agy-fleet pulled and applied.
 - 2026-09-08: herdr 0.9.0 verified against the repo (config keys, hooks,
   no drift on the box); go pinned to 1.27, node stays 24 until 26 is LTS.
 - 2026-09-07: check-up closed: macshot cask, model as a seed key, motd-news
