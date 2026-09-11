@@ -33,14 +33,19 @@ Decide from the diff, not from the task name. A "small script" that runs
    found, so it attacks the fix instead of re-reporting the bug. An
    internal pass is a claim too; it has returned zero findings on code an
    external audit then found major defects in.
-3. External: invoke the `agy-fleet` skill, then one launch per auditor.
-   `agy-run.sh` backgrounds itself and returns at once; poll with
-   `agy-wait.sh`:
+3. External: invoke the `agy-fleet` skill, then one launch per auditor,
+   as ONE Bash call with `run_in_background: true` that launches and
+   waits; the harness notifies when it ends and the session keeps
+   working (the internal auditor runs in parallel) instead of blocking:
 
    ```
-   $AGY_RUN  audit-<topic>-gemini38 <workdir>/prompt.txt gemini-3.8-flash-high 900
-   $AGY_WAIT audit-<topic>-gemini38 900
+   Bash(run_in_background: true,
+        command: "$AGY_RUN audit-<topic>-gemini38 <workdir>/prompt.txt gemini-3.8-flash-high 900 && $AGY_WAIT audit-<topic>-gemini38 900")
    ```
+
+   Do not call `$AGY_WAIT` in the foreground: it blocks the session for
+   the whole run (380 s measured 2026-09-11) and a long audit hits the
+   Bash tool's 10-minute cap.
 
    The run writes its own directory, `research/_work/audit-<topic>-gemini38/`
    - not the scope directory `audit-<topic>/` from step 1 - so `report.md`,

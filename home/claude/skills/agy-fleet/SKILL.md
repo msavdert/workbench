@@ -88,10 +88,16 @@ see the template.
    `invoke_subagent` tool. agy's machine-wide `antigravity-cli-daemon` can
    outlive the run's process group, and the equivalent incident on the omp
    fleet drained a full day of quota on two pools.
-2. **The runner backgrounds itself; do not background it again.** Call
-   `agy-run.sh` in the foreground - it returns in under a second after
-   writing `pid`. An extra `&` or `run_in_background` is harmless but adds a
-   second process to reason about.
+2. **Launch and wait in ONE Bash call with `run_in_background: true`, no
+   trailing `&`.** `agy-run.sh` detaches the run (setsid + pid file) and
+   returns in under a second; `agy-wait.sh` blocks until the run ends and
+   prints the status line. Chained in one backgrounded call, the harness
+   notifies the session when the wait exits, with the status line as the
+   result, and the session does no polling and is not blocked meanwhile.
+   A foreground `agy-wait.sh` blocks the session for the whole run (380 s
+   measured on an audit, 2026-09-11) and hits the Bash tool's 10-minute
+   cap on a long one. Never add `&` inside the call: the wrapper already
+   detaches, and an inner `&` on the waiter would end the call at once.
 3. **Liveness is `kill -0 $(cat <workdir>/pid)`, never `pgrep`.** Your own
    command line contains both `agy` and the topic name; a pattern match finds
    itself. `agy-wait.sh <topic> [max-seconds]` does the polling (every 10 s); its own
@@ -135,11 +141,19 @@ wrappers share that failure mode.
 
 ```
 Write(file_path: <abs-repo>/research/_work/<topic>/prompt.txt, content: ...)
-Bash("$AGY_RUN <topic> <abs-repo>/research/_work/<topic>/prompt.txt gemini-3.8-flash-high 900")
-Bash("$AGY_WAIT <topic> 900")          # blocks, prints the status line
+Bash(run_in_background: true,
+     command: "$AGY_RUN <topic> <abs-repo>/research/_work/<topic>/prompt.txt gemini-3.8-flash-high 900 && $AGY_WAIT <topic> 900")
+# ... keep working; the completion notification carries the status line ...
 Read(<abs-repo>/research/_work/<topic>/report.md)
 Read(<abs-repo>/research/_work/<topic>/meta)   # confirm model_answered
 ```
+
+The launch part prints `launched topic=... pid=...` and exits 0 at once;
+the `&&` hands over to the waiter, whose exit code mirrors the run (0 ok,
+1 error, 3 quota, 5 timeout, 6 waiter deadline; see the failures table). If the launch itself fails (exit 2
+prompt missing, exit 4 topic already alive) the waiter never starts and
+the notification shows the launch error. Run the pair in the foreground
+only for a probe you expect to answer in seconds (`agy-check.sh`).
 
 The prompt path is absolute. `agy-run.sh status <topic>` prints the current
 status line without waiting. `agy-check.sh` probes the fleet (version,
