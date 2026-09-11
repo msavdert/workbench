@@ -241,6 +241,7 @@ manifest() {
   link claude/agents "$HOME/.claude/agents"
   link claude/skills/omp-fleet "$HOME/.claude/skills/omp-fleet"
   link claude/skills/omp-fleet/omp-delegate.yml "$HOME/.claude/omp-delegate.yml"
+  link claude/skills/agy-fleet "$HOME/.claude/skills/agy-fleet"
   link claude/skills/skill-creator "$HOME/.claude/skills/skill-creator"
   link claude/skills/youtube-whisper-transcriber "$HOME/.claude/skills/youtube-whisper-transcriber"
   link claude/skills/oss-project-eval "$HOME/.claude/skills/oss-project-eval"
