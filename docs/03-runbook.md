@@ -179,7 +179,7 @@ one active session per checkout (the `work` server is same-dir, bypass). To
 change surface, finish the session: update PLAN.md, push, start fresh on the
 other side; `claude --resume` in the same directory is the fallback when the
 transcript itself is needed. Mac sessions are not registered: the mac overlay
-does not set the key.
+explicitly sets `remoteControlAtStartup` to false.
 
 ## Secrets
 
@@ -219,6 +219,7 @@ the mac since the devbox seat is gone.
 | OS packages only | `ssh agent-vm-ssh 'sudo apt update && sudo apt full-upgrade -y'`; `sudo needrestart -b` shows `KSTA: 3` if a reboot is pending |
 | mise tools only | `ssh agent-vm-ssh 'mise up'`; `mise prune` drops versions no longer listed |
 | Claude Code | self-updates; `claude update` to force |
+| agy & agy Remote Control | `ssh agent-vm-ssh 'mise up agy'`; then `ssh agent-vm-ssh 'systemctl --user restart antigravity-cli-daemon'` to load the new binary into the running daemon process |
 | This repo's config | `make provision`; `box/` only: `STEPS=user`; `home/` only: `STEPS=home` (pulls `~/work/workbench` on the box and re-runs `home/install.sh box`) |
 | The laptop | `mise run mac:sync` (pulls `~/work/workbench`, `mac/setup.sh --links-only`); full run `mac/setup.sh`, `CLEANUP=1` to also remove brew packages not in `mac/Brewfile` |
 | zsh completion cache and plugins (both profiles) | `mise run completions:regen`, `mise run zsh:plugins`; also run by `mac/setup.sh` and `STEPS=tools` |
@@ -348,6 +349,14 @@ The first `claude auth login` on it is manual, as on every substrate.
 - **Remote Control session missing from the app** - `systemctl --user status
   claude-remote`; if it loops on auth, `claude auth login` again (token
   expired) and `systemctl --user restart claude-remote`.
+- **"Update available" on antigravity.google.com for agent-vm** - the web hub
+  sees the running daemon reporting an older version than current. agy updates
+  on the OS side, not in the web UI. If `mise up` (or `agy update`) already
+  updated the CLI binary to latest, the running daemon process is still
+  holding the previous binary in memory (check PID with `systemctl --user
+  status antigravity-cli-daemon`). Restart it to load the new binary:
+  `systemctl --user restart antigravity-cli-daemon`. Verify with `agy
+  remote-control status`; refresh the hub and the badge disappears.
 - **`agy remote-control status` says inactive, or the daemon fails after
   `mise up`** - `systemctl --user cat antigravity-cli-daemon` must show the
   drop-in with `mise exec`; if only the pinned ExecStart is there, `make
