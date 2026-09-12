@@ -18,6 +18,12 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-12: agy remote update procedure documented in runbook; daemon
+restarted and verified on 1.2.2 with instance name agent-vm preserved; web
+hub badge cleared. Claude remoteControlAtStartup explicitly disabled on
+macOS overlay (home/claude/settings.mac.json) to keep mac sessions local.
+The mac needs `git pull && home/install.sh mac`. Earlier state follows.
+
 2026-09-11: the three tool-neutral skills (`skill-creator`,
 `youtube-whisper-transcriber`, `oss-project-eval`) are visible to all three
 harnesses from one tree: agy via `~/.gemini/skills/` links, omp via relative
@@ -237,6 +243,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-12: agy remote update documented and daemon restarted on 1.2.2;
+  Claude remoteControlAtStartup explicitly disabled in mac overlay.
 - 2026-09-11: the three tool-neutral skills shared with agy (links into
   `~/.gemini/skills/`) and omp (relative symlinks in `home/omp/skills/`),
   verified in print mode on mac and box; agy-fleet pulled and applied.

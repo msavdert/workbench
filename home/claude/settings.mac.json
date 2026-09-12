@@ -32,5 +32,6 @@
   "permissions": {
     "defaultMode": "auto"
   },
+  "remoteControlAtStartup": false,
   "theme": "auto"
 }
