@@ -127,6 +127,14 @@ the initial value; afterwards the value the tool wrote in-session is
 carried over on every provision and is not drift. Settings a tool rewrites
 live are otherwise unmanageable: either every provision resets the
 operator's choice or every check cries wolf.
+Amended 2026-09-14: ownership covers removal too. Carrying over only the
+keys that are present made a cleared model come back from the repo, so the
+operator's deselection was reported as drift and re-pinned on the next
+provision. An existing target is now authoritative for seed keys in both
+directions; the repo seeds only when the target cannot speak for itself - no
+file yet, or one that is not a single JSON object. `effortLevel` joined the
+Claude list on the same date and for the same reason: the operator switches
+model and effort per session on both machines, and neither may be drift.
 
 D9 Claude behaviour (global CLAUDE.md, subagents, skills, hooks) lives in
 `home/claude/` next to its settings, the same way omp and agy keep their

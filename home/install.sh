@@ -161,10 +161,19 @@ generate() {
 #
 # Optional third argument: comma-separated top-level keys the TOOL owns after
 # first install ("seed keys"). The repo supplies their initial value; once the
-# target exists, the tool's current value is carried over instead, so a model
-# picked in the tool's UI or a workspace trusted interactively is neither
-# reported as drift nor reset by the next provision. Everything else stays
-# repo-owned and is still compared and rewritten.
+# target exists, the tool's state wins, so a model picked in the tool's UI or a
+# workspace trusted interactively is neither reported as drift nor reset by the
+# next provision. Everything else stays repo-owned and is still compared and
+# rewritten.
+#
+# "The tool's state" includes a key the tool REMOVED. Carrying over only keys
+# that are present cannot express that: clearing the model in the UI drops the
+# key, the repo value comes back, and the next provision silently re-pins a
+# model the operator had deselected. So an existing target is authoritative for
+# seed keys in both directions - present, with its value; absent, and the key
+# is dropped. $have is null only when the target cannot speak for itself - no
+# file yet (first install), or one that is not a single JSON object - and that
+# is the one case where the repo seeds.
 merge_settings() {
   local base="$HOME_SRC/$1/settings.base.json" \
     overlay="$HOME_SRC/$1/settings.$PROFILE.json" \
@@ -174,14 +183,18 @@ merge_settings() {
     return 0
   fi
   [[ -f $overlay ]] || overlay=/dev/null
-  have='{}'
+  have=null
   if [[ -n $seed && -f $dst && ! -L $dst ]]; then
-    # An unparseable live file (a crash mid-write) would silently reset the
-    # seed keys to the repo value; say so instead of hiding it.
-    have="$(jq -c . "$dst" 2>/dev/null)" || {
-      log WARN "$dst (not valid JSON; seed keys reset to the repo value)"
-      have='{}'
-    }
+    # A live file that is empty, truncated mid-write, appended to twice or not
+    # a JSON object says nothing about the seed keys, so the repo value seeds
+    # and the operator is told. `jq -c .` alone detects none of those: it exits
+    # 0 on an empty file and on concatenated values, and the reduce's `has` is
+    # a fatal error on a non-object, which would abort the whole run.
+    have="$(jq -cs 'if length == 1 and (.[0] | type) == "object" then .[0] else empty end' "$dst" 2>/dev/null)" || have=""
+    if [[ -z $have ]]; then
+      log WARN "$dst (not a single JSON object; seed keys reset to the repo value)"
+      have=null
+    fi
   fi
   tmp="$(mktemp)"
   jq -S -s --arg home "$HOME" --arg seed "$seed" --argjson have "$have" '
@@ -206,7 +219,9 @@ merge_settings() {
                  then $home + .[1:] else . end)
            else . end)
     | reduce (($seed | split(",")) | map(select(. != ""))[]) as $k (.;
-        if $have | has($k) then .[$k] = $have[$k] else . end)
+        if $have == null then .
+        elif $have | has($k) then .[$k] = $have[$k]
+        else del(.[$k]) end)
   ' "$base" "$overlay" >"$tmp"
   generate "$dst" 0644 <"$tmp"
   rm -f "$tmp"
@@ -243,7 +258,7 @@ manifest() {
   # Claude Code (D8): settings composed, statusline linked, nothing else.
   # `model` and `modelSettings` are seed keys: the repo supplies the first
   # value, `/model` in a session owns them afterwards (D8, 2026-09-07).
-  merge_settings claude "$HOME/.claude/settings.json" model,modelSettings
+  merge_settings claude "$HOME/.claude/settings.json" model,modelSettings,effortLevel
   link claude/statusline.sh "$HOME/.claude/statusline.sh"
 
   # Claude behaviour (D9): global instructions, subagents, the global

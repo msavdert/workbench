@@ -18,6 +18,18 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-14: seed keys in `home/install.sh` now own removal, not only value.
+Clearing the model in Claude Code's UI drops the key; the old merge carried
+over present keys only, so the repo value returned and `--check mac` called
+it drift. An existing target is now authoritative in both directions and the
+repo seeds only when the target cannot speak for itself: no file yet, or one
+that is not a single JSON object, which is reported as a WARN. That last case
+used to abort the whole run with a raw jq error and is fixed in the same
+change. `effortLevel` joined Claude's seed list,
+so model and effort can be switched per session on either machine without
+drift. Verified: `--check mac` prints `no drift`, a changed model or effort
+stays clean, a tampered repo-owned key is still reported.
+
 2026-09-14: `obsidian-sync` added under `home/bin/`, linked on the mac
 profile by `home/install.sh` and exposed as `mise run obsidian:sync`. It
 mirrors the Google Drive Obsidian vault one way into the iCloud container
@@ -203,9 +215,13 @@ present). Agent gateway only - savdert has no op access by design.
 ## Next
 
 0. Box side of the 2026-09-07 settings change closed 2026-09-08:
-   `home/install.sh --check box` printed `no drift`. Still open: a fresh
-   `home/install.sh --check mac` after the next `/model` switch, to prove
-   the rule holds on a change, not only on today's state. Also open: on
+   `home/install.sh --check box` printed `no drift`. The mac side closed
+   2026-09-14: the rule did NOT hold on a change - clearing the model in
+   the UI drops the key, and carrying over only present keys let the repo
+   value come back, so `--check mac` reported drift and a provision would
+   have re-pinned it. Seed keys now own removal as well, `effortLevel`
+   joined the list, and `--check mac` prints `no drift` while a tampered
+   repo-owned key is still caught. Also open: on
    the mac, `mise up` after the go 1.27 pin, and `node = "26"` in
    `config.box.toml` once Node 26 enters LTS (expected October 2026,
    unverified).
@@ -249,6 +265,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-14: seed keys own removal too; effortLevel added to Claude's list;
+  mac settings drift closed.
 - 2026-09-14: obsidian-sync (one-way vault mirror to iCloud for the iPhone)
   added to home/bin, install.sh mac and mise task obsidian:sync.
 - 2026-09-12: agy remote update documented and daemon restarted on 1.2.2;

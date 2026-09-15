@@ -115,9 +115,14 @@ symlink into `home/`) and generated files (`~/.claude/settings.json`,
 Generated settings may carry seed keys (`merge_settings <tool> <dst>
 <keys>`): the repo sets them once, the tool owns them afterwards (agy's
 `model` and `trustedWorkspaces`, which agy rewrites in its own form and
-extends from its UI; Claude Code's `model` and `modelSettings`, which
-`/model` rewrites). `--check` ignores their drift by design; everything
-else in the file stays repo-owned.
+extends from its UI; Claude Code's `model`, `modelSettings` and
+`effortLevel`, which `/model` and the effort switch rewrite). Ownership
+includes removal: if the live file exists and no longer carries a seed key,
+the generated file drops it too, so a model cleared in the UI is not re-pinned
+by the next provision. The repo value seeds only when the target cannot
+speak for itself: no file yet, or one that is not a single JSON object (empty,
+truncated, or the wrong shape), which is reported as a WARN. `--check` ignores seed-key drift by design;
+everything else in the file stays repo-owned.
 A target is generated rather than linked whenever the tool that reads it also
 WRITES it: through a symlink such a write lands in a tracked file, which is
 how an omp 17 schema migration silently rewrote `home/omp/config.yml` on
