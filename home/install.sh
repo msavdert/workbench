@@ -307,6 +307,12 @@ manifest() {
     link bin/timeout "$HOME/.local/bin/timeout"
   fi
 
+  # Obsidian vault mirror: mac only. It reads the Google Drive vault and
+  # writes into the iCloud container, neither of which exists on the box.
+  if [[ $PROFILE == mac ]]; then
+    link bin/obsidian-sync "$HOME/.local/bin/obsidian-sync"
+  fi
+
   profile_env
 }
 

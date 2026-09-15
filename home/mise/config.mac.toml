@@ -67,3 +67,10 @@ else
 fi
 "$REPO_DIR/mac/setup.sh" --links-only
 """
+
+# One-way mirror, not a two-way sync: the vault stays canonical in Google
+# Drive and the iPhone reads a copy from iCloud. Deliberately not scheduled,
+# see the comment at the top of home/bin/obsidian-sync.
+[tasks."obsidian:sync"]
+description = "Mirror the Obsidian vault from Google Drive into iCloud for read-only iPhone access"
+run = "obsidian-sync"

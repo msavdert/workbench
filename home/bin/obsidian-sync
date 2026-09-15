@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# obsidian-sync [-n]  (home/bin, linked to ~/.local/bin by home/install.sh)
+# One-way mirror of the Obsidian vault from Google Drive to iCloud Drive, so
+# the iPhone can open it read-only. Data flows one way only; anything edited
+# on the phone is reverted on the next run. Mac only: the paths, the iCloud
+# container and `stat -f` are all macOS.
+#
+# Not scheduled. A LaunchAgent would run as /bin/bash, and TCC binds Full
+# Disk Access to the interpreter, so scheduling would mean granting every
+# bash script on the machine access to protected locations. Run from a
+# terminal instead, which already carries the grant. The vault's own runbook
+# "Obsidian - iCloud Mirror" section 7 records the decision and the options.
+set -euo pipefail
+
+# The Google Drive folder name embeds the account address, so the source is
+# resolved at run time instead of being written into this public repository.
+VAULT_REL="${OBSIDIAN_VAULT_REL:-All/Documents/ObsidianVaults/obsidian}"
+SRC="${OBSIDIAN_VAULT_SRC:-}"
+DST="${OBSIDIAN_VAULT_DST:-$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/obsidian-ro}"
+LOG="$HOME/Library/Logs/obsidian-sync.log"
+LOCK="$HOME/Library/Caches/obsidian-sync.lock"
+SENTINEL="Home.md" # proves the source is really mounted, not an empty stub
+LOCK_HELD=0        # set once this run owns $LOCK, read by the EXIT trap
+MIN_MD=500         # refuse to mirror a source that lost most of its notes
+
+log() { printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S')" "$*" >>"$LOG"; }
+
+die() {
+  log "ERROR: $*"
+  printf 'obsidian-sync: %s\n' "$*" >&2
+  exit 1
+}
+
+release_lock() {
+  if [ "$LOCK_HELD" -eq 1 ]; then
+    rmdir "$LOCK" 2>/dev/null || true
+  fi
+}
+
+usage() {
+  cat >&2 <<'USAGE'
+usage: obsidian-sync [-n|--dry-run]
+
+Mirrors the Obsidian vault from Google Drive into the iCloud Obsidian
+container, one way. -n lists what would be transferred and writes nothing.
+
+Environment: OBSIDIAN_VAULT_SRC, OBSIDIAN_VAULT_DST, OBSIDIAN_VAULT_REL.
+USAGE
+}
+
+# Counting has to use the same exclusions as the transfer, or the floor check
+# and the before/after numbers are measured against a different tree.
+count_notes() {
+  find "$1" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.trash/*' 2>/dev/null | wc -l | tr -d ' '
+}
+
+# Only one run at a time: mkdir is atomic, a plain file test is not. Every
+# branch here is guarded, because an unguarded failure under set -e aborts
+# before the log file is even created.
+acquire_lock() {
+  local mtime age
+  if mkdir "$LOCK" 2>/dev/null; then
+    LOCK_HELD=1
+    return 0
+  fi
+  # `stat` succeeds on a regular file too, so a stray file at $LOCK would be
+  # read as a live lock and silently skip every run for an hour. Name it.
+  if [ -e "$LOCK" ] && [ ! -d "$LOCK" ]; then
+    die "lock path $LOCK exists but is not a directory, clear it by hand"
+  fi
+  # The lock can vanish between the failed mkdir and this stat when another
+  # run finishes in that window.
+  if ! mtime=$(stat -f %m "$LOCK" 2>/dev/null); then
+    if mkdir "$LOCK" 2>/dev/null; then
+      LOCK_HELD=1
+      return 0
+    fi
+    log "skipped: the lock is contended"
+    exit 0
+  fi
+  age=$(($(date +%s) - mtime))
+  if [ "$age" -le 3600 ]; then
+    log "skipped: another run holds the lock"
+    exit 0
+  fi
+  log "WARN: removing a stale lock, ${age}s old"
+  rmdir "$LOCK" 2>/dev/null || die "stale lock $LOCK cannot be removed, clear it by hand"
+  mkdir "$LOCK" 2>/dev/null || {
+    log "skipped: another run took the lock first"
+    exit 0
+  }
+  LOCK_HELD=1
+}
+
+# Picks the first Google Drive account folder. With more than one account,
+# set OBSIDIAN_VAULT_SRC to name the vault explicitly.
+resolve_src() {
+  local base
+  for base in "$HOME"/Library/CloudStorage/GoogleDrive-*/; do
+    [ -d "$base" ] || continue
+    printf '%s' "${base}My Drive/$VAULT_REL"
+    return 0
+  done
+  return 1
+}
+
+# rsync --delete makes an unreadable or half-mounted source destructive: it
+# would wipe the mirror. Every check below exists to stop that, and the `ls`
+# check is not redundant - under a denied TCC grant `stat` still succeeds
+# while `readdir` fails, so the sentinel passes and `find` returns zero.
+check_source() {
+  [ -d "$SRC" ] || die "source directory is missing: $SRC"
+  [ -f "$SRC/$SENTINEL" ] || die "sentinel $SENTINEL is missing - Google Drive looks unmounted"
+  ls "$SRC" >/dev/null 2>&1 || die "source directory cannot be listed (TCC grant?): $SRC"
+}
+
+main() {
+  local dry="" md_count dst_count dst_size
+  case "${1:-}" in
+    "") ;;
+    -n | --dry-run) dry="-n -v" ;; # -v, or a dry run lists nothing at all
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'obsidian-sync: unknown argument: %s\n' "$1" >&2
+      usage
+      exit 2
+      ;;
+  esac
+  if [ "$#" -gt 1 ]; then
+    printf 'obsidian-sync: too many arguments\n' >&2
+    usage
+    exit 2
+  fi
+
+  # Traps are installed before the lock is taken, so there is no window where
+  # the lock exists without a handler to remove it; release_lock checks
+  # ownership, so a run that skips never removes someone else's lock.
+  # Cleanup belongs on EXIT alone; INT and TERM only need to stop the script,
+  # because a trap without an exit lets execution resume after the signal.
+  trap release_lock EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  acquire_lock
+
+  if [ -z "$SRC" ]; then
+    SRC=$(resolve_src) ||
+      die "no Google Drive folder under ~/Library/CloudStorage - set OBSIDIAN_VAULT_SRC"
+  fi
+  check_source
+
+  # pipefail turns a failing find into a failing assignment; catching it here
+  # keeps the message in the log instead of letting set -e kill the script.
+  if ! md_count=$(count_notes "$SRC"); then
+    die "source could not be scanned (TCC grant?): $SRC"
+  fi
+  [ "$md_count" -ge "$MIN_MD" ] || die "only $md_count notes found (floor $MIN_MD) - refusing to mirror"
+
+  [ -d "$(dirname "$DST")" ] || die "iCloud Obsidian container is missing - install Obsidian on the iPhone first"
+  if [ -e "$DST" ] && [ ! -d "$DST" ]; then
+    die "$DST exists but is not a directory"
+  fi
+  # A dry run must not create the destination: rsync -n reports against a
+  # missing target perfectly well, and an empty folder here would sync to the
+  # phone and show up in Obsidian as a vault the operator never committed to.
+  if [ -z "$dry" ]; then
+    mkdir -p "$DST" || die "cannot create $DST"
+  fi
+
+  # _old/ is mirrored on purpose: the vault SOP keeps it searchable.
+  # The excludes below are per-device state; rsync also protects them from
+  # --delete, so the phone keeps its own pane layout.
+  log "start ${dry:+(dry-run) }source=$md_count notes"
+  # shellcheck disable=SC2086 # $dry holds separate flags and must word-split
+  rsync -a --delete $dry \
+    --exclude '.DS_Store' \
+    --exclude '.trash/' \
+    --exclude '.obsidian/workspace.json' \
+    --exclude '.obsidian/workspace-mobile.json' \
+    --exclude '.obsidian/file-recovery.json' \
+    "$SRC/" "$DST/" >>"$LOG" 2>&1 ||
+    die "rsync failed, see $LOG"
+
+  if [ -n "$dry" ]; then
+    # Counting the destination here would report the mirror as it already is,
+    # not what the run would change. The transfer list in the log is the answer.
+    log "done (dry-run) source=$md_count notes, transfer list above"
+    printf 'obsidian-sync: dry run of %s notes, transfer list in %s\n' "$md_count" "$LOG"
+    return 0
+  fi
+
+  # Reporting must not be able to fail a run whose transfer already succeeded.
+  dst_count=$(count_notes "$DST") || dst_count="?"
+  dst_size=$(du -sh "$DST" 2>/dev/null | cut -f1) || dst_size="?"
+  log "done mirror=$dst_count notes, $dst_size"
+  printf 'obsidian-sync: %s notes, %s\n' "$dst_count" "$dst_size"
+}
+
+main "$@"

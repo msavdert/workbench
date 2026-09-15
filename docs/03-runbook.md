@@ -420,3 +420,32 @@ update, troubleshooting). Day-2 essentials:
 | A nightly unit failed | the box posts `<host>: <unit> FAILED` plus the unit's last journal lines to the operator's Telegram home chat (`unit-failure-notify@.service`, `OnFailure=` on vault-compile, vault-sessions, hermes-backup); test with `systemctl --user start unit-failure-notify@selftest.service` |
 | The vault's `private/` tier | git-crypt encrypted (vault HANDOFF D16); the box clone stays locked and needs no key (box: mise `aqua:AGWA/git-crypt`, mac: brew; the aqua package ships linux/amd64 only). Key: 1Password document `vault-git-crypt-key` (dotfiles), fetched with `op document get` (never `op read`, it mangles binary). Unlock only on the mac; see `private/README.md` in the vault |
 | Run the compile now | `ssh agent-vm-ssh 'systemctl --user start vault-compile.service'`; then check `~/work/vault/.state/compile.report` |
+
+## Obsidian vault mirror (mac)
+
+The operator's Obsidian vault lives in Google Drive and syncs between the mac
+and the work Windows machine. This is not the `vault` repository above; it is
+a separate Google Drive tree. `obsidian-sync` mirrors it one way into the
+iCloud Obsidian container so the iPhone can open it read-only. The vault's own
+note "Obsidian - iCloud Mirror" is the full runbook (architecture, guards,
+troubleshooting, rejected alternatives); this table is the day-2 summary.
+
+| What | How |
+|---|---|
+| Run the mirror | `mise run obsidian:sync` (or `obsidian-sync` directly) |
+| Dry run | `obsidian-sync -n` - writes nothing, not even the destination directory; the transfer list goes to the log |
+| Log | `~/Library/Logs/obsidian-sync.log` |
+| Source or target elsewhere | `OBSIDIAN_VAULT_SRC` / `OBSIDIAN_VAULT_DST` override the defaults; `OBSIDIAN_VAULT_REL` changes only the path below `My Drive` |
+| More than one Google Drive account | the script takes the first `~/Library/CloudStorage/GoogleDrive-*`; set `OBSIDIAN_VAULT_SRC` to disambiguate |
+
+It is deliberately not scheduled. A LaunchAgent runs as `/bin/bash` and TCC
+binds Full Disk Access to the interpreter, so scheduling would mean granting
+every bash script on the machine access to protected locations; the operator
+refused that on 2026-09-14. A terminal already carries the grant, so the
+mirror is run by hand. If scheduling is ever wanted, wrap the script in a
+small `.app` and grant Full Disk Access to that bundle alone.
+
+The script refuses to run rather than mirror a source it cannot trust: it
+checks a sentinel file, that the directory can actually be listed, and that at
+least 500 notes are present. Without those, `rsync --delete` would empty the
+mirror whenever Google Drive is unmounted or unreadable. Do not remove them.

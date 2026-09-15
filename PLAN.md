@@ -18,6 +18,12 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-14: `obsidian-sync` added under `home/bin/`, linked on the mac
+profile by `home/install.sh` and exposed as `mise run obsidian:sync`. It
+mirrors the Google Drive Obsidian vault one way into the iCloud container
+for read-only iPhone access. Not scheduled, on purpose: a LaunchAgent would
+need Full Disk Access on `/bin/bash`. Earlier state follows.
+
 2026-09-12: agy remote update procedure documented in runbook; daemon
 restarted and verified on 1.2.2 with instance name agent-vm preserved; web
 hub badge cleared. Claude remoteControlAtStartup explicitly disabled on
@@ -243,6 +249,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-14: obsidian-sync (one-way vault mirror to iCloud for the iPhone)
+  added to home/bin, install.sh mac and mise task obsidian:sync.
 - 2026-09-12: agy remote update documented and daemon restarted on 1.2.2;
   Claude remoteControlAtStartup explicitly disabled in mac overlay.
 - 2026-09-11: the three tool-neutral skills shared with agy (links into
