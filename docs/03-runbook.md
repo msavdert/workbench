@@ -438,6 +438,67 @@ troubleshooting, rejected alternatives); this table is the day-2 summary.
 | Source or target elsewhere | `OBSIDIAN_VAULT_SRC` / `OBSIDIAN_VAULT_DST` override the defaults; `OBSIDIAN_VAULT_REL` changes only the path below `My Drive` |
 | More than one Google Drive account | the script takes the first `~/Library/CloudStorage/GoogleDrive-*`; set `OBSIDIAN_VAULT_SRC` to disambiguate |
 
+### Snapshots
+
+The mirror is not a backup. Drive and iCloud both propagate a damaged or
+deleted note to every device within seconds, so neither offers a way back to
+yesterday's text. `obsidian-snapshot` writes one zip of the whole vault into
+`ObsidianVaults/_Snapshots/` beside it in Google Drive - beside, never inside,
+or each archive would be swept into the next one and indexed by Obsidian as
+note content. `obsidian:sync` depends on the snapshot task, so the operator's
+existing habit takes the backup; nothing new has to be remembered.
+
+The archive is built in a scratch directory outside Drive, verified with
+`zip -T`, and only then moved in, so Drive never uploads a half-written file
+and an interrupted run leaves no debris. A run whose vault has not changed is
+skipped, because the full archive is about 160 MB of upload; the decision
+comes from a SHA-256 digest over the file list, sizes and mtimes (0.09 s),
+recorded beside the archives as `.<vault>.digest`. `find -newer` cannot make
+that call: deleting a note makes no file newer, and a note restored from an
+older archive carries an older mtime than the archive it would be compared
+against, so both would read as "unchanged" and the backup would be skipped in
+silence. A scan that fails or comes back empty aborts rather than reporting an
+unchanged vault, and the digest's sort runs under a pinned collation, because
+the same vault hashes differently under `en_US.UTF-8` and under `C` and would
+otherwise be re-archived by every run from a differently configured shell. A
+digest is trusted only while an archive it could describe still exists: an
+emptied `_Snapshots/` takes a fresh archive instead of reporting the backup
+current. The vault path must be absolute, so the archive folder can never
+resolve inside the vault it is archiving. Restore is plain `unzip`: no plugin, no tool, no chain of
+differential archives to replay.
+
+| What | How |
+|---|---|
+| Take a snapshot | `mise run obsidian:snapshot` (or `obsidian-snapshot`); `mise run obsidian:sync` does it first |
+| Dry run | `obsidian-snapshot -n` - names the archive it would write and every snapshot it would remove |
+| Log | `~/Library/Logs/obsidian-snapshot.log` |
+| Restore | `unzip obsidian-YYYY-MM-DD-HHMM.zip -d /tmp/restore`, compare, then copy back what is wanted |
+| Retention elsewhere | `OBSIDIAN_KEEP_LAST` / `_DAILY` / `_WEEKLY` / `_MONTHLY`; `OBSIDIAN_SNAPSHOT_DIR` moves the folder |
+| A second vault | `OBSIDIAN_VAULT_REL` picks it, `OBSIDIAN_SENTINEL=.obsidian` and `OBSIDIAN_MIN_NOTES` fit the guards to it; the archive prefix comes from the vault's own directory name, so two vaults sharing `_Snapshots/` keep separate histories and separate retention budgets |
+
+Retention is grandfather-father-son, the same semantics as `restic forget`: a
+rule claims the newest survivor of each period, not every archive in it. The
+defaults keep the last 10 runs, the newest of each of the last 7 days, of each
+of the last 12 weeks and of each of the last 12 months. An archive that no
+rule claims is removed, so the thirteenth month expires on its own. The rules
+overlap, so the steady state is about 31 archives, roughly 5 GB, and it does
+not grow with age.
+
+Two guards sit in front of the deletion. An empty keep set against a
+non-empty archive list means the bucket arithmetic broke rather than that
+everything expired, and the run aborts instead of deleting. A prune of more
+than 20 archives in one run also aborts, and asks to be reviewed with `-n` and
+re-run with `-f`; the intended use is a first prune after a long absence. `-n`
+plans against the archive the run would have written, so its list matches what
+a real run does, and it prints an over-cap prune instead of refusing to show
+it - the cap's own advice is to review it that way.
+
+The cleanup trap is installed the moment the lock is taken, before anything
+else can exit, and no step inside it can abort the trap: a lock left behind
+turns every run for the next hour into a silent no-op that still reports
+success. The full restore procedure, with the per-scenario commands, lives in
+the vault's own note "Obsidian - Snapshots".
+
 It is deliberately not scheduled. A LaunchAgent runs as `/bin/bash` and TCC
 binds Full Disk Access to the interpreter, so scheduling would mean granting
 every bash script on the machine access to protected locations; the operator

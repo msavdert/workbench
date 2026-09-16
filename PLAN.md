@@ -18,6 +18,52 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-15: `obsidian-snapshot` added under `home/bin/`, linked on the mac
+profile and exposed as `mise run obsidian:snapshot`; `obsidian:sync` now
+depends on it, so the operator's existing habit takes the backup. The mirror
+was never a backup: Drive and iCloud both carry a damaged note to every
+device, so nothing in the setup could reach yesterday's text. The script zips
+the whole vault into `ObsidianVaults/_Snapshots/` beside it in Drive, builds
+and verifies outside Drive before moving in, skips an unchanged vault, and
+prunes grandfather-father-son (last 10, 7 daily, 12 weekly, 12 monthly), so
+the thirteenth month expires by itself.
+
+Audited before commit; both auditors returned FAIL on the first round and
+seven findings were fixed. Change detection moved from `find -newer` to a
+SHA-256 digest over the file list, sizes and mtimes: `-newer` missed a deleted
+note and a note restored with an older mtime, and skipped the backup in
+silence. The cleanup trap is now installed the instant the lock is taken and
+cannot abort part-way, so a failure between the two no longer strands the lock
+and turns an hour of runs into silent no-ops. `-n` plans against the archive
+the run would write, so its list matches a real run, and it prints an over-cap
+prune rather than refusing to show what the cap tells it to review. The
+archive prefix comes from the vault's directory name instead of the literal
+`obsidian`, and the listing validates the stamp, so a second vault sharing
+`_Snapshots/` can neither be pruned by the first nor sort ahead of it.
+`KEEP_LAST=0` no longer kills the run on BSD `head`, retention values are
+validated, an unreadable vault aborts instead of reporting itself unchanged,
+and the log records which vault and folder a run used. Two auditor findings
+were rejected with evidence: the EXIT trap does release the lock on SIGTERM
+(reproduced), and the "31 survivors" figure was measured, not miscomputed -
+the auditor modelled a different archive distribution than the one tested.
+
+A second round found four more, all in the new digest code and all fixed: the
+sort collation was unpinned, so the same vault hashed two ways and any run
+from a differently configured shell wrote a redundant 160 MB archive; the
+empty-scan guard was dead code, because the SHA-256 of no input is a perfectly
+valid digest; a surviving digest file vouched for archives that had been
+deleted, so an emptied folder reported the backup current while holding
+nothing; and a relative vault path put the archive folder inside the vault.
+The second round's internal verdict was pass with findings.
+
+Verified after the fixes: 740 synthetic archives prune to 31, oldest survivor
+2025-10-31; `-n` and a real run agree exactly; an over-cap prune previews 710
+lines without touching a file; a deleted note changes the digest; two vaults
+in one folder leave each other's archives alone; a real run wrote a 160 MB
+archive that `unzip` restored with `diff -rq` reporting no difference. The
+vault's own note "Obsidian - Snapshots" carries the full restore procedure.
+Earlier state follows.
+
 2026-09-14: seed keys in `home/install.sh` now own removal, not only value.
 Clearing the model in Claude Code's UI drops the key; the old merge carried
 over present keys only, so the repo value returned and `--check mac` called
@@ -265,6 +311,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-15: obsidian-snapshot added; pruned GFS archives beside the vault
+  in Drive, hung off obsidian:sync. Audited, seven findings fixed.
 - 2026-09-14: seed keys own removal too; effortLevel added to Claude's list;
   mac settings drift closed.
 - 2026-09-14: obsidian-sync (one-way vault mirror to iCloud for the iPhone)

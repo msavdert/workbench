@@ -1,0 +1,426 @@
+#!/usr/bin/env bash
+# obsidian-snapshot [-n] [-f]  (home/bin, linked to ~/.local/bin by home/install.sh)
+# Point-in-time snapshots of the Obsidian vault: one zip per run into a folder
+# beside the vault in Google Drive, pruned to a grandfather-father-son
+# schedule. Google Drive and the iCloud mirror are sync copies, not backups -
+# they carry a damaged note to every device within seconds - so the only way
+# back to yesterday's text is an archive that nothing syncs into. Mac only:
+# the paths, `stat -f` and `date -j` are all macOS.
+#
+# Not scheduled, for the same reason as obsidian-sync: a LaunchAgent would run
+# as /bin/bash and TCC binds Full Disk Access to the interpreter. `mise run
+# obsidian:sync` depends on this task, so the operator's existing habit
+# carries the backup without a second command to remember.
+set -euo pipefail
+
+# The Google Drive folder name embeds the account address, so the source is
+# resolved at run time instead of being written into this public repository.
+VAULT_REL="${OBSIDIAN_VAULT_REL:-All/Documents/ObsidianVaults/obsidian}"
+SRC="${OBSIDIAN_VAULT_SRC:-}"
+SNAP_DIR="${OBSIDIAN_SNAPSHOT_DIR:-}"
+LOG="$HOME/Library/Logs/obsidian-snapshot.log"
+LOCK="$HOME/Library/Caches/obsidian-snapshot.lock"
+SENTINEL="${OBSIDIAN_SENTINEL:-Home.md}" # proves the source is really mounted, not an empty stub
+MIN_MD="${OBSIDIAN_MIN_NOTES:-500}"      # refuse to archive a source that lost most of its notes
+LOCK_HELD=0                              # set once this run owns $LOCK, read by the EXIT trap
+WORK=""                                  # scratch dir outside Drive, set in main
+NAME="${OBSIDIAN_SNAPSHOT_NAME:-}"       # archive prefix and prune scope; defaults to the vault dir name
+STATE=""                                 # digest of the vault as of the newest archive, set in main
+
+# Grandfather-father-son retention. A snapshot survives if any one rule wants
+# it; the rules overlap, so the steady state is well under their sum. At
+# 160 MB an archive the ceiling is about 6.5 GB, which does not grow with age.
+KEEP_LAST="${OBSIDIAN_KEEP_LAST:-10}"       # most recent runs, whenever they ran
+KEEP_DAILY="${OBSIDIAN_KEEP_DAILY:-7}"      # newest of each of the last 7 days
+KEEP_WEEKLY="${OBSIDIAN_KEEP_WEEKLY:-12}"   # newest of each of the last 12 weeks
+KEEP_MONTHLY="${OBSIDIAN_KEEP_MONTHLY:-12}" # newest of each of the last 12 months
+MAX_DELETE=20                               # circuit breaker, see prune()
+
+DRY_RUN=0
+FORCE=0
+PENDING="" # archive a dry run would have written, so prune can plan on it
+DIGEST=""  # this run's vault digest, compared against $STATE
+
+log() { printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S')" "$*" >>"$LOG"; }
+
+die() {
+  log "ERROR: $*"
+  printf 'obsidian-snapshot: %s\n' "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat >&2 <<'USAGE'
+usage: obsidian-snapshot [-n|--dry-run] [-f|--force]
+
+Writes one zip of the Obsidian vault into the snapshot folder beside it in
+Google Drive, then prunes older snapshots to the retention schedule. -n
+reports what would be written and removed, and changes nothing. -f lifts the
+cap that refuses an unusually large prune.
+
+Environment: OBSIDIAN_VAULT_SRC, OBSIDIAN_VAULT_REL, OBSIDIAN_SNAPSHOT_DIR,
+OBSIDIAN_SNAPSHOT_NAME, OBSIDIAN_MIN_NOTES, OBSIDIAN_SENTINEL,
+OBSIDIAN_KEEP_LAST, OBSIDIAN_KEEP_DAILY, OBSIDIAN_KEEP_WEEKLY,
+OBSIDIAN_KEEP_MONTHLY.
+USAGE
+}
+
+# Releasing the lock is the part that must not be skipped: a lock left behind
+# makes every run for the next hour a silent no-op. So no step here may abort
+# the trap - under errexit a failing command at the end of an && list does
+# abort it, which would strand the lock whenever the scratch dir resists
+# removal. It also runs before $WORK exists, because the trap is installed as
+# soon as the lock is held.
+cleanup() {
+  if [ -n "$WORK" ]; then
+    rm -rf "$WORK" 2>/dev/null || true
+  fi
+  if [ "$LOCK_HELD" -eq 1 ]; then
+    rmdir "$LOCK" 2>/dev/null || true
+  fi
+}
+
+# Only one run at a time: mkdir is atomic, a plain file test is not. Every
+# branch is guarded, because an unguarded failure under set -e aborts before
+# the log file is even created.
+acquire_lock() {
+  local mtime age
+  if mkdir "$LOCK" 2>/dev/null; then
+    LOCK_HELD=1
+    return 0
+  fi
+  if [ -e "$LOCK" ] && [ ! -d "$LOCK" ]; then
+    die "lock path $LOCK exists but is not a directory, clear it by hand"
+  fi
+  if ! mtime=$(stat -f %m "$LOCK" 2>/dev/null); then
+    if mkdir "$LOCK" 2>/dev/null; then
+      LOCK_HELD=1
+      return 0
+    fi
+    log "skipped: the lock is contended"
+    exit 0
+  fi
+  age=$(($(date +%s) - mtime))
+  if [ "$age" -le 3600 ]; then
+    log "skipped: another run holds the lock"
+    exit 0
+  fi
+  log "WARN: removing a stale lock, ${age}s old"
+  rmdir "$LOCK" 2>/dev/null || die "stale lock $LOCK cannot be removed, clear it by hand"
+  mkdir "$LOCK" 2>/dev/null || {
+    log "skipped: another run took the lock first"
+    exit 0
+  }
+  LOCK_HELD=1
+}
+
+# Picks the first Google Drive account folder. With more than one account,
+# set OBSIDIAN_VAULT_SRC to name the vault explicitly.
+resolve_src() {
+  local base
+  for base in "$HOME"/Library/CloudStorage/GoogleDrive-*/; do
+    [ -d "$base" ] || continue
+    printf '%s' "${base}My Drive/$VAULT_REL"
+    return 0
+  done
+  return 1
+}
+
+count_notes() {
+  find "$1" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.trash/*' 2>/dev/null | wc -l | tr -d ' '
+}
+
+# An archive of a half-mounted vault is worse than no archive: it looks like a
+# valid restore point and silently reinstates an empty tree. The `ls` check is
+# not redundant - under a denied TCC grant `stat` still succeeds while
+# `readdir` fails, so the sentinel passes and `find` returns zero.
+check_src() {
+  local notes
+  [ -d "$SRC" ] || die "vault not found at $SRC"
+  ls "$SRC" >/dev/null 2>&1 || die "vault at $SRC cannot be read, check the Full Disk Access grant"
+  # -e, not -f: `.obsidian` is the one entry every vault has, so it is the
+  # sentinel that needs no per-vault thought, and it is a directory.
+  [ -e "$SRC/$SENTINEL" ] || die "sentinel $SENTINEL missing, the vault looks half-mounted"
+  notes=$(count_notes "$SRC")
+  if [ "$notes" -lt "$MIN_MD" ]; then
+    die "vault holds only $notes notes, below the floor of $MIN_MD, refusing to archive it"
+  fi
+  log "source ok: $notes notes"
+}
+
+# The prefix scopes every archive operation to one vault, so a second vault
+# sharing this directory can neither be pruned by the first nor mistaken for
+# it. It reaches a glob and a regex, so refuse anything but a plain name.
+check_name() {
+  case $NAME in
+    '' | . | .. | *[!A-Za-z0-9._-]*) die "vault name '$NAME' is not a plain name, set OBSIDIAN_SNAPSHOT_NAME" ;;
+  esac
+}
+
+# The stamp is zero-padded, so a lexical reverse sort is newest-first. `?` in
+# a glob matches any character, not only a digit, and in a C-locale sort a
+# letter outranks every digit - so a mis-stamped file would sort as the newest
+# archive and take a retention slot. The regex is what actually enforces the
+# stamp; the glob only narrows the walk.
+list_snapshots() {
+  find "$SNAP_DIR" -maxdepth 1 -type f -name "$NAME-*.zip" 2>/dev/null |
+    grep -E "/$NAME-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}\.zip$" |
+    LC_ALL=C sort -r || true
+}
+
+# A full archive costs 160 MB of upload, and this runs on every obsidian:sync,
+# so an unchanged vault is skipped. `find -newer` cannot decide this: deleting
+# a note makes no file newer, and a note restored from an older archive or
+# from Drive's version history carries an older mtime than the archive it is
+# being compared against. Both would be read as "nothing changed" and the
+# backup silently skipped. A digest over the file list, sizes and mtimes sees
+# all three. Measured at 0.09 s over the 1672-file vault.
+#
+# Obsidian rewrites workspace.json whenever a pane moves, which is not a
+# content change and must not by itself justify a new archive.
+vault_digest() {
+  local list
+  list="$WORK/scan"
+  find "$SRC" \
+    -not -path '*/.trash/*' \
+    -not -name '.DS_Store' \
+    -not -name 'workspace.json' \
+    -not -name 'workspace-mobile.json' \
+    -exec stat -f '%N %z %m' {} + >"$list" || return 1
+  # shasum of nothing is a perfectly valid digest, so a scan that returned no
+  # files would hash to the well-known empty value and then read as "a vault
+  # that simply has no files" on every run after it.
+  [ -s "$list" ] || return 1
+  # The collation has to be pinned: `sort` orders mixed-case note names one way
+  # under en_US.UTF-8 and another under C, so the same untouched vault hashes
+  # two ways and a run from a differently configured environment writes a
+  # redundant 160 MB archive. Measured on this vault.
+  LC_ALL=C sort "$list" | shasum -a 256 | cut -d' ' -f1
+}
+
+# An unreadable vault must never present as an unchanged one: that is the
+# difference between "your backup is current" and "your backup stopped a month
+# ago and said nothing".
+current_digest() {
+  local digest
+  digest=$(vault_digest) || die "cannot scan the vault to test for changes"
+  [ -n "$digest" ] || die "the vault scan produced nothing, refusing to call it unchanged"
+  printf '%s' "$digest"
+}
+
+create_snapshot() {
+  local stamp out tmp size
+  stamp=$(date +%Y-%m-%d-%H%M)
+  out="$SNAP_DIR/$NAME-$stamp.zip"
+  tmp="$WORK/$NAME-$stamp.zip"
+  # The stamp is minute-resolution, so a change made within the same minute as
+  # the last archive has nowhere to go. Say so: silence here reads as a
+  # successful backup. The digest is left unwritten, so the next run takes it.
+  if [ -e "$out" ]; then
+    log "skipped: ${out##*/} already exists, the vault changed within the same minute"
+    printf 'snapshot skipped, %s already exists - run again in a minute\n' "${out##*/}"
+    return 0
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf 'would write %s\n' "${out##*/}"
+    # Named so prune() can plan against the archive list a real run would see.
+    PENDING="$out"
+    return 0
+  fi
+  # Built outside Drive and moved in only after it verifies, so Drive never
+  # uploads a half-written archive and an interrupted run leaves no debris.
+  (cd "$SRC" && zip -rqX "$tmp" . -x '.DS_Store' '*/.DS_Store' '.trash/*') ||
+    die "zip failed, nothing was published"
+  zip -T "$tmp" >/dev/null 2>&1 || die "the archive did not verify, nothing was published"
+  mv "$tmp" "$out" || die "cannot move the archive into $SNAP_DIR"
+  size=$(du -h "$out" | cut -f1 | tr -d ' ')
+  # Written only now: a digest saved before the archive existed would make the
+  # next run skip a snapshot that was never taken.
+  printf '%s\n' "$DIGEST" >"$STATE" || die "cannot record the vault digest at $STATE"
+  log "wrote ${out##*/} ($size)"
+  printf 'snapshot %s (%s)\n' "${out##*/}" "$size"
+}
+bucket_key() {
+  local base stamp day
+  base=${1##*/}
+  stamp=${base#"$NAME"-}
+  stamp=${stamp%.zip}
+  day=${stamp%-*}
+  case $2 in
+    daily) printf '%s' "$day" ;;
+    monthly) printf '%s' "${day%-*}" ;;
+    weekly) date -j -f %Y-%m-%d "$day" +%G-W%V 2>/dev/null || true ;;
+  esac
+}
+
+# Walks newest-first and keeps the first archive seen in each bucket, up to
+# the rule's limit. That is restic's `forget` semantics: a rule claims the
+# newest survivor of each period, not every archive in it.
+select_keep() {
+  local keep=$1 kind=$2 limit=$3 all=$4
+  local seen f key count
+  [ "$limit" -gt 0 ] || return 0
+  seen="$WORK/seen.$kind"
+  : >"$seen"
+  count=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    key=$(bucket_key "$f" "$kind")
+    if [ -z "$key" ]; then continue; fi
+    if grep -qxF "$key" "$seen"; then continue; fi
+    printf '%s\n' "$key" >>"$seen"
+    printf '%s\n' "$f" >>"$keep"
+    count=$((count + 1))
+    if [ "$count" -ge "$limit" ]; then break; fi
+  done <"$all"
+}
+
+prune() {
+  local all keep del sorted total n f over
+  all="$WORK/all"
+  keep="$WORK/keep"
+  del="$WORK/del"
+  sorted="$WORK/all.sorted"
+  list_snapshots >"$all"
+  # A dry run writes no archive, so without this the plan it prints is short
+  # by one and understates the prune a real run would perform.
+  if [ -n "$PENDING" ]; then
+    printf '%s\n' "$PENDING" >>"$all"
+    LC_ALL=C sort -r "$all" -o "$all"
+  fi
+  total=$(wc -l <"$all" | tr -d ' ')
+  [ "$total" -gt 0 ] || return 0
+
+  : >"$keep"
+  # BSD head rejects -n 0 outright, which would abort the run before it ever
+  # reached the prune it was asked to perform.
+  if [ "$KEEP_LAST" -gt 0 ]; then
+    head -n "$KEEP_LAST" "$all" >>"$keep"
+  fi
+  select_keep "$keep" daily "$KEEP_DAILY" "$all"
+  select_keep "$keep" weekly "$KEEP_WEEKLY" "$all"
+  select_keep "$keep" monthly "$KEEP_MONTHLY" "$all"
+  LC_ALL=C sort -u "$keep" -o "$keep"
+
+  # An empty keep set against a non-empty archive list means the bucket maths
+  # broke, not that everything expired. Deleting on that would be the one
+  # unrecoverable bug in this script.
+  if [ ! -s "$keep" ]; then
+    die "the retention rules selected nothing to keep out of $total, refusing to prune"
+  fi
+
+  LC_ALL=C sort "$all" >"$sorted"
+  LC_ALL=C comm -23 "$sorted" "$keep" >"$del"
+  n=$(wc -l <"$del" | tr -d ' ')
+  if [ "$n" -eq 0 ]; then
+    printf 'retention: %s kept, none expired\n' "$total"
+    return 0
+  fi
+
+  # The cap tells the operator to review the list with -n, so -n has to be
+  # able to print it. Only a run that would really delete stops here.
+  over=0
+  if [ "$n" -gt "$MAX_DELETE" ] && [ "$FORCE" -eq 0 ]; then
+    over=1
+    if [ "$DRY_RUN" -eq 0 ]; then
+      die "$n snapshots would be removed, over the cap of $MAX_DELETE; review them with -n and re-run with -f"
+    fi
+  fi
+
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    if [ "$DRY_RUN" -eq 1 ]; then
+      printf 'would remove %s\n' "${f##*/}"
+      continue
+    fi
+    rm -f -- "$f" || die "cannot remove $f"
+    log "pruned ${f##*/}"
+  done <"$del"
+
+  if [ "$over" -eq 1 ]; then
+    printf 'retention: %s would be kept, %s would expire - over the cap of %s, a real run needs -f\n' \
+      "$((total - n))" "$n" "$MAX_DELETE"
+    return 0
+  fi
+  printf 'retention: %s kept, %s expired\n' "$((total - n))" "$n"
+}
+
+# A retention rule reaches `head -n` and arithmetic; a non-numeric value from
+# the environment would fail somewhere deep inside the prune instead of here.
+check_int() {
+  case $2 in
+    '' | *[!0-9]*) die "$1 must be a non-negative integer, got '$2'" ;;
+  esac
+}
+
+main() {
+  local have_archive
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -n | --dry-run) DRY_RUN=1 ;;
+      -f | --force) FORCE=1 ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      *)
+        usage
+        exit 2
+        ;;
+    esac
+    shift
+  done
+
+  check_int OBSIDIAN_KEEP_LAST "$KEEP_LAST"
+  check_int OBSIDIAN_KEEP_DAILY "$KEEP_DAILY"
+  check_int OBSIDIAN_KEEP_WEEKLY "$KEEP_WEEKLY"
+  check_int OBSIDIAN_KEEP_MONTHLY "$KEEP_MONTHLY"
+
+  mkdir -p "$(dirname "$LOG")" "$(dirname "$LOCK")"
+  acquire_lock
+  # Installed before anything else can exit: a failure between taking the lock
+  # and installing the trap would strand the lock with no trap to release it.
+  trap cleanup EXIT
+  WORK=$(mktemp -d) || die "cannot create a scratch directory"
+
+  if [ -z "$SRC" ]; then
+    SRC=$(resolve_src) || die "no Google Drive account folder found under ~/Library/CloudStorage"
+  fi
+  SRC="${SRC%/}"
+  # A relative path would put the archive folder under whatever directory the
+  # run started in - and if that is the vault, every archive lands inside the
+  # tree the next archive copies.
+  case $SRC in
+    /*) ;;
+    *) die "the vault path must be absolute, got '$SRC'" ;;
+  esac
+  # Beside the vault, never inside it: an archive within the vault would be
+  # swept into the next archive and indexed by Obsidian as note content. The
+  # prefix is the vault's own directory name, so a second vault sharing this
+  # folder keeps a separate history and a separate retention budget.
+  [ -n "$SNAP_DIR" ] || SNAP_DIR="$(dirname "$SRC")/_Snapshots"
+  [ -n "$NAME" ] || NAME="${SRC##*/}"
+  check_name
+  STATE="$SNAP_DIR/.$NAME.digest"
+
+  check_src
+  mkdir -p "$SNAP_DIR" || die "cannot create $SNAP_DIR"
+  # Recorded because the log is the only account of what a run did, and
+  # without them two runs against different vaults read as one history.
+  log "run: vault=$SRC archives=$SNAP_DIR name=$NAME dry_run=$DRY_RUN"
+
+  DIGEST=$(current_digest)
+  # The digest says the vault is unchanged since the last archive; it says
+  # nothing about whether that archive still exists. Trusting it alone lets an
+  # emptied folder report "your backup is current" while holding nothing.
+  have_archive=$(list_snapshots | head -n 1)
+  if [ -n "$have_archive" ] && [ -f "$STATE" ] && [ "$DIGEST" = "$(cat "$STATE")" ]; then
+    log "skipped: the vault is unchanged since the newest archive"
+    printf 'snapshot skipped, the vault has not changed\n'
+  else
+    create_snapshot
+  fi
+  prune
+}
+
+main "$@"

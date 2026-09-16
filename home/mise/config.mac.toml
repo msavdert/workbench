@@ -73,4 +73,12 @@ fi
 # see the comment at the top of home/bin/obsidian-sync.
 [tasks."obsidian:sync"]
 description = "Mirror the Obsidian vault from Google Drive into iCloud for read-only iPhone access"
+depends = ["obsidian:snapshot"]
 run = "obsidian-sync"
+
+# Both Drive and the iCloud mirror are sync copies: a damaged note reaches
+# every device before it is noticed. This is the only copy that stands still.
+# It hangs off obsidian:sync so the operator's existing habit carries it.
+[tasks."obsidian:snapshot"]
+description = "Archive the Obsidian vault to a pruned snapshot folder beside it in Google Drive"
+run = "obsidian-snapshot"
