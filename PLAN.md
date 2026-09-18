@@ -30,6 +30,14 @@ and linked into `~/.gemini/skills/audit` via `home/install.sh`; uses a dedicated
 `auditor` subagent on Gemini 3.8 Flash (High) for adversarial pre-commit verification.
 `home/install.sh --check box` reports no drift.
 
+2026-09-18, later: `github.use_git_credentials = true` enabled in
+`home/mise/config.toml`. Plain `mise up` previously hit GitHub's anonymous 60/h
+rate limit (`github auth: no`, 403 on usage packslip) because GITHUB_TOKEN is
+kept out of ambient shell envs (D10) and `gh auth login` is not used. Mise now
+queries Git's credential helper (`op://dotfiles/GitHub/admintoken`), lifting
+the limit to 5000/h. Verified: `mise token github` resolves, `mise up --dry-run`
+runs clean.
+
 2026-09-15: `obsidian-snapshot` added under `home/bin/`, linked on the mac
 profile and exposed as `mise run obsidian:snapshot`; `obsidian:sync` now
 depends on it, so the operator's existing habit takes the backup. The mirror
@@ -323,6 +331,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-18: mise github.use_git_credentials enabled in config.toml; resolves
+  60/h anonymous GitHub rate limit on mise up via Git's 1Password helper.
 - 2026-09-18: agy audit skill added (dedicated read-only subagent on Gemini
   3.8 Flash High); agy-drift-check timer added; daemon updated to 1.2.6.
 - 2026-09-15: obsidian-snapshot added; pruned GFS archives beside the vault

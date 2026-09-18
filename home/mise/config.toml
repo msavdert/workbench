@@ -15,6 +15,9 @@ yes = true
 not_found_auto_install = false
 npm.package_manager = "bun"
 task.source_freshness_hash_contents = true
+# Resolves GitHub API token via Git credential helper (op://dotfiles/GitHub/admintoken)
+# to avoid the 60/h anonymous rate limit on `mise up` and release checks.
+github.use_git_credentials = true
 
 [tools]
 # --- shell experience: home/zsh/.zshrc references these on both profiles ---

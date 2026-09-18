@@ -147,8 +147,9 @@ skills here and its text went to the vault; see `docs/02-migration.md`.
 
 D10 Secrets: only the 1Password service-account token is on the box
 (`~/.config/op/env`, pushed by `make secrets`). git over HTTPS uses a
-credential helper reading `op://`; `gh` runs as `opwith git gh`; other
-tools via `opwith <env> <cmd>` with `home/op-env/*.env`. Claude Code and
+credential helper reading `op://`; mise delegates GitHub API queries to Git's
+helper via `github.use_git_credentials = true`; `gh` runs as `opwith git gh`;
+other tools via `opwith <env> <cmd>` with `home/op-env/*.env`. Claude Code and
 agy use their own OAuth logins.
 
 D11 Remote Control (Claude app sessions): one shared server, `work`
