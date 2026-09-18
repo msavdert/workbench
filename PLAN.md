@@ -18,6 +18,18 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-09-18: `agy-drift-check` script, service and timer added to `box/files/` and
+wired into `box/bootstrap.sh` (`step_user` and `step_verify`). Runs every 3 hours
+(`*-*-* 00/3:00:00 America/New_York`); detects binary drift between the running
+`antigravity-cli-daemon` process and the disk binary (handles unlinked/deleted
+inodes as well as version mismatches), and safely restarts the daemon only when
+the daemon is idle (no active child worker processes in its cgroup). Tested on the
+box: detected 1.2.3 -> 1.2.6 drift, restarted daemon, verified idempotent on clean
+state. Later: agy-exclusive `audit` skill added under `home/agy/skills/audit/SKILL.md`
+and linked into `~/.gemini/skills/audit` via `home/install.sh`; uses a dedicated read-only
+`auditor` subagent on Gemini 3.8 Flash (High) for adversarial pre-commit verification.
+`home/install.sh --check box` reports no drift.
+
 2026-09-15: `obsidian-snapshot` added under `home/bin/`, linked on the mac
 profile and exposed as `mise run obsidian:snapshot`; `obsidian:sync` now
 depends on it, so the operator's existing habit takes the backup. The mirror
@@ -311,6 +323,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-09-18: agy audit skill added (dedicated read-only subagent on Gemini
+  3.8 Flash High); agy-drift-check timer added; daemon updated to 1.2.6.
 - 2026-09-15: obsidian-snapshot added; pruned GFS archives beside the vault
   in Drive, hung off obsidian:sync. Audited, seven findings fixed.
 - 2026-09-14: seed keys own removal too; effortLevel added to Claude's list;

@@ -287,11 +287,12 @@ manifest() {
   # seed keys, see merge_settings.
   merge_settings agy "$HOME/.gemini/antigravity-cli/settings.json" model,trustedWorkspaces
   link agy/statusline.sh "$HOME/.gemini/antigravity-cli/statusline.sh"
+  link agy/skills/audit "$HOME/.gemini/skills/audit"
   # Tool-neutral skills are shared with agy through ~/.gemini/skills, the
-  # "Shared" tier agy's /skill screen names (symlinks followed). audit, omp-fleet and agy-fleet stay Claude-only:
-  # they drive Claude subagents or delegate to agy/omp from Claude. omp gets
-  # the same three via relative symlinks inside home/omp/skills/, since omp's
-  # skills.enableClaudeUser defaults to false.
+  # "Shared" tier agy's /skill screen names (symlinks followed). Claude's multi-fleet
+  # audit, omp-fleet and agy-fleet stay Claude-only: they drive Claude subagents or
+  # delegate to agy/omp from Claude. omp gets the same three via relative symlinks inside
+  # home/omp/skills/, since omp's skills.enableClaudeUser defaults to false.
   link claude/skills/skill-creator "$HOME/.gemini/skills/skill-creator"
   link claude/skills/youtube-whisper-transcriber "$HOME/.gemini/skills/youtube-whisper-transcriber"
   link claude/skills/oss-project-eval "$HOME/.gemini/skills/oss-project-eval"

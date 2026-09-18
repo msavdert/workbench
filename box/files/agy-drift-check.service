@@ -1,0 +1,7 @@
+[Unit]
+Description=Check agy remote-control daemon binary drift and reload if idle
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/agy-drift-check

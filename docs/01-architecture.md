@@ -61,6 +61,7 @@ workbench/
 | `~agent/.config/systemd/user/vault-compile.{service,timer}`, `vault-sessions.{service,timer}`, `unit-failure-notify@.service`, `~/.local/bin/notify-telegram` | `box/files/` | `box/bootstrap.sh step_vault` |
 | `~/.config/systemd/user/antigravity-cli-daemon.service`, `~/.gemini/config/config.json` (instance name), `~/.gemini/jetski-standalone-oauth-token` | not in repo; agy writes them (like hermes writes `hermes-gateway.service`) | the tool itself, once: `agy remote-control start --name <instance>` (`docs/03-runbook.md`) |
 | `~/.config/systemd/user/antigravity-cli-daemon.service.d/override.conf`, the four Turbo-preset keys in `userSettings` of `~/.gemini/config/config.json` (seeded once, then the hub's) | `box/files/antigravity-cli-daemon.override.conf`, `box/bootstrap.sh step_user` | `box/bootstrap.sh` |
+| `~/.config/systemd/user/agy-drift-check.{service,timer}`, `~/.local/bin/agy-drift-check` | `box/files/` | `box/bootstrap.sh step_user` |
 | `~/.bashrc` (guard + non-interactive part), `~/.bash_profile`, `~/.tmux.conf` | `box/files/bashrc`, `bash_profile`, `tmux.conf` | `box/bootstrap.sh` |
 | `~/.config/bash/interactive.sh`, `~/.zshrc`, `~/.zshenv`, `~/.config/starship.toml` | `home/bash/`, `home/zsh/`, `home/starship.toml` | `home/install.sh` |
 | `~/.config/mise/config.toml`, `config.<profile>.toml` | `home/mise/` | `home/install.sh <profile>` |
@@ -73,6 +74,7 @@ workbench/
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
 | `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`) | `home/herdr/ agy/ omp/` | `home/install.sh` |
 | `~/.gemini/skills/{skill-creator,youtube-whisper-transcriber,oss-project-eval}` | `home/claude/skills/` (second link of the same tree) | `home/install.sh` |
+| `~/.gemini/skills/audit` | `home/agy/skills/audit` | `home/install.sh` |
 | `~/.omp/agent/config.yml` | `home/omp/config.yml` | `home/install.sh` (generated, not linked: omp rewrites it) |
 | `~/.gemini/antigravity-cli/settings.json` | `home/agy/settings.base.json` + overlay | `home/install.sh` (jq merge, `~` in path lists expanded) |
 | `~/.config/zellij` (box only) | `home/zellij/` | `home/install.sh box` |
@@ -105,9 +107,10 @@ defaults to false, so `~/.claude/skills` is not read on its own). Verified
 with agy 1.2.1 and omp 18.1.16 in print mode: omp lists all three in its
 skill set; agy loads them on slash invocation (`/skill-creator ...`) but did
 not surface them when asked to list its skills, so in agy they are
-commands, not description-triggered behaviour. `audit`, `omp-fleet` and
-`agy-fleet` stay Claude-only: they call Claude subagents or delegate from
-Claude to agy/omp.
+commands, not description-triggered behaviour. Claude's multi-fleet `audit`,
+`omp-fleet` and `agy-fleet` stay Claude-only: they call Claude subagents or
+delegate from Claude to agy/omp. agy has its own native, internal-subagent
+`audit` skill under `home/agy/skills/audit/` running on Gemini 3.8 Flash (High).
 
 `home/install.sh` has two kinds of target: links (a `$HOME` path is a
 symlink into `home/`) and generated files (`~/.claude/settings.json`,

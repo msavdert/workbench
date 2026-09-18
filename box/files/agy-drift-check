@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Check running antigravity-cli-daemon binary against installed mise agy binary;
+# restart the daemon if a newer binary exists and no active child tasks are running.
+set -euo pipefail
+
+service="antigravity-cli-daemon.service"
+
+if ! systemctl --user is-active --quiet "$service"; then
+  exit 0
+fi
+
+pid=$(systemctl --user show "$service" --property=MainPID --value 2>/dev/null || true)
+if [[ -z "$pid" || "$pid" -le 0 ]]; then
+  exit 0
+fi
+
+raw_exe=$(readlink "/proc/$pid/exe" 2>/dev/null || true)
+if [[ -z "$raw_exe" ]]; then
+  exit 0
+fi
+
+target_bin=$(/usr/bin/mise which agy 2>/dev/null || command -v agy 2>/dev/null || true)
+if [[ -z "$target_bin" ]]; then
+  exit 0
+fi
+target_exe=$(readlink -f "$target_bin" 2>/dev/null || true)
+if [[ -z "$target_exe" || ! -f "$target_exe" || ! -x "$target_exe" ]]; then
+  exit 0
+fi
+
+drift=0
+if [[ "$raw_exe" == *" (deleted)"* ]]; then
+  drift=1
+else
+  running_exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)
+  if [[ -z "$running_exe" || ! -f "$running_exe" || "$running_exe" != "$target_exe" ]]; then
+    drift=1
+  fi
+fi
+
+if [[ "$drift" -eq 0 ]]; then
+  exit 0
+fi
+
+# Check whether the daemon is busy with child worker processes.
+cg=$(systemctl --user show "$service" --property=ControlGroup --value 2>/dev/null || true)
+proc_count=0
+if [[ -n "$cg" && -f "/sys/fs/cgroup$cg/cgroup.procs" ]]; then
+  proc_count=$(wc -l <"/sys/fs/cgroup$cg/cgroup.procs")
+elif command -v pgrep >/dev/null 2>&1; then
+  child_count=$(pgrep -P "$pid" 2>/dev/null | wc -l || true)
+  proc_count=$((child_count + 1))
+fi
+
+if [[ "$proc_count" -gt 1 ]]; then
+  echo "agy-drift-check: drift detected ($raw_exe -> $target_exe), but daemon has active tasks; deferring restart" >&2
+  exit 0
+fi
+
+echo "agy-drift-check: drift detected ($raw_exe -> $target_exe); restarting $service"
+systemctl --user restart "$service"

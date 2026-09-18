@@ -354,9 +354,15 @@ The first `claude auth login` on it is manual, as on every substrate.
   on the OS side, not in the web UI. If `mise up` (or `agy update`) already
   updated the CLI binary to latest, the running daemon process is still
   holding the previous binary in memory (check PID with `systemctl --user
-  status antigravity-cli-daemon`). Restart it to load the new binary:
-  `systemctl --user restart antigravity-cli-daemon`. Verify with `agy
-  remote-control status`; refresh the hub and the badge disappears.
+  status antigravity-cli-daemon`).
+  - **Automatic resolution:** `agy-drift-check.timer` runs every 3 hours. If a
+    newer binary is installed on disk and the daemon is idle (no active worker
+    processes in its cgroup), it automatically reloads
+    `antigravity-cli-daemon`.
+  - **Immediate manual reload:** Restart it directly:
+    `systemctl --user restart antigravity-cli-daemon` (or run
+    `agy-drift-check`). Verify with `agy remote-control status`; refresh the
+    hub and the badge disappears.
 - **`agy remote-control status` says inactive, or the daemon fails after
   `mise up`** - `systemctl --user cat antigravity-cli-daemon` must show the
   drop-in with `mise exec`; if only the pinned ExecStart is there, `make

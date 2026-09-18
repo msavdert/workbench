@@ -231,7 +231,12 @@ step_user() {
   # drop-in only repoints ExecStart at mise; it is inert until that unit exists.
   put 0644 "$files/antigravity-cli-daemon.override.conf" \
     "$AGENT_HOME/.config/systemd/user/antigravity-cli-daemon.service.d/override.conf"
+  # Periodic binary drift check: reloads the daemon when mise updates agy and daemon is idle
+  put 0755 "$files/agy-drift-check" "$AGENT_HOME/.local/bin/agy-drift-check"
+  put 0644 "$files/agy-drift-check.service" "$AGENT_HOME/.config/systemd/user/agy-drift-check.service"
+  put 0644 "$files/agy-drift-check.timer" "$AGENT_HOME/.config/systemd/user/agy-drift-check.timer"
   as_agent systemctl --user daemon-reload 2>/dev/null || true
+  as_agent systemctl --user enable --now agy-drift-check.timer 2>/dev/null || true
   # The hub's General settings live in userSettings of this file; without them
   # every tool call in a remote session asks for approval. Seed exactly what
   # the hub wrote when "Security Preset: Turbo mode" and a Network Access
@@ -541,6 +546,7 @@ step_verify() {
   # vault: clone present, nightly compile armed
   check test -d "$AGENT_HOME/work/vault/.git"
   check as_agent bash -lc 'systemctl --user is-active vault-compile.timer'
+  check as_agent bash -lc 'systemctl --user is-active agy-drift-check.timer'
   [[ $ok == 1 ]] || die "verification failed"
 }
 
