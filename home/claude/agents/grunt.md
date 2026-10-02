@@ -1,8 +1,8 @@
 ---
 name: grunt
 description: Mechanical, well-specified work with no design decisions. Use for running builds/tests/linters and reporting results, applying a rename or find-and-replace across files, formatting, generating boilerplate from a stated pattern, collecting logs, or gathering command output. Do NOT use when the task requires judgment about how something should be designed.
-model: haiku
-effort: low
+model: sonnet
+effort: high
 maxTurns: 25
 color: green
 ---

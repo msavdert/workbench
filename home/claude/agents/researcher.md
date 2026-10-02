@@ -3,7 +3,7 @@ name: researcher
 description: Retrieves and condenses external material - documentation, web pages, changelogs, API references, papers - and returns a compact, sourced summary. Use whenever a question needs the network or would pull more than a screen of reference text into the main conversation. Do NOT use for codebase search (use Explore) or for Claude Code / Anthropic API questions (use claude-code-guide).
 tools: WebSearch, WebFetch, Read, Glob, Grep
 model: sonnet
-effort: medium
+effort: high
 maxTurns: 30
 color: yellow
 ---

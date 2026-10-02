@@ -18,6 +18,11 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-10-01: every subagent in `home/claude/agents/` runs on the `sonnet` alias at
+high effort (was opus/medium for `executor`, haiku/low for `Explore` and `grunt`,
+medium for `researcher`). Whether the alias resolves to Sonnet 5.5 is unverified
+in this repo; the 2.1.287 binary contains the `claude-sonnet-5-5` id.
+
 2026-09-18: `agy-drift-check` script, service and timer added to `box/files/` and
 wired into `box/bootstrap.sh` (`step_user` and `step_verify`). Runs every 3 hours
 (`*-*-* 00/3:00:00 America/New_York`); detects binary drift between the running
@@ -331,6 +336,10 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-01: all subagents (Explore, grunt, executor, researcher, auditor) on
+  the `sonnet` alias at high effort; `home/claude/agents/README.md` roster
+  updated. Also carried: hermes-backup SHA256 checksum on DeleteObjects (OCI),
+  `@dbx-app/cli` in the mise config.
 - 2026-09-18: mise github.use_git_credentials enabled in config.toml; resolves
   60/h anonymous GitHub rate limit on mise up via Git's 1Password helper.
 - 2026-09-18: agy audit skill added (dedicated read-only subagent on Gemini

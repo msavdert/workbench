@@ -121,8 +121,13 @@ def main() -> None:
         if o["LastModified"].replace(tzinfo=dt.UTC) < cutoff
     ]
     if old:
+        # DeleteObjects needs a body checksum; under "when_required" botocore
+        # defaults to CRC32, which OCI rejects (it wants Content-MD5, SHA256
+        # or CRC32C, and CRC32C needs botocore[crt]). SHA256 goes in a plain
+        # header, no aws-chunked (verified against this endpoint 2026-10-01).
         s3.delete_objects(
-            Bucket=BUCKET, Delete={"Objects": [{"Key": k} for k in old], "Quiet": True}
+            Bucket=BUCKET, Delete={"Objects": [{"Key": k} for k in old], "Quiet": True},
+            ChecksumAlgorithm="SHA256",
         )
         print(f"hermes-backup: pruned {len(old)} remote object(s)")
 

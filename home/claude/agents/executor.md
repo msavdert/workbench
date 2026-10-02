@@ -2,8 +2,8 @@
 name: executor
 description: Implements a precisely specified change or spike end to end against the architect's spec - code, doc edits, builds, setup - and verifies it on disk. Use for all delegated execution work once the approach is decided. Do NOT use for open design questions or to "figure out the approach"; those stay in the main session. Cannot spawn subagents by design.
 disallowedTools: Agent
-model: opus
-effort: medium
+model: sonnet
+effort: high
 maxTurns: 60
 ---
 

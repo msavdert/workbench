@@ -49,6 +49,7 @@ agy = "latest"
 # above); without it the omp install fails on a profile without node.
 bun = "latest"
 "npm:@oh-my-pi/pi-coding-agent" = "latest"
+"npm:@dbx-app/cli" = "latest"
 
 [tasks."completions:regen"]
 description = "Regenerate the shell completion cache in ~/.local/share/zsh/completions"
