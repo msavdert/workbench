@@ -98,7 +98,7 @@ global skills here since 2026-09-02; ai-hub's templates and overnight
 protocol stayed in the archived repository.
 Those three carry no Claude-specific frontmatter beyond an informational
 `compatibility` line and no hard dependency on Claude subagents (two of
-them suggest an `Explore` subagent, which other harnesses ignore), so they
+them suggest an `explore` subagent, which other harnesses ignore), so they
 are shared with the other two harnesses since 2026-09-11 without a second
 copy: `home/install.sh` links each into `~/.gemini/skills/` (agy's "Shared"
 tier; symlinks are followed), and `home/omp/skills/` holds a relative

@@ -81,5 +81,5 @@ If the user explicitly requests the `tiny` or `base` models, you MUST remind the
 
 ## Reading a transcript afterwards
 
-A conference talk transcript runs to several thousand lines. Reading one whole into the main session buys a summary at the cost of the rest of the session. Delegate it: send an `Explore` or general-purpose subagent at the file with the specific question, and keep the answer rather than the transcript.
+A conference talk transcript runs to several thousand lines. Reading one whole into the main session buys a summary at the cost of the rest of the session. Delegate it: send an `explore` or general-purpose subagent at the file with the specific question, and keep the answer rather than the transcript.
 

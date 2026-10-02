@@ -120,16 +120,25 @@ def main() -> None:
         for o in s3.list_objects_v2(Bucket=BUCKET, Prefix=PREFIX).get("Contents", [])
         if o["LastModified"].replace(tzinfo=dt.UTC) < cutoff
     ]
+    prune_error = ""
     if old:
         # DeleteObjects needs a body checksum; under "when_required" botocore
         # defaults to CRC32, which OCI rejects (it wants Content-MD5, SHA256
         # or CRC32C, and CRC32C needs botocore[crt]). SHA256 goes in a plain
         # header, no aws-chunked (verified against this endpoint 2026-10-01).
-        s3.delete_objects(
+        resp = s3.delete_objects(
             Bucket=BUCKET, Delete={"Objects": [{"Key": k} for k in old], "Quiet": True},
             ChecksumAlgorithm="SHA256",
         )
-        print(f"hermes-backup: pruned {len(old)} remote object(s)")
+        # A 200 can still carry per-key failures (listed under Errors even
+        # with Quiet); without this check they pass silently and old backups
+        # pile up. The failure is raised after step 4 so today's local copy
+        # and the state file are still written: the upload itself succeeded.
+        errors = resp.get("Errors") or []
+        if errors:
+            prune_error = f"remote prune failed for {len(errors)} of {len(old)} object(s): {errors[:3]}"
+        else:
+            print(f"hermes-backup: pruned {len(old)} remote object(s)")
 
     # 4. local copies: keep the newest LOCAL_KEEP, only our own label.
     local = sorted(LOCAL_DIR.glob(f"{LABEL}-backup-*.zip.age"))
@@ -142,6 +151,8 @@ def main() -> None:
 
     state = {"last_run_utc": dt.datetime.now(dt.UTC).isoformat(), "key": key}
     (LOCAL_DIR / f"{LABEL}-backup-state.json").write_text(json.dumps(state))
+    if prune_error:
+        fail(prune_error)
     print("hermes-backup: OK")
 
 

@@ -59,7 +59,7 @@ case "$tool" in
     [[ -n $file && -z $limit ]] || exit 0
     if too_long "$file" "$offset"; then
       block "$file has more than $MAX_LINES lines from the start of the read and no limit was given" \
-        "Locate the range with grep or an LSP lookup and Read it with offset and limit, or send the whole-file read to a subagent (Explore) and keep only its findings. Every line read here is re-billed on every later turn."
+        "Locate the range with grep or an LSP lookup and Read it with offset and limit, or send the whole-file read to a subagent (explore) and keep only its findings. Every line read here is re-billed on every later turn."
     fi
     ;;
   Bash)
@@ -70,7 +70,7 @@ case "$tool" in
       file="${BASH_REMATCH[2]}${BASH_REMATCH[3]}${BASH_REMATCH[4]}"
       if too_long "$file"; then
         block "cat $file would print more than $MAX_LINES lines" \
-          "Print a range (sed -n 'a,bp') or grep for what you need, or send the read to a subagent (Explore). Every line printed here is re-billed on every later turn."
+          "Print a range (sed -n 'a,bp') or grep for what you need, or send the read to a subagent (explore). Every line printed here is re-billed on every later turn."
       fi
     fi
     ;;

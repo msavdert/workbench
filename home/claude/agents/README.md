@@ -25,36 +25,42 @@ conversation or becomes a skill instead — see `../skills/README.md`.
 The main session is the architect: it runs on the strongest model at
 high effort (`model` and `effortLevel` in `~/.claude/settings.json`) and
 makes every design decision. Subagents never carry design judgment; they
-all run on the `sonnet` alias at high effort, so the architect's usage
-budget is spent on thinking and the delegates still get a capable model.
+all run on the `sonnet` alias, so the architect's usage budget is spent
+on thinking and the delegates still get a capable model. Effort follows
+the work: `high` where the agent edits or judges, `low` where it only
+retrieves or runs commands.
 The alias follows the newest Sonnet (assumption, not verified here; no
 `ANTHROPIC_DEFAULT_SONNET_MODEL` pin is set in this repository).
 
 | Agent        | Justification        | Model  | Effort | Tools            | Returns                          |
 |--------------|----------------------|--------|--------|------------------|----------------------------------|
-| `Explore`    | isolation (reads)    | sonnet | high   | read-only        | locations as `file:line`         |
-| `grunt`      | isolation (logs)     | sonnet | high   | all              | exit codes, extracted failures   |
+| `explore`    | isolation (reads)    | sonnet | low    | read-only        | locations as `file:line`         |
+| `grunt`      | isolation (logs)     | sonnet | low    | all              | exit codes, extracted failures   |
 | `executor`   | isolation (edits)    | sonnet | high   | all but Agent    | delivered paths + verification   |
 | `auditor`    | isolation (fresh eye)| sonnet | high   | read-only        | verdict + defensible findings    |
-| `researcher` | isolation (network)  | sonnet | high   | web + read-only  | sourced summary, no raw pages    |
+| `researcher` | isolation (network)  | sonnet | low    | web + read-only  | sourced summary, no raw pages    |
 
 Rules that follow from the table:
 
 - A subagent's model is never `inherit` or `fable`. If a task needs the
   architect's model, it is architecture and belongs in the main session.
-- Every agent is `sonnet` at `high` effort (operator decision 2026-10-01).
-  Before that, `executor` ran on opus at medium, `researcher` on sonnet
-  at medium, and `Explore`, `grunt` on haiku at low; the opus choice dated from 2026-09-01 and was
-  based on the operator's daily use, reported rather than measured. If a
-  stronger model for `executor` or `auditor` is ever warranted, measure it
-  and record the result in the vault's `50-knowledge/ai/experiments/`.
+- Every agent is `sonnet` (operator decision 2026-10-01); effort is `high`
+  for `executor` and `auditor`, `low` for `explore`, `grunt` and
+  `researcher` (set the same day, after a first pass that put all five on
+  high). Before that, `executor` ran on opus at medium, `researcher` on
+  sonnet at medium, and `explore`, `grunt` on haiku at low; the opus
+  choice dated from 2026-09-01 and was based on the operator's daily use,
+  reported rather than measured. If a stronger model or more effort for
+  any agent is ever warranted, measure it and record the result in the
+  vault's `50-knowledge/ai/experiments/`.
 - No delegate spawns delegates. `executor` has `disallowedTools: Agent`
   and `auditor` has a read-only allowlist, so neither can start its own
   review chain; one delegate is one process, and the architect decides
   when an audit happens (the `audit` skill).
-- `Explore` overrides the built-in agent of the same name (user-level
-  `~/.claude/agents/` beats plugin definitions; project `.claude/agents/`
-  beats both). Keep the name's capitalization so the override holds.
+- `explore` is lowercase on purpose (operator decision 2026-10-01), so it
+  does not override the built-in `Explore`; both exist and callers must
+  ask for `explore` by name. Names are matched case-sensitively
+  (assumption, not verified here).
 - Read-only agents get an explicit `tools:` allowlist. Agents that must
   write get no list, because a stale allowlist silently breaks them when
   the harness renames a tool.

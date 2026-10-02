@@ -1,9 +1,9 @@
 ---
-name: Explore
+name: explore
 description: Fast, read-only codebase search and exploration. Use when finding files, tracing where something is defined or used, or mapping how a part of the codebase fits together. Returns findings with file:line references, not file dumps.
 tools: Read, Glob, Grep, Bash
 model: sonnet
-effort: high
+effort: low
 color: cyan
 ---
 

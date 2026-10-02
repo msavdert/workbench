@@ -38,7 +38,7 @@ Then extract the claims as a table of **falsifiable** statements. "Blazing fast"
 is not a claim; "3x faster than X on Y" is. Record which claims are untestable -
 that fact is itself a finding.
 
-Delegate the reading to a subagent (`Explore` for layout and provenance, a
+Delegate the reading to a subagent (`explore` for layout and provenance, a
 general-purpose agent for the docs). A repository read into the main session
 costs the rest of the session and buys a summary a subagent returns for a
 fraction of it.
