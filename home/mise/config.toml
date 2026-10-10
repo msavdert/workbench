@@ -41,6 +41,7 @@ shfmt = "latest"
 # vault's .githooks/pre-commit secret scan (vault HANDOFF D11) runs on every
 # machine that commits to ~/vault - both profiles, hence the shared base.
 gitleaks = "latest"
+"pipx:oci-cli" = "latest"
 
 # --- AI harnesses (D12); omp is the npm package below ---
 herdr = "latest"
@@ -49,7 +50,6 @@ agy = "latest"
 # above); without it the omp install fails on a profile without node.
 bun = "latest"
 "npm:@oh-my-pi/pi-coding-agent" = "latest"
-"npm:@dbx-app/cli" = "latest"
 
 [tasks."completions:regen"]
 description = "Regenerate the shell completion cache in ~/.local/share/zsh/completions"

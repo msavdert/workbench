@@ -18,6 +18,10 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-10-10: `@dbx-app/cli` moved from shared `config.toml` to `config.box.toml`
+to remain box-only; `pipx:oci-cli` added to shared `config.toml` for both
+mac and box.
+
 2026-10-01: every subagent in `home/claude/agents/` runs on the `sonnet` alias:
 `executor` and `auditor` at high effort, `explore` (renamed from `Explore`, so it
 no longer overrides the built-in), `grunt` and `researcher` at low. Whether the
@@ -337,6 +341,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-10: dbx cli moved to box-only in mise; oci-cli added to shared mise base.
 - 2026-10-01: subagents on `sonnet` (executor, auditor high; explore, grunt,
   researcher low), `Explore` renamed `explore`; hermes-backup checks DeleteObjects
   `Errors` and sends SHA256 checksum (OCI); `@dbx-app/cli` in the mise config.

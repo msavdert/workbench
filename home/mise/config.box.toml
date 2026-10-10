@@ -25,6 +25,7 @@ yazi = "latest"
 "npm:bash-language-server" = "latest"
 "npm:yaml-language-server" = "latest"
 "npm:tldr" = "latest"
+"npm:@dbx-app/cli" = "latest"
 
 # --- system and network ---
 duf = "latest"
