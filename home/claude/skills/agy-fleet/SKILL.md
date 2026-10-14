@@ -114,7 +114,13 @@ see the template.
    not name the model in a commit line.
 6. **Never put a secret in the prompt file.** It is copied into the work dir
    and sent to a third-party API. Exchange keys, API passwords and `op://`
-   resolved values never appear in a prompt.
+   resolved values never appear in a prompt. Every tool output the model
+   produces goes to that API as well: on 2026-10-14 an audit run inherited
+   `OP_SERVICE_ACCOUNT_TOKEN`, ran `op item get` on its own and sent an SSH
+   private key upstream (the key was rotated). `agy-run.sh` and
+   `agy-check.sh` now unset the token and the ssh-agent socket before
+   launch; do not launch agy any other way, and keep the audit prompt's
+   "Never run `op`, never read ~/.config/op, ~/.ssh ..." line.
 7. **Work in an isolated directory.** `research/_work/<topic>/` under the
    work root, which is already gitignored in perp-lab (`.gitignore:19`).
    Confirm the same line exists before using this skill in another repo. The

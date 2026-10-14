@@ -341,6 +341,10 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-14: ssh:sync writes `<title>-pub` for items with `public-hostname`, adds
+  `Include config.local`, ignores gpg-agent's ssh socket (task, bashrc, zshrc).
+- 2026-10-14: agy audit run inherited the op token and sent the devenv SSH key
+  upstream; key rotated (old item archived), agy-run.sh now unsets the token.
 - 2026-10-10: dbx cli moved to box-only in mise; oci-cli added to shared mise base.
 - 2026-10-01: subagents on `sonnet` (executor, auditor high; explore, grunt,
   researcher low), `Explore` renamed `explore`; hermes-backup checks DeleteObjects

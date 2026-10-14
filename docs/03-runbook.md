@@ -211,6 +211,13 @@ mise). Snapshots and rollbacks need `pve-vm-ssh` (a 1Password `ssh-host`
 item; `mise run ssh:sync` on the mac installs it) - not yet exercised from
 the mac since the devbox seat is gone.
 
+An `ssh-host` item may carry an optional `public-hostname` field; `ssh:sync`
+then also writes `<title>-pub` (same user, port, key) for reaching the host
+by its public address. The box is not on the tailnet, so OCI hosts are only
+reachable from it through their `-pub` alias. The `op` CLI cannot edit SSH
+Key items: adding the field means creating a new item (key rotation) or an
+edit in the 1Password app.
+
 ## Updating
 
 | What | How |

@@ -29,6 +29,17 @@
 # What this wrapper does contain is the blast radius: cwd and --add-dir are
 # the topic directory, so files the model writes land there.
 #
+# It also launches agy without the 1Password service-account token. agy runs
+# its shell commands as children of its own process, with its environment
+# (measured 2026-10-14), so a token inherited from the caller's shell let an
+# external audit run `op item get` and pull a private key into the model's
+# context. Unsetting it (and the ssh-agent socket, which would let the model
+# log in to every synced host) closes that accidental path. agy's commands
+# run as `bash -c`, which does not read ~/.bashrc; a login or interactive
+# shell, or `ssh localhost`, would re-load the token from ~/.config/op/env,
+# which the same user can always read. Not a boundary, so the prompt rule
+# against touching secrets still applies.
+#
 # Usage:
 #   agy-run.sh <topic> <prompt-file> [model] [max-seconds]
 #   agy-run.sh status <topic>          # one status line for a topic
@@ -37,6 +48,10 @@
 # already alive (or a launch is in progress).
 
 set -euo pipefail
+
+# Keep the 1Password token, the ssh-agent and the Claude messaging token out
+# of the delegate's environment (see header).
+unset OP_SERVICE_ACCOUNT_TOKEN OP_CONNECT_TOKEN OP_CONNECT_HOST SSH_AUTH_SOCK CLAUDE_CODE_MESSAGING_TOKEN
 
 # Work root. AGY_PROJECT_ROOT is the name of this fleet; OMP_PROJECT_ROOT is
 # accepted too so a caller that already exported it for the omp fallback does
@@ -141,7 +156,9 @@ POINTER = (
     "in your workspace. Read ALL of it - it is large, so keep reading "
     "until you reach the end of the file - and then do exactly what it "
     "says. Do NOT spawn subagents and do not use invoke_subagent. Do not "
-    "edit or create any file outside that directory. Answer in this "
+    "edit or create any file outside that directory. Never run op, never "
+    "read ~/.config/op, ~/.ssh or any key or token file: tool output is "
+    "sent upstream. Answer in this "
     "conversation in at most five lines; do not create any new files.\n"
 )
 

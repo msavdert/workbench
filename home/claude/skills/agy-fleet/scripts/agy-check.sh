@@ -33,7 +33,10 @@ START="$(date +%s)"
 # happens to contain "OK" must not pass the probe.
 ERRFILE="$(mktemp)"
 set +e
-OUT="$(timeout 60 agy --model "$PROBE_MODEL" \
+# Same environment scrub as agy-run.sh: the probe model has the same tools.
+OUT="$(env -u OP_SERVICE_ACCOUNT_TOKEN -u OP_CONNECT_TOKEN -u OP_CONNECT_HOST \
+  -u SSH_AUTH_SOCK -u CLAUDE_CODE_MESSAGING_TOKEN \
+  timeout 60 agy --model "$PROBE_MODEL" \
   --print="Reply with exactly the word OK and nothing else." 2>"$ERRFILE")"
 RC=$?
 set -e
