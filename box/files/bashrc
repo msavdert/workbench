@@ -21,6 +21,18 @@ if [ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && [ -r "$HOME/.config/op/env" ]; then
 fi
 export OP_ENV_DIR="$HOME/.config/op-env"
 
+# ssh-agent: Ubuntu's gpg-agent-ssh.socket points SSH_AUTH_SOCK at gpg-agent,
+# which holds none of our keys and refuses `ssh-add -` without a pinentry.
+# Use the plain agent that `mise run ssh:sync` loads when it is up, for agent
+# shells too; without it, gpg-agent counts as no agent. Only a socket test
+# here, nothing is spawned; a forwarded agent is left alone.
+_agent_sock="${XDG_RUNTIME_DIR:-$HOME/.ssh}/ssh-agent.sock"
+case "${SSH_AUTH_SOCK:-}" in
+  "" | */S.gpg-agent.ssh)
+    if [ -S "$_agent_sock" ]; then export SSH_AUTH_SOCK="$_agent_sock"; else unset SSH_AUTH_SOCK; fi ;;
+esac
+unset _agent_sock
+
 # non-interactive, non-blocking defaults
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a

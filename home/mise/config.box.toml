@@ -109,8 +109,12 @@ op read "op://dotfiles/texts/homelab-talosconfig" > ~/.talos/config
 chmod 600 ~/.kube/config ~/.talos/config
 """
 
-# Writes only to ~/.ssh/config.local, which configs/ssh/config Includes first
-# and which this repo never tracks - the baked-in config is untouched. The
+# Writes only to ~/.ssh/config.local, which this repo never tracks; the task
+# makes sure ~/.ssh/config Includes it (adding the line once if missing, so
+# `ssh <alias>` works without -F). An item with an optional `public-hostname`
+# field also gets a second alias `<title>-pub` with the same user, port and
+# key, for reaching the host by its public address when the tailnet name does
+# not resolve (the box is not on the tailnet). The
 # managed block is fenced by markers so re-running replaces only what this
 # task wrote last time and leaves anything you added by hand alone. Each
 # private key goes straight into the running ssh-agent, nothing touches disk;
@@ -126,11 +130,22 @@ mkdir -p ~/.ssh && chmod 700 ~/.ssh
 touch ~/.ssh/config.local
 rm -rf ~/.ssh/1p-hosts && mkdir -p ~/.ssh/1p-hosts && chmod 700 ~/.ssh/1p-hosts
 
+touch ~/.ssh/config
+grep -qixF 'Include config.local' ~/.ssh/config || {
+  { printf 'Include config.local\\n\\n'; cat ~/.ssh/config; } > ~/.ssh/config.new
+  mv ~/.ssh/config.new ~/.ssh/config
+}
+chmod 600 ~/.ssh/config
+
 # mise tasks run under plain sh, not zsh, so .zshrc's agent bootstrap never
 # fires here - this task needs to be able to stand on its own. Same self-heal
 # as .zshrc: a dead agent leaves its socket file behind, so probe with
-# ssh-add rather than trusting the file's existence.
+# ssh-add rather than trusting the file's existence. Ubuntu's
+# gpg-agent-ssh.socket points SSH_AUTH_SOCK at gpg-agent, which refuses
+# `ssh-add -` without a pinentry ("agent refused operation"), so that socket
+# counts as no agent; a forwarded agent is still left alone.
 AGENT_SOCK="${XDG_RUNTIME_DIR:-$HOME/.ssh}/ssh-agent.sock"
+case "${SSH_AUTH_SOCK:-}" in */S.gpg-agent.ssh) SSH_AUTH_SOCK= ;; esac
 if [ -z "${SSH_AUTH_SOCK:-}" ] || [ "$SSH_AUTH_SOCK" = "$AGENT_SOCK" ]; then
     AGENT_RC=0
     SSH_AUTH_SOCK="$AGENT_SOCK" ssh-add -l >/dev/null 2>&1 || AGENT_RC=$?
@@ -161,11 +176,16 @@ awk -v b="$BEGIN_MARK" -v e="$END_MARK" '
         host=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="hostname") | .value] | first // empty')
         user=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="user") | .value] | first // empty')
         port=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="port") | .value] | first // "22"')
+        pubhost=$(printf '%s' "$item" | jq -r '[.fields[] | select(.label=="public-hostname") | .value] | first // empty')
         [ -n "$host" ] || continue
         op read "op://dotfiles/$id/private key?ssh-format=openssh" | ssh-add -q -
         op read "op://dotfiles/$id/public key" > ~/.ssh/1p-hosts/"$title".pub
         printf 'Host %s\\n    HostName %s\\n    User %s\\n    Port %s\\n    IdentityFile ~/.ssh/1p-hosts/%s.pub\\n    IdentitiesOnly yes\\n\\n' \
           "$title" "$host" "$user" "$port" "$title"
+        if [ -n "$pubhost" ]; then
+          printf 'Host %s-pub\\n    HostName %s\\n    User %s\\n    Port %s\\n    IdentityFile ~/.ssh/1p-hosts/%s.pub\\n    IdentitiesOnly yes\\n\\n' \
+            "$title" "$pubhost" "$user" "$port" "$title"
+        fi
       done
   echo "$END_MARK"
 } > ~/.ssh/config.local.new

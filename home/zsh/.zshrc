@@ -315,14 +315,16 @@ function zs {
 # --- SSH agent ---------------------------------------------------------------
 # On macOS, point SSH_AUTH_SOCK at the 1Password agent socket if it is live.
 # On the box (Linux) or on systems without 1Password, manage a fallback
-# agent socket. If an agent is already forwarded into the session, leave it alone.
+# agent socket. If an agent is already forwarded into the session, leave it alone;
+# Ubuntu's gpg-agent-ssh socket does not count (it refuses `ssh-add -`).
 if [[ "$(uname -s)" == "Darwin" ]]; then
     _1p_sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
     if [[ -S "$_1p_sock" ]]; then
         export SSH_AUTH_SOCK="$_1p_sock"
     fi
     unset _1p_sock
-elif [[ -z ${SSH_AUTH_SOCK:-} || $SSH_AUTH_SOCK == "${XDG_RUNTIME_DIR:-$HOME/.ssh}/ssh-agent.sock" ]] \
+elif [[ -z ${SSH_AUTH_SOCK:-} || $SSH_AUTH_SOCK == */S.gpg-agent.ssh \
+        || $SSH_AUTH_SOCK == "${XDG_RUNTIME_DIR:-$HOME/.ssh}/ssh-agent.sock" ]] \
     && (( $+commands[ssh-agent] && $+commands[ssh-add] )); then
     _agent_sock="${XDG_RUNTIME_DIR:-$HOME/.ssh}/ssh-agent.sock"
     SSH_AUTH_SOCK="$_agent_sock" command ssh-add -l &>/dev/null
