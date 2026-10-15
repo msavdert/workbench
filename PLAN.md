@@ -38,7 +38,7 @@ no longer overrides the built-in), `grunt` and `researcher` at low. Whether the
 alias resolves to Sonnet 5.5 is unverified in this repo; the 2.1.287 binary
 contains the `claude-sonnet-5-5` id.
 
-2026-09-18: `agy-drift-check` script, service and timer added to `box/files/` and
+2026-09-18 (retired 2026-10-14, see Next -0): `agy-drift-check` script, service and timer added to `box/files/` and
 wired into `box/bootstrap.sh` (`step_user` and `step_verify`). Runs every 3 hours
 (`*-*-* 00/3:00:00 America/New_York`); detects binary drift between the running
 `antigravity-cli-daemon` process and the disk binary (handles unlinked/deleted
@@ -304,14 +304,10 @@ present). Agent gateway only - savdert has no op access by design.
    deferred forever on a detached `op daemon`; it now counts the server's
    direct children. Phone test passed 2026-10-14: `work` agent ran
    `remote-session open trader`, the session showed up in the app.
--0. agy-drift-check removal is on hold. Operator believes the hub's Update
-   button now updates and restarts the daemon; the journal says otherwise:
-   all 4 daemon starts in the 7 days to 2026-10-14 were drift-check restarts,
-   and the self-updater swapped binaries in place inside the mise install dir
-   (`antigravity.<n>.old`) without restarting. Timer disabled on the box only
-   (repo still enables it) as a test: on the next agy release click Update in
-   the hub, then check whether `antigravity-cli-daemon` got a new PID and exe.
-   Restarted -> delete the drift check from the repo; not restarted -> re-enable.
+-0. Done 2026-10-14: agy-drift-check retired. Every daemon start in the prior
+   7 days was the timer (the background self-updater swaps the binary on disk
+   but never restarts the daemon), but the hub's Update button re-execs the
+   daemon in place: same PID since 21:00, running exe now 1.3.5.
 
 0. Box side of the 2026-09-07 settings change closed 2026-09-08:
    `home/install.sh --check box` printed `no drift`. The mac side closed
@@ -364,6 +360,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-14: agy-drift-check retired; the hub's Update re-execs the agy daemon in place.
 - 2026-10-14: one `work` Remote Control server only; `remote-session` opens bypass project
   sessions on demand, `claude-drift-check.timer` fixes binary drift of idle servers.
 - 2026-10-14: ssh:sync writes `<title>-pub` for items with `public-hostname`, adds

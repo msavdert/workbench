@@ -346,20 +346,17 @@ The first `claude auth login` on it is manual, as on every substrate.
 - **Remote Control session missing from the app** - `systemctl --user status
   claude-remote`; if it loops on auth, `claude auth login` again (token
   expired) and `systemctl --user restart claude-remote`.
-- **"Update available" on antigravity.google.com for agent-vm** - the web hub
-  sees the running daemon reporting an older version than current. agy updates
-  on the OS side, not in the web UI. If `mise up` (or `agy update`) already
-  updated the CLI binary to latest, the running daemon process is still
-  holding the previous binary in memory (check PID with `systemctl --user
-  status antigravity-cli-daemon`).
-  - **Automatic resolution:** `agy-drift-check.timer` runs every 3 hours. If a
-    newer binary is installed on disk and the daemon is idle (no active worker
-    processes in its cgroup), it automatically reloads
-    `antigravity-cli-daemon`.
-  - **Immediate manual reload:** Restart it directly:
-    `systemctl --user restart antigravity-cli-daemon` (or run
-    `agy-drift-check`). Verify with `agy remote-control status`; refresh the
-    hub and the badge disappears.
+- **"Update available" on antigravity.google.com for agent-vm** - the
+  running daemon is older than the current release. agy's background
+  self-updater replaces the binary on disk, in place inside the mise install
+  directory (the old one is renamed `antigravity.<n>.old`), but does not
+  restart the daemon. Click **Update** in the hub: the daemon re-execs onto
+  the new binary in place - same PID, no systemd restart (observed
+  2026-10-14, 1.3.4 -> 1.3.5). Check: `/proc/<MainPID>/exe --version`. The
+  mise directory name can then lag the binary (`mise ls` says 1.3.4 while
+  `agy --version` says 1.3.5) until the next `mise up`. Without the hub,
+  `systemctl --user restart antigravity-cli-daemon` does the same. The
+  `agy-drift-check` timer that did this every 3 hours was retired that day.
 - **`agy remote-control status` says inactive, or the daemon fails after
   `mise up`** - `systemctl --user cat antigravity-cli-daemon` must show the
   drop-in with `mise exec`; if only the pinned ExecStart is there, `make

@@ -61,7 +61,6 @@ workbench/
 | `~agent/.config/systemd/user/vault-compile.{service,timer}`, `vault-sessions.{service,timer}`, `unit-failure-notify@.service`, `~/.local/bin/notify-telegram` | `box/files/` | `box/bootstrap.sh step_vault` |
 | `~/.config/systemd/user/antigravity-cli-daemon.service`, `~/.gemini/config/config.json` (instance name), `~/.gemini/jetski-standalone-oauth-token` | not in repo; agy writes them (like hermes writes `hermes-gateway.service`) | the tool itself, once: `agy remote-control start --name <instance>` (`docs/03-runbook.md`) |
 | `~/.config/systemd/user/antigravity-cli-daemon.service.d/override.conf`, the four Turbo-preset keys in `userSettings` of `~/.gemini/config/config.json` (seeded once, then the hub's) | `box/files/antigravity-cli-daemon.override.conf`, `box/bootstrap.sh step_user` | `box/bootstrap.sh` |
-| `~/.config/systemd/user/agy-drift-check.{service,timer}`, `~/.local/bin/agy-drift-check` | `box/files/` | `box/bootstrap.sh step_user` |
 | `~/.bashrc` (guard + non-interactive part), `~/.bash_profile`, `~/.tmux.conf` | `box/files/bashrc`, `bash_profile`, `tmux.conf` | `box/bootstrap.sh` |
 | `~/.config/bash/interactive.sh`, `~/.zshrc`, `~/.zshenv`, `~/.config/starship.toml` | `home/bash/`, `home/zsh/`, `home/starship.toml` | `home/install.sh` |
 | `~/.config/mise/config.toml`, `config.<profile>.toml` | `home/mise/` | `home/install.sh <profile>` |
