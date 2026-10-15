@@ -1,19 +1,15 @@
 # Repositories (re)created under ~/work on every `make provision`.
-# One per line:  <name> [git-url] [remote-add options]
+# One per line:  <name> [git-url]
 # <name> becomes ~/work/<name>. Blank lines and # comments are ignored. Applied
-# by bootstrap.sh step_remotes, which runs remote-add for each entry
-# (idempotent). Policy: one Remote Control server, `work` (~/work, capacity 2,
-# claude-remote.service); sessions started there are steered from the
-# operator's machine, so the entries are `--clone-only`. Drop the flag on a
-# line to give that project its own server (claude-remote@<name>).
-workbench https://github.com/msavdert/workbench.git --clone-only
-dba-to-dbre https://github.com/msavdert/dba-to-dbre.git --clone-only
-suhuf https://github.com/msavdert/suhuf.git --clone-only
+# by bootstrap.sh step_remotes, which runs `remote-session clone` for each
+# entry (clone if missing + workspace trust; idempotent). No entry starts a
+# server: the only one is `work` (claude-remote.service), and project sessions
+# are opened on demand with `remote-session open <name>`.
+workbench https://github.com/msavdert/workbench.git
+dba-to-dbre https://github.com/msavdert/dba-to-dbre.git
+suhuf https://github.com/msavdert/suhuf.git
 # private second-brain repo: written to by hermes (00-inbox) and the nightly
 # vault-compile timer; brain sessions live on the mac (vault HANDOFF D7/D9)
-vault https://github.com/msavdert/vault.git --clone-only
-# found running as per-project servers on 2026-09-01 (started by hand with
-# remote-add, never listed here): clone-only keeps the checkouts across a
-# rebuild; whether each deserves its own server is the operator's call
-agentshard https://github.com/msavdert/agentshard.git --clone-only
-quant-research https://github.com/msavdert/quant-research.git --clone-only
+vault https://github.com/msavdert/vault.git
+agentshard https://github.com/msavdert/agentshard.git
+quant-research https://github.com/msavdert/quant-research.git

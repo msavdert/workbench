@@ -155,10 +155,16 @@ agy use their own OAuth logins.
 D11 Remote Control (Claude app sessions): one shared server, `work`
 (`claude-remote.service`, `~/work`, capacity 2). Sessions in it are steered
 from the operator's machine, which clones and switches projects on demand,
-so per-project servers are optional: `remote-add <name>` starts a
-`claude-remote@<name>` unit rooted in `~/work/<name>` when a project needs its
-own environment. Repositories that must be present after a rebuild are listed
-in `box/remotes.list` (`--clone-only` by default). Requires systemd - one more
+and there are no per-project servers (retired 2026-10-14 with the
+`claude-remote@` template and `remote-add/rm/ls`). The `work` agent opens a
+one-off session in a project with `remote-session open <name>` (an interactive `claude
+--remote-control` in a detached tmux, its own transient unit, bypass), which
+gives agy's "pick the project per session" without a server per repository
+and always starts the newest binary. Claude Code has no machine-wide
+multi-directory server (`claude rc --recursive` was declined upstream, issue
+77718). `claude-drift-check.timer` restarts the idle server after a
+self-update. Repositories that must be present after a rebuild are listed in
+`box/remotes.list` (`remote-session clone`). Requires systemd - one more
 reason for D3. The other direction is covered by `remoteControlAtStartup: true`
 in the box overlay (D8): a `claude` started in a herdr pane registers itself
 with the app too, so a terminal session can be followed from the phone without

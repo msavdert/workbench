@@ -40,22 +40,30 @@ The tools' own login tokens (Claude Code under `~/.claude`, agy under
 
 ## Sessions from the Claude app (Remote Control)
 
-One server per project directory, as systemd user units. To make a repo
-available as an environment in the app:
+One always-on server, `work` (`claude-remote.service`, `~/work`). The
+operator talks to it from the phone and asks it to open project sessions.
+When asked to "open a session in <project>" (or similar), run:
 
-    remote-add <name> <git-url>      # clone to ~/work/<name>, trust, start claude-remote@<name>
-    remote-add <name> --worktree     # each app session in its own git worktree
-    remote-ls
-    remote-rm <name>                 # stops the server, keeps the directory
+    remote-session open <name> [git-url] [--model M]   # clone/trust ~/work/<name>, start a bypass Remote Control session, print its URL
+    remote-session ls                                   # work server + open sessions
+    remote-session close <name>                         # ends it; history stays in the app
+    remote-session clone <name> <git-url>               # clone + trust only
 
-Do not hand-write systemd units for this. The generic environment `work`
-(`~/work`) is for exactly this bootstrapping. Environments that must survive
-a rebuild are listed in `~/work/workbench/box/remotes.list`.
+and give the operator the printed URL. The session appears in the app on its
+own, runs in `bypassPermissions` and always starts the newest installed
+Claude Code. There are no per-project servers and no other helpers
+(`remote-add/rm/ls` are gone). Do not hand-write systemd units. Repositories
+that must survive a rebuild go in `~/work/workbench/box/remotes.list`.
+
+Updating Claude Code: `claude update` (it also updates itself). The `work`
+server keeps its start-up binary until restarted; `claude-drift-check.timer`
+restarts it within 15 minutes once it has no open session. Never restart
+`claude-remote.service` yourself: your own session runs inside it.
 
 agy (Antigravity) works the other way round: one daemon for the whole
 machine, `antigravity-cli-daemon.service`, and the project directory is
 picked per session in the hub at https://antigravity.google.com. `agy
-remote-control status` shows it; there is no `remote-add` for agy and the
+remote-control status` shows it; there is no `remote-session` for agy and the
 `agy-daemon.sh` installer from the docs is deprecated, do not run it.
 
 ## Tools

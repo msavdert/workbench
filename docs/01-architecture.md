@@ -55,7 +55,7 @@ workbench/
 | `/etc/apt`, `/etc/docker/daemon.json`, `/etc/sysctl.d/*`, `/etc/ssh/sshd_config.d/*`, `/etc/sudoers.d/*`, `/etc/security/limits.d/*`, `/etc/needrestart/conf.d/*`, `/etc/systemd/journald.conf.d/*`, `/etc/terminfo` (Ghostty entry) | `box/files/` | `box/bootstrap.sh` |
 | `/etc/systemd/system/docker-prune.{service,timer}` | `box/files/` | `box/bootstrap.sh step_docker` |
 | routine maintenance (`apt full-upgrade`, `mise up`, `mise prune`, usage, reboot-pending report) | task `box:maintain` in `home/mise/config.box.toml`; `make maintain` wraps it over ssh | run by the operator or an agent on demand, never by a timer (`docs/00-vision.md` D14) |
-| `~/.config/systemd/user/claude-remote*.service`, `~/.local/bin/remote-*`, `~/.local/bin/agent-session` | `box/files/` | `box/bootstrap.sh` |
+| `~/.config/systemd/user/claude-remote.service`, `~/.config/systemd/user/claude-drift-check.{service,timer}`, `~/.local/bin/remote-session`, `~/.local/bin/claude-drift-check`, `~/.local/bin/agent-session` | `box/files/` | `box/bootstrap.sh` |
 | `/etc/claude-code/CLAUDE.md` | `box/files/machine-CLAUDE.md` | `box/bootstrap.sh` |
 | `~agent/.hermes/{.env,config.yaml,SOUL.md}` and `~savdert/.hermes/{...}` (env converged each run; config/SOUL seeded once, see `docs/reference/hermes.md`) | `box/files/hermes/` | `box/bootstrap.sh step_hermes` |
 | `~agent/.config/systemd/user/vault-compile.{service,timer}`, `vault-sessions.{service,timer}`, `unit-failure-notify@.service`, `~/.local/bin/notify-telegram` | `box/files/` | `box/bootstrap.sh step_vault` |
@@ -193,7 +193,7 @@ installs `rsync` and removes that file before `openssh-server` lands.
 
 Carried over from agent-vm and generalised by `PROVIDER=proxmox|orbstack|cloud`:
 `vm-create`, `vm-wait`, `vm-status`, `secrets`, `provision [STEPS=...]`,
-`bootstrap-all`, `claude-remote`, `remote-add/ls/rm`, `snapshot`/`rollback`/
+`bootstrap-all`, `claude-remote`, `remote-session`, `snapshot`/`rollback`/
 `snapshots` (Proxmox only), `vm-destroy`, `ssh`, `lint`.
 
 The client is not driven from the Makefile: it has no VM to reach and no

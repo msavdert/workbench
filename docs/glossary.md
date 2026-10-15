@@ -15,7 +15,7 @@ means.
 | operator | The human who owns the environment (me). Distinguished from agents because both use the same user account on the box. |
 | agent | An AI coding agent process: Claude Code, or a harness driven by herdr, agy, omp. Agent-spawned shells are plain; the operator's are rich. |
 | Claude Code | Anthropic's terminal coding agent; installed natively (self-updating), configured from `home/claude/`. |
-| Remote Control | Claude Code's feature that exposes a session in the box to the claude.ai app; runs as a systemd user service (`claude-remote.service`, `claude-remote@<project>.service`). |
+| Remote Control | Claude Code's feature that exposes a session in the box to the claude.ai app; runs as one systemd user service (`claude-remote.service`, the `work` server); project sessions are opened with `remote-session`. |
 | herdr | A harness runner that manages agent sessions and integrates with Claude Code through hooks; installed by mise, configured in `home/herdr/`. |
 | agy | Google's Antigravity CLI (`~/.gemini/antigravity-cli/`); installed by mise, settings composed from `home/agy/`. |
 | omp | `@oh-my-pi/pi-coding-agent`, a terminal coding agent with its own provider logins; installed by mise (npm backend), configured from `home/omp/`. |

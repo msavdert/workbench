@@ -1,0 +1,7 @@
+[Unit]
+Description=Restart the idle Claude Code Remote Control server when it runs an outdated binary
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/claude-drift-check

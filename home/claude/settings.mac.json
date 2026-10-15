@@ -24,7 +24,7 @@
       "### User-specific",
       "**Primary use of Claude Code**: software development — personal infrastructure/platform tooling (workbench: VM bootstrap, agent configuration, provisioning)",
       "**Trusted repo**: msavdert/workbench (github.com/msavdert/workbench, public) — since public, only this repo's own work is OK to commit/push here; confidential material and secrets are never cleared into it by visibility alone",
-      "**Org-specific CLIs**: None configured — repo Makefile targets observed (bootstrap-all, provision, remote-add/ls/rm, rollback, secrets, snapshot(s), vm-create/destroy/status/wait) are project-local, not org CLIs",
+      "**Org-specific CLIs**: None configured — repo Makefile targets observed (bootstrap-all, provision, remote-session, rollback, secrets, snapshot(s), vm-create/destroy/status/wait) are project-local, not org CLIs",
       "routine under msavdert/workbench prefix: git, mise, mac (repo-local tooling seen in this project's transcript)"
     ]
   },

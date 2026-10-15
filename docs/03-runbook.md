@@ -17,8 +17,8 @@ make claude-remote
 ```
 
 which enables `claude-remote.service`, the shared `work` environment
-(`~/work`, `--name work`, capacity 2) - the only server by default; see the
-next section for optional per-project ones. `claude-remote.service` is a
+(`~/work`, `--name work`, capacity 2) - the only server; project sessions
+are opened from it with `remote-session` (next sections). `claude-remote.service` is a
 systemd user unit (`~/.config/systemd/user/claude-remote.service`). Two consents that Claude
 normally asks for on a TTY - workspace trust for `~/work` and "Enable Remote
 Control? (y/n)" - are pre-seeded into `~/.claude.json` by `bootstrap.sh
@@ -38,8 +38,8 @@ and `make provision STEPS=user && ssh agent-vm-ssh 'systemctl --user daemon-relo
 
 agy's model differs from Claude's: one daemon per machine, and the project
 (directory, repository) is chosen per session in the hub at
-https://antigravity.google.com, so there is no `remote-add` equivalent and
-nothing to list in `box/remotes.list`. The daemon is registered by agy
+https://antigravity.google.com, so there is no `remote-session` equivalent
+and nothing to list in `box/remotes.list`. The daemon is registered by agy
 itself, not by bootstrap:
 
 ```
@@ -92,63 +92,54 @@ daemon uses `cliRemoteControlHostname`, which `start --name` rewrites. Same post
 without prompts, and the hub reaches it through Google's relay, not the
 tailnet.
 
-## Working on a project (optional per-project Remote Control servers)
+## Working on a project: `remote-session`
 
-Default policy (D11): the shared `work` server is the only one running.
-Sessions started in it are steered from the operator's machine, which
-clones repositories and moves between them; `box/remotes.list` keeps those
-clones present after a rebuild (`--clone-only`, no server).
-
-A Remote Control server is bound to the directory it starts in and the app
-cannot pick a directory per session. When a project deserves its own
-environment, `remote-add <name>` starts a systemd user instance
-`claude-remote@<name>` rooted in `~/work/<name>` and shown in the Claude app
-as an environment called `<name>`. Sessions started there begin in that
-checkout and see its `CLAUDE.md`, `.claude/`, memory, hooks, exactly like a
-local `claude` run from that directory.
+Policy (D11): one always-on server, `work` (`claude-remote.service`, `~/work`).
+There are no per-project servers. From a `work` session (phone or web), ask
+the agent to open a session in a project; it runs `remote-session`:
 
 ```
-make remote-add NAME=suhuf URL=https://github.com/msavdert/suhuf.git   # clone + trust + start
-make remote-add NAME=suhuf OPTS="--worktree"                           # each app session in its own git worktree
-make remote-ls
-make remote-rm NAME=suhuf                                              # stops the server, keeps ~/work/suhuf
+remote-session open trader                    # ~/work/trader, prints https://claude.ai/code/session_...
+remote-session open suhuf https://github.com/msavdert/suhuf.git --model sonnet
+remote-session ls                             # work server state + open sessions
+remote-session close trader                   # history stays in the app
+remote-session clone suhuf https://github.com/msavdert/suhuf.git   # clone + trust only, no session
 ```
 
-The same works from inside the VM (for example from a session in the generic
-`work` environment): `remote-add suhuf https://github.com/msavdert/suhuf.git`.
-Cloning private repos needs no token: the git credential helper reads it from
-1Password.
+From the operator's machine: `make remote-session ARGS="open trader"`.
+Cloning private repos needs no token: the git credential helper reads it
+from 1Password.
 
-In the app the environments do not appear under Recents (that list is
-sessions). Click **+ New**; above the chat box there are three targets -
-Local / Cloud / Remote control. Under Remote control each server is listed as
-`<name>  agent-vm  N of M sessions`; pick one and the new session starts in
-that server's directory. Or open the URL that `remote-add` prints
-(`https://claude.ai/code?environment=env_...`). Sessions you then start
-land under Recents with the environment's name.
+Each session is an interactive `claude --remote-control <name>
+--permission-mode bypassPermissions` in a detached tmux (socket
+`remote-session-<name>`), started as the transient user unit
+`remote-session-<name>`, so it outlives a restart of the `work` server and
+does not keep that server "busy". It appears in the app under Recents on its
+own, starts in bypass (the app's mode menu has no Bypass entry: switching the
+mode there is one-way for that session) and always uses the newest installed
+binary. Attach from a shell: `tmux -L remote-session-<name> attach`.
 
-Environments you will see in the app:
+In the app (claude.ai/code, macOS desktop Code tab, mobile), **+ New** ->
+choose environment -> Remote Control lists the `work` server as `work
+agent-vm N of 2 sessions`. **Cloud** there is Anthropic's hosted sandbox
+(clones from GitHub, no access to this VM); its "Add cloud environment" form
+is not part of this setup.
 
-| Environment | Directory | Purpose |
-|---|---|---|
-| `work` | `~/work` | the default and usually only environment; projects live in `~/work/<name>` |
-| `<name>` | `~/work/<name>` | optional, one per project, created by `remote-add` without `--clone-only` |
+The `work` server passes `--permission-mode bypassPermissions` explicitly:
+the `defaultMode` in `~/.claude/settings.json` does not reach sessions a
+server spawns. After a server restart its own sessions can be brought back
+with `claude remote-control --continue` in `~/work` within ~4 hours (see
+https://code.claude.com/docs/en/remote-control.md). Anthropic does not
+document the exact UI flow, so expect the labels to move.
 
-Per-project knobs: `--capacity N` (concurrent sessions, default 4),
-`--permission-mode M` (default `bypassPermissions`; the `defaultMode` in
-`~/.claude/settings.json` does not reach spawned remote sessions, so the
-server passes it explicitly) and `--worktree` / `--same-dir` (default same-dir: all sessions share the
-checkout; worktree: each on-demand session gets `git worktree` isolation,
-good for parallel tasks on one repo). They are stored in
-`~/.config/claude-remote/<name>.env` and picked up by the template unit.
+### Version drift
 
-In the app (claude.ai/code, macOS desktop Code tab, mobile): pick the
-environment (`work`, `suhuf`, ...) and start a new session, or open the
-session the server pre-created on start. Sessions survive an app disconnect;
-after a server restart run `claude remote-control --continue` in that
-directory within ~4 hours to bring them back (see
-https://code.claude.com/docs/en/remote-control.md). Anthropic does not document the exact UI flow, so expect the
-labels to move.
+Claude Code updates itself by moving `~/.local/bin/claude`; a running server
+keeps its start-up binary. `claude-drift-check.timer` (every 15 min) restarts
+`claude-remote.service` when its binary differs and it has no open session
+(direct child processes of the server; the unit's cgroup also holds a
+detached `op daemon`, so it cannot be the test). Otherwise it logs and
+defers: `journalctl --user -u claude-drift-check -n 20`.
 
 ## Machine-level instructions for agents
 
@@ -245,9 +236,9 @@ ssh agent-vm-ssh 'sudo systemctl reboot'
 # ~20 s later
 ssh -o ControlPath=none agent-vm-ssh 'uname -r; sudo needrestart -b | grep KSTA'
 # expect the new kernel and NEEDRESTART-KSTA: 1
-make claude-remote                # the Remote Control servers are enabled units
-                                  # and come back by themselves; this only
-                                  # confirms they did
+make claude-remote                # the Remote Control server is an enabled unit
+                                  # and comes back by itself; this only
+                                  # confirms it did
 ```
 
 `ControlPath=none` matters: the ssh ControlMaster socket from before the
@@ -266,9 +257,9 @@ Full rebuild checklist (what is automated and what is not):
 |---|---|
 | `make vm-destroy` | asks for confirmation |
 | `ssh-keygen -R 10.0.0.11` on the operator machine (new host key) | manual, one command |
-| `make bootstrap-all` = vm-create, vm-wait, secrets, provision | yes; provision also clones every repo in `box/remotes.list` (`--clone-only`: no per-project servers) |
+| `make bootstrap-all` = vm-create, vm-wait, secrets, provision | yes; provision also clones every repo in `box/remotes.list` (`remote-session clone`) |
 | `ssh -t agent-vm-ssh claude auth login` | **manual** (OAuth code paste), unavoidable |
-| `make claude-remote` | starts `work` (and any per-project server enabled by hand) |
+| `make claude-remote` | starts `work` |
 | `omp` provider logins (`omp` on the VM, interactive) | **manual**, only if you use omp there |
 | `make snapshot NAME=clean` | one command |
 
@@ -279,9 +270,8 @@ docker ...` fails with "permission denied" until the master is closed:
 `ssh -O exit agent-vm-ssh`. Provisioning itself is unaffected (`sudo -u`
 starts fresh sessions).
 
-Anything you clone or `remote-add` by hand and do not put in
-`box/remotes.list` is lost on rebuild (the directory too, unless pushed);
-a per-project server is only recreated if its line has no `--clone-only`. Anything under
+Anything you clone by hand and do not put in `box/remotes.list` is lost on
+rebuild (the directory too, unless pushed). Anything under
 `~/work/*` that is not pushed is lost on rebuild or rollback.
 
 After a rebuild the ssh host key changes; the operator's ssh config uses

@@ -25,15 +25,13 @@ STEPS    ?=
 # NAME/STEPS/VMID reach the recipes through the environment ($$NAME), never by
 # text substitution ($(NAME)) - substitution into a quoted ssh command would
 # let a stray quote inject shell. Recipes validate them against a strict pattern.
-URL      ?=
-OPTS     ?=
-export NAME STEPS VMID URL OPTS
+ARGS     ?=
+export NAME STEPS VMID ARGS
 define need_name
 	@[[ "$$NAME" =~ ^[A-Za-z0-9_.-]+$$ ]] || { echo "NAME must match [A-Za-z0-9_.-]+"; exit 1; }
 endef
-define check_url_opts
-	@re='^[A-Za-z0-9_.:/@+-]*$$'; [[ "$$URL" =~ $$re ]] || { echo "URL has unexpected characters"; exit 1; }
-	@re='^[A-Za-z0-9_ -]*$$'; [[ "$$OPTS" =~ $$re ]] || { echo "OPTS has unexpected characters"; exit 1; }
+define check_args
+	@re='^[A-Za-z0-9_.:/@+ -]*$$'; [[ "$$ARGS" =~ $$re ]] || { echo "ARGS has unexpected characters"; exit 1; }
 endef
 define check_steps
 	@re='^[a-z ]+$$'; [[ -z "$$STEPS" || "$$STEPS" =~ $$re ]] || { echo "STEPS must be space-separated step names"; exit 1; }
@@ -42,7 +40,7 @@ SSH       = ssh -o BatchMode=yes
 RSYNC     = rsync -az --delete --exclude .git
 
 .PHONY: help vm-create vm-wait provision secrets bootstrap-all snapshot rollback snapshots \
-        vm-status vm-destroy ssh claude-remote remote-add remote-rm remote-ls lint
+        vm-status vm-destroy ssh claude-remote remote-session lint
 
 help:
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -73,20 +71,12 @@ secrets: ## push OP_SERVICE_ACCOUNT_TOKEN (this shell, else `op read $(OP_TOKEN_
 
 bootstrap-all: vm-create vm-wait secrets provision ## fresh VM end to end
 
-claude-remote: ## after `claude auth login`: start the generic `work` server and every enabled project server (list-unit-files does not list template instances, the wants/ symlinks do)
-	$(SSH) $(VM_HOST) 'test -f ~/.claude/.credentials.json || { echo "run: ssh $(VM_HOST) -t claude auth login"; exit 1; }; systemctl --user daemon-reload && systemctl --user enable --now claude-remote.service && for f in ~/.config/systemd/user/default.target.wants/claude-remote@*.service; do test -e "$$f" && systemctl --user start "$$(basename "$$f")"; done; sleep 3; bash -lc remote-ls'
+claude-remote: ## after `claude auth login`: start the always-on `work` server
+	$(SSH) $(VM_HOST) 'test -f ~/.claude/.credentials.json || { echo "run: ssh $(VM_HOST) -t claude auth login"; exit 1; }; systemctl --user daemon-reload && systemctl --user enable --now claude-remote.service; sleep 3; bash -lc "remote-session ls"'
 
-remote-add: ## optional per-project Remote Control server: NAME=<dir under ~/work> [URL=<git url>] [OPTS="--worktree|--clone-only"]; list it in box/remotes.list to survive a rebuild
-	$(need_name)
-	$(check_url_opts)
-	$(SSH) $(VM_HOST) "bash -lc 'remote-add $$NAME $$URL $$OPTS'"
-
-remote-rm: ## stop + disable the per-project server NAME=<name> (keeps the directory)
-	$(need_name)
-	$(SSH) $(VM_HOST) "bash -lc 'remote-rm $$NAME'"
-
-remote-ls: ## list Remote Control servers on the VM
-	$(SSH) $(VM_HOST) "bash -lc remote-ls"
+remote-session: ## Claude app sessions on the VM: ARGS="ls" | "open <name> [git-url] [--model M]" | "close <name>" | "clone <name> [git-url]"
+	$(check_args)
+	$(SSH) $(VM_HOST) "bash -lc 'remote-session $$ARGS'"
 
 snapshot: ## qm snapshot NAME=<name>
 	$(need_name)
@@ -118,5 +108,5 @@ ssh: ## interactive shell on the VM (tmux session "main")
 	ssh -t $(VM_HOST) 'bash -lc agent-session'
 
 lint: ## shellcheck + shfmt check
-	shellcheck -e SC1091 providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/bin/timeout home/bin/brain home/bin/obsidian-sync home/bin/obsidian-snapshot home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/claude/hooks/read-gate.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls box/files/notify-telegram box/files/agy-drift-check
-	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/claude/hooks/read-gate.sh home/agy/statusline.sh home/bash/interactive.sh home/bin/opwith home/bin/timeout home/bin/brain home/bin/obsidian-sync home/bin/obsidian-snapshot box/files/agent-session box/files/remote-add box/files/remote-rm box/files/remote-ls box/files/notify-telegram box/files/agy-drift-check
+	shellcheck -e SC1091 providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/bin/opwith home/bin/timeout home/bin/brain home/bin/obsidian-sync home/bin/obsidian-snapshot home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/claude/hooks/read-gate.sh home/agy/statusline.sh home/bash/interactive.sh box/files/agent-session box/files/remote-session box/files/claude-drift-check box/files/notify-telegram box/files/agy-drift-check
+	shfmt -d -i 2 -ci providers/proxmox/create-vm.sh providers/orbstack/create-vm.sh box/bootstrap.sh home/install.sh home/zsh/install-plugins.sh mac/setup.sh home/claude/statusline.sh home/claude/hooks/read-gate.sh home/agy/statusline.sh home/bash/interactive.sh home/bin/opwith home/bin/timeout home/bin/brain home/bin/obsidian-sync home/bin/obsidian-snapshot box/files/agent-session box/files/remote-session box/files/claude-drift-check box/files/notify-telegram box/files/agy-drift-check

@@ -1,0 +1,10 @@
+[Unit]
+Description=Check the Claude Code Remote Control server for binary drift periodically
+
+[Timer]
+# Claude Code ships several builds a week; the check is a few readlinks
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

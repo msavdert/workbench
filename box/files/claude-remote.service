@@ -1,6 +1,6 @@
-# systemd --user unit: the generic "work" environment (~/work, no repo). Use it
-# from the app to clone repos and run `remote-add <name>`, which starts a
-# per-project server (claude-remote@<name>) rooted in ~/work/<name>. Enable with:
+# systemd --user unit: the always-on "work" environment (~/work, no repo), the
+# only Remote Control server on the box. Sessions in it open project sessions
+# with `remote-session open <name>`. Enable with:
 #   make claude-remote      (after `claude auth login` once, interactively)
 [Unit]
 Description=Claude Code Remote Control server

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Restart the Claude Code Remote Control server (claude-remote.service) when it
+# still runs a binary older than the one ~/.local/bin/claude points at, but
+# only while it has no open session.
+# Claude Code updates itself by moving that symlink; a running server never
+# re-executes, so without this it serves sessions on its start-up version.
+# A busy server is deferred to the next run, never interrupted.
+set -euo pipefail
+
+target_exe=$(readlink -f "$HOME/.local/bin/claude" 2>/dev/null || true)
+if [[ -z $target_exe || ! -x $target_exe ]]; then
+  exit 0
+fi
+
+check_unit() {
+  local unit=$1 pid raw_exe running_exe sessions
+  systemctl --user is-active --quiet "$unit" || return 0
+  pid=$(systemctl --user show "$unit" --property=MainPID --value 2>/dev/null || true)
+  [[ -n $pid && $pid -gt 0 ]] || return 0
+  raw_exe=$(readlink "/proc/$pid/exe" 2>/dev/null || true)
+  [[ -n $raw_exe ]] || return 0
+  # a pruned version shows up as "<path> (deleted)"
+  if [[ $raw_exe != *" (deleted)"* ]]; then
+    running_exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)
+    [[ $running_exe != "$target_exe" ]] || return 0
+  fi
+  # every open session is a direct child of the server. Counting the unit's
+  # cgroup instead is wrong: `op daemon`, started by the 1Password CLI from a
+  # session, detaches into the same cgroup and outlives every session.
+  sessions=$(pgrep -P "$pid" 2>/dev/null | wc -l || true)
+  if [[ $sessions -gt 0 ]]; then
+    echo "claude-drift-check: $unit runs ${raw_exe##*/}, installed ${target_exe##*/}; open session, deferring" >&2
+    return 0
+  fi
+  echo "claude-drift-check: $unit runs ${raw_exe##*/}, installed ${target_exe##*/}; restarting"
+  systemctl --user restart "$unit"
+}
+
+check_unit claude-remote.service

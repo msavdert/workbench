@@ -18,6 +18,16 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-10-14: Claude Remote Control reduced to the single `work` server; the four
+hand-started per-project servers (perp-lab, quant-research, ays-english-class,
+trader) were removed. Project sessions are opened on demand by the `work`
+agent with `remote-session open <name>` (tmux + transient unit, bypass, newest
+binary); `claude-drift-check.timer` restarts the idle server after a
+self-update. `remote-session` is the only helper (open|clone|ls|close): the
+`claude-remote@` template and `remote-add/rm/ls` are deleted, bootstrap removes
+them from the box and `step_remotes` runs `remote-session clone`. Applied with
+`bootstrap.sh user remotes` (it cloned the missing `~/work/suhuf`).
+
 2026-10-10: `@dbx-app/cli` moved from shared `config.toml` to `config.box.toml`
 to remain box-only; `pipx:oci-cli` added to shared `config.toml` for both
 mac and box.
@@ -290,6 +300,19 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
+-1. Done 2026-10-14. The drift check first counted the unit's cgroup and
+   deferred forever on a detached `op daemon`; it now counts the server's
+   direct children. Phone test passed 2026-10-14: `work` agent ran
+   `remote-session open trader`, the session showed up in the app.
+-0. agy-drift-check removal is on hold. Operator believes the hub's Update
+   button now updates and restarts the daemon; the journal says otherwise:
+   all 4 daemon starts in the 7 days to 2026-10-14 were drift-check restarts,
+   and the self-updater swapped binaries in place inside the mise install dir
+   (`antigravity.<n>.old`) without restarting. Timer disabled on the box only
+   (repo still enables it) as a test: on the next agy release click Update in
+   the hub, then check whether `antigravity-cli-daemon` got a new PID and exe.
+   Restarted -> delete the drift check from the repo; not restarted -> re-enable.
+
 0. Box side of the 2026-09-07 settings change closed 2026-09-08:
    `home/install.sh --check box` printed `no drift`. The mac side closed
    2026-09-14: the rule did NOT hold on a change - clearing the model in
@@ -318,7 +341,7 @@ present). Agent gateway only - savdert has no op access by design.
 2. agy: run the $HOME instruction-layer probe (does agy read ~/AGENTS.md or
    ~/GEMINI.md?) and record the answer in docs/03-runbook.md; only workspace-
    relative paths were confirmed during the agy review.
-3. Optional: add `knowledge` to `box/remotes.list` (`--clone-only`) if it
+3. Optional: add `knowledge` to `box/remotes.list` if it
    should be present on the box again.
 
 ## Open questions
@@ -341,6 +364,8 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-14: one `work` Remote Control server only; `remote-session` opens bypass project
+  sessions on demand, `claude-drift-check.timer` fixes binary drift of idle servers.
 - 2026-10-14: ssh:sync writes `<title>-pub` for items with `public-hostname`, adds
   `Include config.local`, ignores gpg-agent's ssh socket (task, bashrc, zshrc).
 - 2026-10-14: agy audit run inherited the op token and sent the devenv SSH key

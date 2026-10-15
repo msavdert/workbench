@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# remote-session open <name> [git-url] [--model M]
+# remote-session clone <name> [git-url]
+# remote-session ls
+# remote-session close <name>
+#
+# The one command for Claude app sessions on this machine. The always-on
+# `work` server (claude-remote.service, ~/work) is the entry point; project
+# work happens in one-off sessions it opens here.
+#   open   clone + trust ~/work/<name>, then start `claude --remote-control
+#          <name>` in bypassPermissions in a detached tmux; prints its URL.
+#          The session appears in the app on its own. It is the scripted form
+#          of `cd ~/work/<name> && claude --remote-control`.
+#   clone  clone (if a url is given and the directory is missing) and
+#          pre-accept workspace trust, no session; box/remotes.list uses it
+#   ls     the `work` server and the open sessions
+#   close  end a session (its history stays in the app)
+#
+# Each session runs as its own transient systemd user unit
+# (remote-session-<name>) rather than inside the caller's cgroup: a session
+# opened from the `work` server must survive that server's restart, and must
+# not count as "busy" for claude-drift-check. A new session always starts the
+# currently installed Claude Code binary.
+# Attach from a shell: tmux -L remote-session-<name> attach
+set -euo pipefail
+
+usage() {
+  sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'
+  exit 1
+}
+
+unit_of() { echo "remote-session-$1"; }
+
+# no leading dot or dash: `..` would resolve to $HOME, `-x` reads as an option
+check_name() {
+  [[ $1 =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]*$ ]] || {
+    echo "name must match [A-Za-z0-9_][A-Za-z0-9_.-]*" >&2
+    exit 1
+  }
+}
+
+# clone_trust <name> [url]: idempotent; Claude refuses to start in an
+# untrusted directory without a TTY to answer the dialog
+clone_trust() {
+  local name=$1 url=${2:-} dir cj
+  dir="$HOME/work/$name"
+  if [[ ! -d $dir ]]; then
+    if [[ -n $url ]]; then
+      git clone --quiet "$url" "$dir"
+    else
+      mkdir -p "$dir"
+      echo "created empty $dir (no url given)" >&2
+    fi
+  fi
+  cj="$HOME/.claude.json"
+  [[ -f $cj ]] || echo '{}' >"$cj"
+  jq --arg d "$dir" '.projects[$d] = ((.projects[$d] // {}) + {hasTrustDialogAccepted: true}) | .remoteDialogSeen = true | .hasCompletedOnboarding = true' \
+    "$cj" >"$cj.tmp" && mv "$cj.tmp" "$cj" && chmod 600 "$cj"
+}
+
+cmd_clone() {
+  [[ $# -ge 1 && $# -le 2 ]] || usage
+  check_name "$1"
+  clone_trust "$@"
+  echo "$1: cloned + trusted ($HOME/work/$1)"
+}
+
+cmd_ls() {
+  printf 'work server: %s\n' "$(systemctl --user is-active claude-remote.service 2>/dev/null || true)"
+  systemctl --user list-units 'remote-session-*' --no-legend --plain --all |
+    awk '{sub(/\.service$/, "", $1); sub(/^remote-session-/, "", $1); print "session " $1 ": " $3 "/" $4}'
+}
+
+cmd_close() {
+  [[ $# -eq 1 ]] || usage
+  check_name "$1"
+  # --collect unloads a unit whose session already ended; that is not an error
+  if systemctl --user is-active --quiet "$(unit_of "$1").service"; then
+    systemctl --user stop "$(unit_of "$1").service"
+    echo "$1: closed"
+  else
+    echo "$1: not running"
+  fi
+}
+
+cmd_open() {
+  local name="" url="" model="" unit sock tname dir out
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --model)
+        model=${2:?}
+        shift
+        ;;
+      -*) usage ;;
+      *) if [[ -z $name ]]; then name=$1; elif [[ -z $url ]]; then url=$1; else usage; fi ;;
+    esac
+    shift
+  done
+  [[ -n $name ]] || usage
+  check_name "$name"
+  # the tmux command line below is re-parsed by a shell
+  [[ -z $model || $model =~ ^[A-Za-z0-9._:/@\[\]-]+$ ]] || {
+    echo "unexpected characters in --model" >&2
+    exit 1
+  }
+  unit=$(unit_of "$name")
+  sock=$unit
+  # tmux rewrites "." in session names to "_"; target it by the rewritten name
+  tname=${name//./_}
+  dir="$HOME/work/$name"
+
+  if systemctl --user is-active --quiet "$unit.service"; then
+    echo "$name: already running (remote-session close $name to restart it)" >&2
+    exit 1
+  fi
+  # a dead unit of the same name blocks systemd-run
+  systemctl --user reset-failed "$unit.service" 2>/dev/null || true
+
+  clone_trust "$name" "$url"
+
+  local -a claude_cmd=(claude --remote-control "$name" --permission-mode bypassPermissions)
+  [[ -n $model ]] && claude_cmd+=(--model "$model")
+
+  # Same environment as claude-remote.service: a transient unit starts from
+  # the user manager's environment, not the caller's shell.
+  # explicit suffix: for a name like "api.socket" systemd would take the type
+  # from the name
+  systemd-run --user --quiet --collect --unit "$unit.service" \
+    --property Type=forking \
+    --property WorkingDirectory="$dir" \
+    --property EnvironmentFile=-"$HOME/.config/op/env" \
+    --setenv OP_ENV_DIR="$HOME/.config/op-env" \
+    --setenv DEBIAN_FRONTEND=noninteractive \
+    --setenv NO_COLOR=1 \
+    --setenv PAGER=cat \
+    --setenv GIT_PAGER=cat \
+    --setenv PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    /usr/bin/tmux -L "$sock" new-session -d -s "$tname" -x 200 -y 50 -c "$dir" "${claude_cmd[*]}"
+
+  # the session URL is printed once Remote Control has registered
+  for _ in $(seq 1 15); do
+    out=$(tmux -L "$sock" capture-pane -p -t "=$tname:" 2>/dev/null || true)
+    if grep -qoE 'https://claude\.ai/code/session_[A-Za-z0-9]+' <<<"$out"; then
+      echo "$name: open  ($dir)"
+      grep -m1 -oE 'https://claude\.ai/code/session_[A-Za-z0-9]+' <<<"$out"
+      return 0
+    fi
+    sleep 2
+  done
+  # stop it first, so a retry is not blocked by a half-started session
+  systemctl --user stop "$unit.service" 2>/dev/null || true
+  echo "$name: no Remote Control URL after 30s, stopped; screen:" >&2
+  grep -v '^[[:space:]]*$' <<<"$out" | tail -15 >&2 || true
+  exit 1
+}
+
+case ${1:-} in
+  open | clone | ls | close)
+    sub=$1
+    shift
+    "cmd_$sub" "$@"
+    ;;
+  *) usage ;;
+esac

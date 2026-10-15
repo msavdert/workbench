@@ -221,11 +221,20 @@ step_user() {
   put 0755 "$files/agent-session" "$AGENT_HOME/.local/bin/agent-session"
   # installed but not enabled: needs a one-time interactive `claude auth login`
   put 0644 "$files/claude-remote.service" "$AGENT_HOME/.config/systemd/user/claude-remote.service"
-  # per-project servers: claude-remote@<name> -> ~/work/<name>, via remote-add
-  put 0644 "$files/claude-remote@.service" "$AGENT_HOME/.config/systemd/user/claude-remote@.service"
-  put 0755 "$files/remote-add" "$AGENT_HOME/.local/bin/remote-add"
-  put 0755 "$files/remote-rm" "$AGENT_HOME/.local/bin/remote-rm"
-  put 0755 "$files/remote-ls" "$AGENT_HOME/.local/bin/remote-ls"
+  # project sessions opened by the `work` agent, and clone+trust for remotes.list
+  put 0755 "$files/remote-session" "$AGENT_HOME/.local/bin/remote-session"
+  # retired 2026-10-14: per-project servers (claude-remote@<name>) and their
+  # remote-add/rm/ls helpers, replaced by remote-session
+  as_agent systemctl --user stop 'claude-remote@*' 2>/dev/null || true
+  rm -f "$AGENT_HOME/.config/systemd/user/claude-remote@.service" \
+    "$AGENT_HOME/.local/bin/remote-add" "$AGENT_HOME/.local/bin/remote-rm" \
+    "$AGENT_HOME/.local/bin/remote-ls" \
+    "$AGENT_HOME"/.config/systemd/user/default.target.wants/claude-remote@*.service
+  rm -rf "$AGENT_HOME/.config/claude-remote"
+  # restarts idle Remote Control servers after Claude Code updated itself
+  put 0755 "$files/claude-drift-check" "$AGENT_HOME/.local/bin/claude-drift-check"
+  put 0644 "$files/claude-drift-check.service" "$AGENT_HOME/.config/systemd/user/claude-drift-check.service"
+  put 0644 "$files/claude-drift-check.timer" "$AGENT_HOME/.config/systemd/user/claude-drift-check.timer"
   # agy Remote Control: one daemon per machine, registered once by hand with
   # `agy remote-control start --name <instance>` (needs the OAuth token). The
   # drop-in only repoints ExecStart at mise; it is inert until that unit exists.
@@ -237,6 +246,7 @@ step_user() {
   put 0644 "$files/agy-drift-check.timer" "$AGENT_HOME/.config/systemd/user/agy-drift-check.timer"
   as_agent systemctl --user daemon-reload 2>/dev/null || true
   as_agent systemctl --user enable --now agy-drift-check.timer 2>/dev/null || true
+  as_agent systemctl --user enable --now claude-drift-check.timer 2>/dev/null || true
   # The hub's General settings live in userSettings of this file; without them
   # every tool call in a remote session asks for approval. Seed exactly what
   # the hub wrote when "Security Preset: Turbo mode" and a Network Access
@@ -350,7 +360,7 @@ step_remotes() {
   # a fresh VM has ~/work/workbench only if listed here; login shell for the op token
   grep -vE '^\s*(#|$)' "$list" | while read -r line; do
     # shellcheck disable=SC2086
-    as_agent bash -lc "remote-add $line" | sed 's/^/  /'
+    as_agent bash -lc "remote-session clone $line" | sed 's/^/  /'
   done
 }
 
@@ -547,6 +557,7 @@ step_verify() {
   check test -d "$AGENT_HOME/work/vault/.git"
   check as_agent bash -lc 'systemctl --user is-active vault-compile.timer'
   check as_agent bash -lc 'systemctl --user is-active agy-drift-check.timer'
+  check as_agent bash -lc 'systemctl --user is-active claude-drift-check.timer'
   [[ $ok == 1 ]] || die "verification failed"
 }
 
