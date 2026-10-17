@@ -18,6 +18,13 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-10-16: after a `pve` reboot the box had no internet: the SDN SNAT rule
+for `10.0.0.0/24` was missing because the `vnet0` post-up hook lost the
+xtables lock at boot (no `-w`). Fixed on the host by hand with
+`sdn-iptables-ensure.service`, which replays missing SDN rules after boot;
+verified by a `pve` reboot that reproduced the race and was repaired by the
+unit. Record: `docs/reference/pve-sdn-snat.md`.
+
 2026-10-16: the git repository `vault` is retired (operator decision, D18 in
 `docs/00-vision.md`): a write-only system with no reader. Removed from this
 repository: `step_vault`, the `vault-compile` and `vault-sessions` units,
@@ -30,7 +37,7 @@ box the same day: GitHub repo archived (private, read-only, verified fully
 pushed first), `~/work/vault` clone deleted, `bootstrap.sh user home hermes
 verify` run (all checks ok, vault units gone), the vault section removed from
 the live `~/.hermes/SOUL.md` and two vault entries from its `MEMORY.md`, gateway
-restarted. Not committed yet. Mac side is the operator's: check `~/vault` for
+restarted. Committed as 389f815. Mac side is the operator's: check `~/vault` for
 unpushed work, delete it, `brew uninstall git-crypt`. The Obsidian Drive vault
 and its mac scripts are untouched.
 
@@ -316,8 +323,8 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
--2. Operator: approve the commit of the vault retirement (box side already
-   applied 2026-10-16), then clean the mac (`~/vault`, git-crypt).
+-2. Operator: clean the mac after the vault retirement (389f815): check
+   `~/vault` for unpushed work, delete it, `brew uninstall git-crypt`.
 -1. Done 2026-10-14. The drift check first counted the unit's cgroup and
    deferred forever on a detached `op daemon`; it now counts the server's
    direct children. Phone test passed 2026-10-14: `work` agent ran
@@ -378,6 +385,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-16: box offline after `pve` reboot (SDN SNAT hook lost the xtables lock); `sdn-iptables-ensure.service` added on the host, reboot-verified.
 - 2026-10-16: vault repo retired (D18): its units, `brain`, `step_vault`, git-crypt, gitleaks and the Hermes vault section removed; archived on GitHub by the operator.
 - 2026-10-14: agy-drift-check retired; the hub's Update re-execs the agy daemon in place.
 - 2026-10-14: one `work` Remote Control server only; `remote-session` opens bypass project

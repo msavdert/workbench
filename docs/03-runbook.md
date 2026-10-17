@@ -322,6 +322,12 @@ The first `claude auth login` on it is manual, as on every substrate.
   Hetzner Robot console. Incident record, re-apply and rollback steps:
   `docs/reference/pve-nic-hang.md`. The host is not managed by this
   repository; that is deliberate.
+- **The box reaches 10.0.0.1 but nothing beyond, after a `pve` reboot** - the
+  SDN SNAT rule for `10.0.0.0/24` is missing from `pve`'s `nat` table: the
+  `vnet0` post-up hook lost the xtables lock race at boot. Since 2026-10-16
+  `sdn-iptables-ensure.service` on the host replays it;
+  `ssh pve-vm-ssh systemctl restart sdn-iptables-ensure` repairs it by hand.
+  Record and re-apply steps: `docs/reference/pve-sdn-snat.md`.
 - **cloud-init did not run as expected** - on the VM:
   `sudo cloud-init status --long; sudo cat /var/log/cloud-init-output.log`.
 - **claude-remote fails with "Workspace not trusted" or loops on "Enable
