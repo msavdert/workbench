@@ -323,6 +323,10 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
+-3. Operator, later: reboot `pve` once more to exercise the revised
+   `sdn-iptables-ensure.sh` (parsing hardened after the audit, so far only run
+   live with `systemctl restart`); check per `docs/reference/pve-sdn-snat.md`
+   "Checking" and that the box reaches the internet.
 -2. Operator: clean the mac after the vault retirement (389f815): check
    `~/vault` for unpushed work, delete it, `brew uninstall git-crypt`.
 -1. Done 2026-10-14. The drift check first counted the unit's cgroup and
@@ -385,7 +389,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
-- 2026-10-16: box offline after `pve` reboot (SDN SNAT hook lost the xtables lock); `sdn-iptables-ensure.service` added on the host, reboot-verified.
+- 2026-10-16: box offline after `pve` reboot (SDN SNAT hook lost the xtables lock); `sdn-iptables-ensure.service` added on the host, reboot-verified before the post-audit hardening.
 - 2026-10-16: vault repo retired (D18): its units, `brain`, `step_vault`, git-crypt, gitleaks and the Hermes vault section removed; archived on GitHub by the operator.
 - 2026-10-14: agy-drift-check retired; the hub's Update re-execs the agy daemon in place.
 - 2026-10-14: one `work` Remote Control server only; `remote-session` opens bypass project
