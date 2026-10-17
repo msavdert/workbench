@@ -253,7 +253,18 @@ manifest() {
   link git/allowed_signers "$HOME/.config/git/allowed_signers"
   link op-env "$HOME/.config/op-env"
   link bin/opwith "$HOME/.local/bin/opwith"
-  link bin/brain "$HOME/.local/bin/brain"
+  # retired 2026-10-16 with the vault: drop the now-dangling `brain` link
+  if [[ -L $HOME/.local/bin/brain && ! -e $HOME/.local/bin/brain ]]; then
+    if ((CHECK)); then
+      log DRIFT "$HOME/.local/bin/brain (dangling retired link)"
+      DRIFT=1
+    elif ((DRY)); then
+      log would "remove $HOME/.local/bin/brain"
+    else
+      rm -f "$HOME/.local/bin/brain"
+      log rm "$HOME/.local/bin/brain"
+    fi
+  fi
 
   # Claude Code (D8): settings composed, statusline linked, nothing else.
   # `model` and `modelSettings` are seed keys: the repo supplies the first

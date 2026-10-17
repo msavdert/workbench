@@ -54,7 +54,7 @@ Acceptance, checked before a skill is linked anywhere:
 
 ## Procedure: changing a skill
 
-Measured in vault `50-knowledge/ai/experiments/009-skill-creator/`; the loop is Anthropic's
+Measured in the archived `vault` repository, `50-knowledge/ai/experiments/009-skill-creator/`; the loop is Anthropic's
 `skill-creator`, fetched when needed rather than kept resident:
 
 ```bash
@@ -78,8 +78,9 @@ git -C "$SCRATCH/anthropic-skills" sparse-checkout set skills/skill-creator
 Source: Anthropic Applied AI talk "Tool, skill, or subagent: Decomposing
 an agent", Claude Code team talk "Stop babysitting your agents" (both
 analyzed 2026-08-06), and Warp's "Teaching agents to learn from your
-team" (analyzed 2026-08-06). Full findings:
-vault `50-knowledge/ai/journal/2026-08-06-transkript-bulgulari.md` and
-`...-transkript-bulgulari-2.md`. Structure and procedure sections: vault
-`50-knowledge/ai/experiments/009-skill-creator/EXPERIMENT.md` (2026-08-16).
+team" (analyzed 2026-08-06). Full findings, in the archived `vault`
+repository: `50-knowledge/ai/journal/2026-08-06-transkript-bulgulari.md` and
+`...-transkript-bulgulari-2.md`. Structure and procedure sections: the same
+repository, `50-knowledge/ai/experiments/009-skill-creator/EXPERIMENT.md`
+(2026-08-16).
 The skills moved here from the archived `ai-hub` repository on 2026-09-02.

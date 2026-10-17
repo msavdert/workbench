@@ -406,10 +406,10 @@ operator's logins (`docker run hello-world`, `opwith git gh api user`,
 `op whoami`, `claude --version`) are run by hand after `make claude-remote`;
 the rebuild checklist above lists them.
 
-## Hermes gateways and the nightly vault compile
+## Hermes gateways
 
 Two always-on Telegram assistants (personal under `agent`, family under the
-isolated `savdert` user) and the `vault-compile.timer` live on the box;
+isolated `savdert` user) live on the box;
 `docs/reference/hermes.md` is the full reference (secret rotation, re-seed,
 update, troubleshooting). Day-2 essentials:
 
@@ -417,15 +417,13 @@ update, troubleshooting). Day-2 essentials:
 |---|---|
 | Gateway status/logs | as the owning user: `systemctl --user status hermes-gateway`, `journalctl --user -u hermes-gateway -f` |
 | Re-provision hermes only | `make provision STEPS=hermes` (re-renders `.env` from 1Password `dotfiles/Hermes`) |
-| A nightly unit failed | the box posts `<host>: <unit> FAILED` plus the unit's last journal lines to the operator's Telegram home chat (`unit-failure-notify@.service`, `OnFailure=` on vault-compile, vault-sessions, hermes-backup); test with `systemctl --user start unit-failure-notify@selftest.service` |
-| The vault's `private/` tier | git-crypt encrypted (vault HANDOFF D16); the box clone stays locked and needs no key (box: mise `aqua:AGWA/git-crypt`, mac: brew; the aqua package ships linux/amd64 only). Key: 1Password document `vault-git-crypt-key` (dotfiles), fetched with `op document get` (never `op read`, it mangles binary). Unlock only on the mac; see `private/README.md` in the vault |
-| Run the compile now | `ssh agent-vm-ssh 'systemctl --user start vault-compile.service'`; then check `~/work/vault/.state/compile.report` |
+| A nightly unit failed | the box posts `<host>: <unit> FAILED` plus the unit's last journal lines to the operator's Telegram home chat (`unit-failure-notify@.service`, `OnFailure=` on hermes-backup); test with `systemctl --user start unit-failure-notify@selftest.service` |
 
 ## Obsidian vault mirror (mac)
 
 The operator's Obsidian vault lives in Google Drive and syncs between the mac
-and the work Windows machine. This is not the `vault` repository above; it is
-a separate Google Drive tree. `obsidian-sync` mirrors it one way into the
+and the work Windows machine. This is not the retired `vault` git repository
+(archived 2026-10-16); it is a separate Google Drive tree. `obsidian-sync` mirrors it one way into the
 iCloud Obsidian container so the iPhone can open it read-only. The vault's own
 note "Obsidian - iCloud Mirror" is the full runbook (architecture, guards,
 troubleshooting, rejected alternatives); this table is the day-2 summary.

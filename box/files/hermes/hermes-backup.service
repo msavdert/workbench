@@ -6,7 +6,7 @@ OnFailure=unit-failure-notify@%p.service
 Type=oneshot
 # mise installs age and the shims live there; op's service-account token
 # normally enters through the login shell, which a systemd unit does not
-# have - the same EnvironmentFile pattern as vault-compile.service.
+# have - the same EnvironmentFile pattern as unit-failure-notify@.service.
 Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
 EnvironmentFile=%h/.config/op/env
 # opwith resolves the op:// refs in ~/.config/op-env/hermes-backup.env into

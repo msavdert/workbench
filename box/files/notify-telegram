@@ -2,8 +2,8 @@
 # notify-telegram <unit>  (box/files, installed to ~/.local/bin by bootstrap)
 # Posts one line to the operator's Telegram home chat, through the personal
 # hermes bot, when a nightly unit fails. Wired as OnFailure= on the
-# vault-compile, vault-sessions and hermes-backup units, so a broken night is
-# seen the next morning instead of weeks later in a .state/*.err file.
+# hermes-backup unit, so a broken night is seen the next morning instead of
+# weeks later in a log nobody reads.
 # Expects TELEGRAM_BOT_TOKEN and TELEGRAM_HOME_CHANNEL in the environment
 # (opwith notify ... resolves them from 1Password).
 set -euo pipefail

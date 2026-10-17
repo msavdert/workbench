@@ -8,8 +8,5 @@
 workbench https://github.com/msavdert/workbench.git
 dba-to-dbre https://github.com/msavdert/dba-to-dbre.git
 suhuf https://github.com/msavdert/suhuf.git
-# private second-brain repo: written to by hermes (00-inbox) and the nightly
-# vault-compile timer; brain sessions live on the mac (vault HANDOFF D7/D9)
-vault https://github.com/msavdert/vault.git
 agentshard https://github.com/msavdert/agentshard.git
 quant-research https://github.com/msavdert/quant-research.git

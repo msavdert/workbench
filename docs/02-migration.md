@@ -62,7 +62,7 @@ not migrated.
 | `runtime/claude/CLAUDE.md`, `agents/`, `skills/`, `hooks/` | `agents/` |
 | `runtime/project-templates/`, `runtime/overnight/` | `agents/templates/`, `agents/overnight/` |
 | `install.sh` | absorbed into `home/install.sh` (same symlink pattern, same boundary-gate self-check) |
-| `doctrine/`, `lab/`, `journal/`, README | stayed in ai-hub until 2026-09-02, then the vault (see below) |
+| `doctrine/`, `lab/`, `journal/`, README | stayed in ai-hub until 2026-09-02, then the vault (see below); the vault was archived 2026-10-16, the text stays readable there |
 
 ## Phases
 
@@ -201,3 +201,17 @@ project skills (`skill-creator`, `youtube-whisper-transcriber`,
 `lab/templates/`, `lab/overnight/` and `lab/runs/TEMPLATE.md` were not
 taken. The box checkout and the `ai-hub` line in `box/remotes.list` are
 gone; the generic `work` environment covers what the checkout was for.
+
+## 2026-10-16: vault retired
+
+The git repository `vault` (github.com/msavdert/vault; `50-knowledge/ai/`
+text moved there on 2026-09-02, see above) is archived on GitHub, read-only,
+history intact. It was a write-only system: hermes, the `brain` CLI and two
+nightly timers fed it and nothing read it back. Removed here: the
+`vault-compile` and `vault-sessions` units, `home/bin/brain`, `step_vault`,
+the `vault` line in `box/remotes.list`, `git-crypt` (mise and Brewfile) and
+`gitleaks` (only the vault's pre-commit used it), and the vault section of
+the personal Hermes SOUL. The AI doctrine, experiments and journal have no
+new home; they stay readable in the archived repository. The separate
+Obsidian vault on Google Drive and its mac mirror scripts are a different
+thing and are unchanged.

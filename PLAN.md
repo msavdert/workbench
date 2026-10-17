@@ -18,6 +18,22 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-10-16: the git repository `vault` is retired (operator decision, D18 in
+`docs/00-vision.md`): a write-only system with no reader. Removed from this
+repository: `step_vault`, the `vault-compile` and `vault-sessions` units,
+`home/bin/brain`, the `vault` entry in `box/remotes.list`, `git-crypt` (mise
+and Brewfile), `gitleaks`, the vault section of the personal Hermes SOUL; the
+oss-project-eval skill now reports its record in the conversation. `step_user`
+removes the four units from the box on the next provision. The AI doctrine
+and journal stay readable in the archived `vault` repository. Applied on the
+box the same day: GitHub repo archived (private, read-only, verified fully
+pushed first), `~/work/vault` clone deleted, `bootstrap.sh user home hermes
+verify` run (all checks ok, vault units gone), the vault section removed from
+the live `~/.hermes/SOUL.md` and two vault entries from its `MEMORY.md`, gateway
+restarted. Not committed yet. Mac side is the operator's: check `~/vault` for
+unpushed work, delete it, `brew uninstall git-crypt`. The Obsidian Drive vault
+and its mac scripts are untouched.
+
 2026-10-14: Claude Remote Control reduced to the single `work` server; the four
 hand-started per-project servers (perp-lab, quant-research, ays-english-class,
 trader) were removed. Project sessions are opened on demand by the `work`
@@ -300,6 +316,8 @@ present). Agent gateway only - savdert has no op access by design.
 
 ## Next
 
+-2. Operator: approve the commit of the vault retirement (box side already
+   applied 2026-10-16), then clean the mac (`~/vault`, git-crypt).
 -1. Done 2026-10-14. The drift check first counted the unit's cgroup and
    deferred forever on a detached `op daemon`; it now counts the server's
    direct children. Phone test passed 2026-10-14: `work` agent ran
@@ -324,7 +342,7 @@ present). Agent gateway only - savdert has no op access by design.
    (git-crypt from mise), mac unlocked with the 1Password key.
 2. Closed 2026-09-01: the moved medical note stays in vault history; the
    operator judged it minor and the repo is private, so no history rewrite.
-3. Verify the morning after: `~/work/vault/.state/compile.report` lists six
+3. Void 2026-10-16 (vault retired). Was: verify the morning after: `~/work/vault/.state/compile.report` lists six
    inputs and at least one note under `50-knowledge/`; the 2026-09-01 daily
    log carries no "prompt injection" alarm.
 4. Review debt from the same session (not started): PLAN.md `Now` and `Log`
@@ -360,6 +378,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-16: vault repo retired (D18): its units, `brain`, `step_vault`, git-crypt, gitleaks and the Hermes vault section removed; archived on GitHub by the operator.
 - 2026-10-14: agy-drift-check retired; the hub's Update re-execs the agy daemon in place.
 - 2026-10-14: one `work` Remote Control server only; `remote-session` opens bypass project
   sessions on demand, `claude-drift-check.timer` fixes binary drift of idle servers.

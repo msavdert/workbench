@@ -19,7 +19,7 @@ For details on model parameter sizes, accuracy metrics, and why `turbo` is the p
 
 ## Where transcripts belong
 
-Write transcripts into the **data** workspace (`~/work/knowledge/transcripts/`), never into the vault's `50-knowledge/ai/`. Transcripts are raw input material, not doctrine and not measurement; a few hundred of them would turn the vault's history into a document store. Pass `--output-dir` explicitly rather than relying on the default.
+Write transcripts into the **data** workspace (`~/work/knowledge/transcripts/`), never into a git repository. Transcripts are raw input material, not doctrine and not measurement; a few hundred of them would turn a repository's history into a document store. Pass `--output-dir` explicitly rather than relying on the default.
 
 ## Running it
 

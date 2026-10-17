@@ -51,8 +51,9 @@ Rules that follow from the table:
   sonnet at medium, and `explore`, `grunt` on haiku at low; the opus
   choice dated from 2026-09-01 and was based on the operator's daily use,
   reported rather than measured. If a stronger model or more effort for
-  any agent is ever warranted, measure it and record the result in the
-  vault's `50-knowledge/ai/experiments/`.
+  any agent is ever warranted, measure it and report the result in the
+  session (earlier experiment records are in the archived `vault`
+  repository, `50-knowledge/ai/experiments/`).
 - No delegate spawns delegates. `executor` has `disallowedTools: Agent`
   and `auditor` has a read-only allowlist, so neither can start its own
   review chain; one delegate is one process, and the architect decides
@@ -86,6 +87,6 @@ human/model to read, not in a schema a caller depends on.
 ---
 Source: Anthropic Applied AI talk "Tool, skill, or subagent: Decomposing
 an agent" (analyzed 2026-08-06). Full findings:
-vault `50-knowledge/ai/journal/2026-08-06-transkript-bulgulari.md`.
+archived `vault` repository, `50-knowledge/ai/journal/2026-08-06-transkript-bulgulari.md`.
 `executor` and `auditor` were lifted from the agentshard project on
 2026-09-02, where they replaced the same builder/reviewer loop.

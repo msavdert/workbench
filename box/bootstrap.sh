@@ -231,6 +231,17 @@ step_user() {
     "$AGENT_HOME/.local/bin/remote-ls" \
     "$AGENT_HOME"/.config/systemd/user/default.target.wants/claude-remote@*.service
   rm -rf "$AGENT_HOME/.config/claude-remote"
+  # retired 2026-10-16: the vault repo's nightly sessions digest and compile
+  # timers (the vault was archived; nothing reads what they wrote)
+  local vunit
+  for vunit in vault-sessions.timer vault-compile.timer; do
+    as_agent systemctl --user disable --now "$vunit" 2>/dev/null || true
+  done
+  as_agent systemctl --user stop vault-sessions.service vault-compile.service 2>/dev/null || true
+  rm -f "$AGENT_HOME"/.config/systemd/user/vault-compile.{service,timer} \
+    "$AGENT_HOME"/.config/systemd/user/vault-sessions.{service,timer} \
+    "$AGENT_HOME"/.config/systemd/user/timers.target.wants/vault-*.timer
+  as_agent systemctl --user daemon-reload 2>/dev/null || true
   # restarts idle Remote Control servers after Claude Code updated itself
   put 0755 "$files/claude-drift-check" "$AGENT_HOME/.local/bin/claude-drift-check"
   put 0644 "$files/claude-drift-check.service" "$AGENT_HOME/.config/systemd/user/claude-drift-check.service"
@@ -367,9 +378,9 @@ step_remotes() {
 
 # ---------------------------------------------------------------------------
 step_hermes() {
-  log "hermes: two isolated Telegram gateways (agent: personal+vault, savdert: family)"
+  log "hermes: two isolated Telegram gateways (agent: personal, savdert: family)"
   # The family gateway runs as its own OS user: no sudo, no 1Password token,
-  # and /home/agent (0750) is unreadable to it - the personal vault stays
+  # and /home/agent (0750) is unreadable to it - the operator's personal home stays
   # filesystem-isolated from the shared family bot (docs/reference/hermes.md).
   if ! id savdert &>/dev/null; then
     useradd -m -s /bin/bash savdert
@@ -471,6 +482,11 @@ step_hermes() {
   # home/install.sh) at RUNTIME - no secrets on disk. The age PRIVATE key
   # never leaves 1Password.
   local bfiles="$files/hermes"
+  # failure notices: OnFailure= on hermes-backup posts to Telegram
+  put 0755 "$files/notify-telegram" "$AGENT_HOME/.local/bin/notify-telegram"
+  chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.local/bin/notify-telegram"
+  put 0644 "$files/unit-failure-notify@.service" "$AGENT_HOME/.config/systemd/user/unit-failure-notify@.service"
+  chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.config/systemd/user/unit-failure-notify@.service"
   install -o "$AGENT_USER" -g "$AGENT_USER" -m 0755 \
     "$bfiles/hermes-backup.py" "$AGENT_HOME/.hermes/hermes-backup.py"
   install -o "$AGENT_USER" -g "$AGENT_USER" -m 0644 \
@@ -483,35 +499,6 @@ step_hermes() {
   as_agent systemctl --user daemon-reload
   as_agent systemctl --user enable --now hermes-backup.timer
   echo "  installed hermes-backup (timer 04:30 America/New_York)"
-}
-
-# ---------------------------------------------------------------------------
-step_vault() {
-  log "vault: nightly sessions digest + compile timers against ~/work/vault"
-  if [[ -d $AGENT_HOME/work/vault/.git ]]; then
-    # the vault's gitleaks pre-commit gate is a tracked .githooks dir; the
-    # hooksPath setting is per-clone and must be converged here
-    as_agent git -C "$AGENT_HOME/work/vault" config core.hooksPath .githooks
-  else
-    echo "  WARN: ~/work/vault missing; step_remotes should have cloned it"
-  fi
-  # failure notices: OnFailure= on the nightly units posts to Telegram
-  put 0755 "$files/notify-telegram" "$AGENT_HOME/.local/bin/notify-telegram"
-  chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.local/bin/notify-telegram"
-  local unit
-  for unit in vault-compile.service vault-compile.timer \
-    vault-sessions.service vault-sessions.timer \
-    unit-failure-notify@.service; do
-    put 0644 "$files/$unit" "$AGENT_HOME/.config/systemd/user/$unit"
-    chown "$AGENT_USER:$AGENT_USER" "$AGENT_HOME/.config/systemd/user/$unit"
-  done
-  as_agent systemctl --user daemon-reload
-  # sessions digest first (02:50), compiler second (03:00): the digest must be
-  # in yesterday's daily log before the compiler distills it
-  for unit in vault-sessions.timer vault-compile.timer; do
-    as_agent systemctl --user enable --now "$unit" >/dev/null 2>&1 ||
-      echo "  WARN: $unit not active"
-  done
 }
 
 # ---------------------------------------------------------------------------
@@ -552,16 +539,14 @@ step_verify() {
   check as_agent bash -lc 'systemctl --user is-active hermes-gateway'
   check as_user savdert bash -lc 'systemctl --user is-active hermes-gateway'
   check as_user savdert bash -lc 'command -v hermes'
-  # the family user must NOT see the agent home (vault isolation)
+  # the family user must NOT see the agent home (personal-home isolation)
   check sudo -u savdert bash -c '! test -r /home/agent/work'
-  # vault: clone present, nightly compile armed
-  check test -d "$AGENT_HOME/work/vault/.git"
-  check as_agent bash -lc 'systemctl --user is-active vault-compile.timer'
+  check as_agent bash -lc 'systemctl --user is-active hermes-backup.timer'
   check as_agent bash -lc 'systemctl --user is-active claude-drift-check.timer'
   [[ $ok == 1 ]] || die "verification failed"
 }
 
-STEPS=(system apt docker user home tools remotes hermes vault verify)
+STEPS=(system apt docker user home tools remotes hermes verify)
 if [[ $# -gt 0 ]]; then STEPS=("$@"); fi
 for s in "${STEPS[@]}"; do
   declare -F "step_$s" >/dev/null || die "unknown step: $s"

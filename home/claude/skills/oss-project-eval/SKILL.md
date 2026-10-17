@@ -13,7 +13,7 @@ what was claimed, what was measured, what was decided, and why.
 
 Adoption on the strength of a README. A project's own benchmark is designed by
 the people who need it to win: it picks the workload, the baseline and the
-metric. Accepting that number is `doctrine/00-invariants.md` Law 5 violated at
+metric. Accepting that number is the archived vault's `50-knowledge/ai/doctrine/00-invariants.md` Law 5 violated at
 the tool level - the same self-verification failure that makes an agent's "done"
 untrustworthy. The counter is not scepticism as an attitude but a measurement
 against a baseline the evaluator chose.
@@ -24,7 +24,7 @@ gets re-evaluated from zero.
 
 ## Procedure
 
-This is `doctrine/05-adopting-new-terms.md` made executable. The five questions
+This is the archived vault's `50-knowledge/ai/doctrine/05-adopting-new-terms.md` made executable. The five questions
 there are the five phases here. Stopping early is a valid outcome and the common
 one - most candidates die in phase 2.
 
@@ -45,7 +45,7 @@ fraction of it.
 
 ### 2. Which invariant does it serve
 
-Name the one from `doctrine/05-adopting-new-terms.md` step 2: context economy,
+Name the one from the archived vault's `50-knowledge/ai/doctrine/05-adopting-new-terms.md` step 2: context economy,
 verification, isolation, recovery, or cost/speed. If none of them, stop and
 record the rejection - a one-line entry with a date is worth more than a
 half-finished experiment.
@@ -108,20 +108,26 @@ changed and what it replaced. An adoption that changes no file did not happen.
 
 ## Output contract
 
-One directory per evaluation:
+The record is reported in the conversation: the filled
+`assets/EXPERIMENT-template.md` (title without a number) followed by the raw
+command output per run, verbatim. Nothing is written into a knowledge
+repository; the archived `vault` repository (github.com/msavdert/vault,
+read-only since 2026-10-16) holds the older records under
+`50-knowledge/ai/experiments/` and is not a write target.
+
+If the operator asks for the record on disk, put it in the evaluated
+project's own repository or in the session scratchpad:
 
 ```
-~/work/vault/50-knowledge/ai/experiments/NNN-<project-slug>/
+<project repo or scratchpad>/<project-slug>-eval/
   EXPERIMENT.md      the record - copy assets/EXPERIMENT-template.md
   raw/               verbatim command output, one file per run
 ```
 
-`NNN` continues the existing numbering in that directory, matching the
-vault's `50-knowledge/ai/doctrine/05-adopting-new-terms.md`. The date lives in the record, not the
-directory name, so the ordering on disk stays the order the work happened in.
+The date lives in the record, not the directory name.
 
 Fill the tables. Per `CLAUDE.md` invariant 4, a narrative where a measurement
 belongs teaches nothing later.
 
 Anything the project produced that is bulky - logs, datasets, checkouts, build
-output - stays out of the hub. Keep the numbers and the commands; drop the rest.
+output - stays out of the record. Keep the numbers and the commands; drop the rest.

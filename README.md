@@ -152,8 +152,9 @@ AGENTS.md    rules for the AI agents that maintain this repository
 ## Status
 
 Migration complete and the from-scratch rebuild proven (2026-08-19). Work
-is backlog-driven (`PLAN.md`). The predecessors `agent-vm`, `dotfiles`
-and `ai-hub` are archived on GitHub; ai-hub's doctrine and journal live in
-the vault (`50-knowledge/ai/`) since 2026-09-02.
+is backlog-driven (`PLAN.md`). The predecessors `agent-vm`, `dotfiles`,
+`ai-hub` and `vault` are archived on GitHub; the AI doctrine, experiments and
+journal stay readable in the archived `vault` repository (`50-knowledge/ai/`,
+read-only since 2026-10-16).
 
 License: MIT (`LICENSE`).

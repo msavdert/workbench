@@ -72,8 +72,8 @@ current state of work and the handoff between sessions.
 
 ## Related repositories
 
-- `vault` - the operator's knowledge base and agent memory; doctrine,
-  experiments and journal about working with AI live there under
-  `50-knowledge/ai/` (from `ai-hub`, archived 2026-09-02).
-- `agent-vm`, `dotfiles` and `ai-hub` - the archived predecessors (read-only
-  on GitHub). `docs/02-migration.md` records what moved where.
+- `agent-vm`, `dotfiles`, `ai-hub` and `vault` - the archived predecessors
+  (read-only on GitHub). `docs/02-migration.md` records what moved where.
+  `vault` (archived 2026-10-16, never used as a reader) holds the AI
+  doctrine, experiments and journal under `50-knowledge/ai/`; they have no
+  other home.

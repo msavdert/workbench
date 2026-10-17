@@ -19,10 +19,11 @@ Layout:
   in one of these.
 - `~/work/workbench` how this machine is built and how the operator's
   environment and agents are configured (`home/`).
-- `~/work/vault` the operator's knowledge base and agent memory; doctrine
-  and journal about working with AI are under `50-knowledge/ai/`.
-- `agent-vm`, `dotfiles` and `ai-hub`, the predecessors of workbench, are
-  archived on GitHub and are not checked out here.
+- `agent-vm`, `dotfiles`, `ai-hub` and `vault`, the predecessors of
+  workbench, are archived on GitHub and are not checked out here. The AI
+  doctrine, experiments and journal are readable in the archived `vault`
+  repository under `50-knowledge/ai/` (github.com/msavdert/vault,
+  read-only since 2026-10-16).
 
 ## Secrets and auth
 

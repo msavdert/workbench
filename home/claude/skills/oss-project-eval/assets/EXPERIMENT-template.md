@@ -1,4 +1,4 @@
-# NNN — <project name>
+# <project name>
 
 **Source:** <repo URL> @ `<commit sha>`
 **Evaluated:** <YYYY-MM-DD>

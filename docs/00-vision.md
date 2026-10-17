@@ -41,8 +41,9 @@ ambiguity for years, not months.
 - Running the box as a container (D3).
 - A general-purpose framework. This is one operator's environment; the
   structure is meant to be copied and adapted, not parameterised.
-- Learning notes, experiments and journals about AI usage. Those live in
-  the vault (`50-knowledge/ai/`, from `ai-hub` until 2026-09-02).
+- Learning notes, experiments and journals about AI usage. The existing ones
+  stay readable in the archived `vault` repository (`50-knowledge/ai/`, from
+  `ai-hub` until 2026-09-02; archived 2026-10-16, D18); there is no new home.
 
 ## Principles
 
@@ -69,7 +70,8 @@ takes files from the predecessor repositories by hand, per the source map in
 repositories; importing it would carry three incompatible layouts into a
 fourth. `ai-hub` stayed a separate repository for doctrine, experiments and
 journal until 2026-09-02, when that text moved into the vault
-(`50-knowledge/ai/`) and the repository was archived; its runtime
+(`50-knowledge/ai/`) and the repository was archived (the vault itself was
+archived 2026-10-16, D18); its runtime
 artifacts had already moved here (D9).
 
 D2 One box, VM only, Ubuntu 24.04 LTS. Substrates: Proxmox VM (primary),
@@ -140,10 +142,12 @@ D9 Claude behaviour (global CLAUDE.md, subagents, skills, hooks) lives in
 `home/claude/` next to its settings, the same way omp and agy keep their
 behaviour files under `home/omp/` and `home/agy/`, and is linked into
 `~/.claude` by `home/install.sh`. Doctrine, experiments and journal - text a
-person reads, not files a machine loads - live in the vault, not here.
+person reads, not files a machine loads - are not kept here; the existing
+ones are in the archived `vault` repository (D18).
 Changed 2026-08-19: the top-level `agents/` tree was dissolved. Changed
 2026-09-02: `ai-hub` was archived; its three project skills became global
-skills here and its text went to the vault; see `docs/02-migration.md`.
+skills here and its text went to the vault, itself archived 2026-10-16 (D18);
+see `docs/02-migration.md`.
 
 D10 Secrets: only the 1Password service-account token is on the box
 (`~/.config/op/env`, pushed by `make secrets`). git over HTTPS uses a
@@ -234,18 +238,32 @@ tmux and zellij are not used interactively and keep their defaults.
 
 D17 Hermes gateways run on the box, as two isolated OS users. The box's
 first always-on daemons beyond Remote Control: `hermes-gateway` under
-`agent` (the operator's personal Telegram assistant, with a clone of the
-private vault repository as its write target) and `hermes-gateway` under
+`agent` (the operator's personal Telegram assistant; until 2026-10-16 it also wrote
+into the private vault repository, D18) and `hermes-gateway` under
 `savdert` (the shared family assistant). This deliberately extends the
 "agent-driven, no extra daemons" doctrine because the alternative was a
 second, unmanaged pet VM (`hermes-vm`, retired 2026-08-26 - see
 `docs/reference/hermes.md`). Isolation between the two is
 filesystem-level, not prompt-level: `savdert` has no sudo, no 1Password
 token, and cannot read `/home/agent` (0750), so the family bot cannot
-reach the personal vault even if instructed to. Provisioning is
+reach the operator's personal home even if instructed to. Provisioning is
 `box/bootstrap.sh step_hermes`; secrets render from `op://` templates at
-provision time. The nightly `vault-compile.timer` (step_vault) is part of
-the same design: the box is always on, the mac is not (vault HANDOFF D7).
+provision time. The nightly `hermes-backup.timer` is part of the same
+design: the box is always on, the mac is not.
+
+D18 The git repository `vault` is retired (2026-10-16). It was a write-only
+system: hermes, the `brain` CLI and two nightly timers (`vault-sessions`,
+`vault-compile`) fed it, and the operator never read it back. It is archived
+read-only on GitHub (github.com/msavdert/vault); everything that existed only
+for it is removed (`step_vault`, the four units, `home/bin/brain`, the
+remotes entry, `git-crypt`, `gitleaks`, the vault section of the personal
+Hermes SOUL). The AI doctrine, experiments and journal get no new home; they
+stay readable in the archived repository, and `oss-project-eval` now reports
+its record in the conversation instead of writing it anywhere. D17 changes
+accordingly: the personal gateway is a plain Telegram assistant and the
+family gateway's isolation is unchanged. The separate Obsidian vault on
+Google Drive and its mac mirror (`home/bin/obsidian-sync`,
+`obsidian-snapshot`) are not the git vault and are unaffected.
 
 ## Known differences between substrates (accepted, documented)
 

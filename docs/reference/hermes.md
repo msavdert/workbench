@@ -2,17 +2,15 @@
 
 Reference for the two Hermes Agent (Nous Research,
 https://hermes-agent.nousresearch.com) Telegram gateways provisioned by
-`box/bootstrap.sh step_hermes`, and the nightly vault compiler installed by
-`step_vault`. Decision record: `docs/00-vision.md` D17. Written 2026-08-26,
+`box/bootstrap.sh step_hermes`. Decision record: `docs/00-vision.md` D17. Written 2026-08-26,
 when both moved here from the retired `hermes-vm`.
 
 ## What runs where
 
 | Unit | OS user | Purpose | Extras |
 |---|---|---|---|
-| `hermes-gateway.service` (user) | `agent` | Operator's personal Telegram assistant; mobile write path into the private vault repo | Full install (browser automation); vault clone at `~/work/vault` |
-| `hermes-gateway.service` (user) | `savdert` | Shared family assistant for the household group chat | `--skip-browser` install; no vault, no sudo, no 1Password token |
-| `vault-compile.service` + `.timer` (user) | `agent` | Nightly distill+retire of the vault (03:00 America/New_York) | Runs `~/work/vault/.claude/scripts/compile.py`, headless `claude -p --model sonnet` |
+| `hermes-gateway.service` (user) | `agent` | Operator's personal Telegram assistant (plain assistant; no notes repository since 2026-10-16) | Full install (browser automation) |
+| `hermes-gateway.service` (user) | `savdert` | Shared family assistant for the household group chat | `--skip-browser` install; no access to the operator's home, no sudo, no 1Password token |
 
 Both users have linger enabled, so the gateways start at boot and survive
 logout. Each user is a complete, independent Hermes install (default
@@ -46,7 +44,7 @@ never sees the 1Password token; it only ever receives the rendered file.
 
 The gateways do NOT get a GitHub token. The agent user's git credential
 helper (`home/git/config`) resolves GitHub HTTPS credentials from
-1Password per invocation, so Hermes shelling out to git in `~/work/vault`
+1Password per invocation, so Hermes shelling out to git
 authenticates without any token in its environment; the savdert user has
 no git credentials at all.
 
@@ -73,59 +71,19 @@ pre-scheduled. The agent gateway also gets `GITHUB_TOKEN` in `.env`
 and `gh` CLI authenticate without the git credential helper; the savdert
 gateway does not (no git operations).
 
-## Vault integration (agent gateway only)
+## Vault retired (2026-10-16)
 
-The private repo `github.com/msavdert/vault` is cloned to
-`~/work/vault` by `step_remotes` (`box/remotes.list`). The gateway's
-SOUL.md instructs it to:
-
-- capture notes as new files `00-inbox/YYYY-MM-DD-HHMM-slug.md` (one note
-  per file, ASCII names), never editing `90-agent/` state files;
-- `git pull --rebase --autostash` before reading or writing, commit as
-  `hermes <hermes@box>`, push after writing;
-- answer questions from vault content only, saying so when the vault holds
-  no evidence (the vault's anti-hallucination rule).
-- refuse to store third-party or health material (spouse, child, medical,
-  finance): that tier is `private/` in the vault (HANDOFF D16), encrypted
-  and written only on the mac, and it must not pass through the Telegram
-  channel at all because the gateway runs on a third-party model. SOUL.md
-  is seeded once, so this rule was also applied to the live file by hand
-  on 2026-09-01.
-
-Two things feed the vault from OUTSIDE a brain session, because the vault's
-own hooks are project-scoped and never fire for a session opened in another
-repository:
-
-- `brain "..."` (`home/bin/brain`, linked to `~/.local/bin`) writes one note
-  into `00-inbox/` from any repository on either machine, records which host
-  and repo it came from, commits and pushes. It takes text from arguments or
-  stdin and needs no Claude session at all.
-- `vault-sessions.timer` (02:50 New York, ten minutes before the compiler)
-  runs the vault's `.claude/scripts/sessions.py`: it reads the previous day's
-  Claude Code transcripts from `~/.claude/projects`, keeps the sessions that
-  look like a human working, and appends ONE `### kod gunu` section to that
-  day's daily log. A session qualifies when it is a main session (not a
-  subagent sidechain), is not the vault itself (those are already flushed),
-  and the operator actually typed at least 50 characters into it -
-  `SESSIONS_MIN_PROMPT_CHARS`. Counting prompts was tried first and measured
-  wrong: "devam edelim" counts as a prompt and says nothing, while a single
-  paragraph asking for a project review is a whole day's thread. Machine
-  messages that arrive as user turns (a loaded skill, a finished background
-  task, a `!` command and its output) are filtered before the threshold, or
-  they inflate it. The material is the prompts plus each session's closing
-  assistant message, so a bullet can say what came of the request and not
-  only that it was made; everything is capped per prompt, per answer, per
-  session and in total. A day that already carries the section is skipped
-  (`--force` overrides), because the timer is `Persistent=true` and the daily
-  log is append-only. Ownership follows the same split as the compiler: this
-  repository owns the units, the vault owns the script.
-
-The nightly compiler (`vault-compile.timer`) then distills daily logs into
-`50-knowledge/` notes and retires aged material. Its logic, locking and
-error discipline live in the vault repo itself
-(`.claude/scripts/compile.py`, documented in the vault's HANDOFF.md and
-docs); this repository only owns the systemd wiring, so the mac and the
-box always run whatever the vault repo currently defines.
+Until 2026-10-16 the agent gateway was the mobile write path into the private
+`vault` repository (notes into `00-inbox/`, answers from the vault, a
+`private/` tier for family and health material that must never pass through
+Telegram), and two nightly timers (`vault-sessions`, `vault-compile`) fed and
+compiled it. The vault was a write-only system with no reader and is now
+archived (github.com/msavdert/vault, read-only). The gateway runs as a plain
+Telegram assistant: `SOUL.agent.md` no longer has a vault section, and
+`step_user` removes the two timers and their units on the next provision.
+SOUL.md is seeded once, so the live `~/.hermes/SOUL.md` was edited by hand
+on 2026-10-16 to drop the same section (and two vault entries in
+`~/.hermes/memories/MEMORY.md`).
 
 ## Backup (agent gateway, nightly)
 
@@ -157,10 +115,8 @@ mode. Restoring a backup:
 | Update hermes | as each user: `hermes update` (then the gateway restarts itself; check status). Installer re-runs are only for a missing install |
 | Rotate a secret | edit `dotfiles/Hermes` in 1Password, `make provision STEPS=hermes`, restart both gateways |
 | Re-seed config/SOUL | as the user: `rm ~/.hermes/.workbench-seeded ~/.hermes/config.yaml ~/.hermes/SOUL.md`, then `make provision STEPS=hermes` |
-| Compile now | `ssh agent-vm-ssh 'systemctl --user start vault-compile.service'`; report lands in `~/work/vault/.state/compile.report`, errors in `.state/compile.err` |
 | Backup now | `ssh agent-vm-ssh 'systemctl --user start hermes-backup.service'`; log: `journalctl --user -u hermes-backup.service` |
 | Backup health | `ssh agent-vm-ssh 'systemctl --user list-timers hermes-backup.timer'`; last key in `~/backup/hermes/hermes-backup-state.json` |
-| Vault health | `~/work/vault/.claude/scripts/doktor.sh` on any clone |
 
 ## Migration record (2026-08-26)
 
@@ -171,8 +127,8 @@ both under ONE user, which is exactly the isolation gap the two-user
 design closes. Secrets sat as literals in the profile `.env` files; they
 were moved into `dotfiles/Hermes` before the rebuild. The VM also ran
 Syncthing for `~/shared/obsidian_vaults/` (`invest101` - a git repo with a
-GitHub remote - and `hermes-notes`); sync is git-only now (vault HANDOFF
-D6/D13). Rollback for the first week: a vzdump cold backup of VM 101 taken
+GitHub remote - and `hermes-notes`); sync is git-only now (decided in the vault
+repository, D6/D13, since archived). Rollback for the first week: a vzdump cold backup of VM 101 taken
 before destruction; restoring it restores the old gateways as they were.
 The operator explicitly waived a content audit of the VM ("nothing there I
 need"); the backup preserves everything regardless.
@@ -195,7 +151,3 @@ need"); the backup preserves everything regardless.
 - `op inject` fails during provision: the agent user's service-account
   token is missing or expired - `make secrets` pushes it again; the token
   only reads the `dotfiles` and `homelab` vaults.
-- Compile did nothing: `.state/compile.report` names inputs and outputs;
-  an empty inputs line means no new daily logs since the last marker
-  (`.state/last-compile`). Errors are in `.state/compile.err`, never
-  only in the journal.

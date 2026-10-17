@@ -39,4 +39,4 @@ means.
 | verify | `step_verify` in `bootstrap.sh`: the list of checks that prove a box converged (services, tools, guard, drift). Transcript: `docs/reference/verify-2026-08-19.md`. |
 | D1..D13 | Numbered decisions in `docs/00-vision.md`, each with its reason and dated amendments. |
 | PLAN.md | The live state of work and the handoff between sessions: `Now`, `Next`, `Log`. |
-| ai-hub, agent-vm, dotfiles | The archived predecessors; `ai-hub`'s doctrine and journal live in the vault (`50-knowledge/ai/`) since 2026-09-02. `docs/02-migration.md` records what moved where. |
+| ai-hub, agent-vm, dotfiles, vault | The archived predecessors; `vault` joined them on 2026-10-16. The AI doctrine and journal stay readable in the archived `vault` repository (`50-knowledge/ai/`). `docs/02-migration.md` records what moved where. |
