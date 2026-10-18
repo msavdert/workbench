@@ -10,6 +10,7 @@ TELEGRAM_ALLOWED_USERS={{ op://dotfiles/Hermes/telegram-users-melih }}
 TELEGRAM_HOME_CHANNEL={{ op://dotfiles/Hermes/telegram-home-melih }}
 
 HERMES_CUSTOM_API_SYNTHETIC_NEW_API_KEY={{ op://dotfiles/Hermes/synthetic-api-key }}
+ANTHROPIC_API_KEY={{ op://dotfiles/Hermes/anthropic-api-key }}
 FIRECRAWL_API_KEY={{ op://dotfiles/Hermes/firecrawl-api-key }}
 GITHUB_TOKEN={{ op://dotfiles/GitHub/admintoken }}
 

@@ -33,6 +33,7 @@ the tracked templates `box/files/hermes/env.*.tpl`:
 | `telegram-bot-melih`, `telegram-users-melih`, `telegram-home-melih` | agent gateway |
 | `telegram-bot-savdert`, `telegram-users-savdert`, `telegram-home-savdert`, `telegram-home-name-savdert` | savdert gateway |
 | `synthetic-api-key` | both (model provider, api.synthetic.new) |
+| `anthropic-api-key` | agent gateway only (Anthropic API key, `ANTHROPIC_API_KEY`) |
 | `firecrawl-api-key` | both (web extract) |
 
 `step_hermes` renders each template with `op inject` on EVERY provision
@@ -63,10 +64,16 @@ against the docs on 2026-08-26, hermes-agent v0.20.5): persistent memory
 (`memory_enabled` + `user_profile_enabled`, no write approval), skills
 (bundled set auto-seeds), keyless web search (no backend set, no API
 key), edge TTS, local terminal backend, and the synthetic.new custom
-OpenAI-compatible provider (`syn:large:text` default, `syn:large:vision`
-vision, Nemotron fallback) carried over from the old install. Cron jobs
+OpenAI-compatible provider (`syn:large:text` default and `syn:large:vision`
+vision for the savdert gateway, Qwen3.8-27B fallback) carried over from the old
+install. Cron jobs
 are available through the `cronjob` tool at runtime; nothing is
-pre-scheduled. The agent gateway also gets `GITHUB_TOKEN` in `.env`
+pre-scheduled. Since 2026-10-17 the agent gateway's main model is
+`claude-haiku-5-5` on the Anthropic API (`agent.reasoning_effort: medium`),
+with synthetic.new kept as `fallback_providers`; the savdert gateway stays
+on synthetic.new. The live agent `config.yaml` was edited to match the seed
+(the seed is installed only once), so a re-seed yields the same model. The
+agent gateway also gets `GITHUB_TOKEN` in `.env`
 (resolved from `op://dotfiles/GitHub/admintoken`) so `hermes skills`
 and `gh` CLI authenticate without the git credential helper; the savdert
 gateway does not (no git operations).

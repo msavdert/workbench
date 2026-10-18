@@ -7,16 +7,13 @@
 # the ddgs backend was removed because the package is not bundled and
 # `hermes tools` is never run during provisioning (docs/reference/hermes.md).
 model:
-  provider: custom
-  base_url: https://api.synthetic.new/openai/v1
-  api_key: ${HERMES_CUSTOM_API_SYNTHETIC_NEW_API_KEY}
-  default: syn:large:text
-  vision: syn:large:vision
+  provider: anthropic
+  default: claude-haiku-5-5
 fallback_providers:
   - provider: custom
     base_url: https://api.synthetic.new/openai/v1
     key_env: HERMES_CUSTOM_API_SYNTHETIC_NEW_API_KEY
-    model: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4
+    model: hf:Qwen/Qwen3.8-27B
 database:
   journal_mode: wal
 agent:
