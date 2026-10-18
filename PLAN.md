@@ -389,6 +389,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-17: hermes updated v0.21.5 to v0.22.2 for both gateway users (`hermes update`); gateways restarted and active, no repo change needed.
 - 2026-10-16: box offline after `pve` reboot (SDN SNAT hook lost the xtables lock); `sdn-iptables-ensure.service` added on the host, reboot-verified before the post-audit hardening.
 - 2026-10-16: vault repo retired (D18): its units, `brain`, `step_vault`, git-crypt, gitleaks and the Hermes vault section removed; archived on GitHub by the operator.
 - 2026-10-14: agy-drift-check retired; the hub's Update re-execs the agy daemon in place.
