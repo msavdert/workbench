@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # obsidian-sync [-n]  (home/bin, linked to ~/.local/bin by home/install.sh)
 # One-way mirror of the Obsidian vault from Google Drive to iCloud Drive, so
-# the iPhone can open it read-only. Data flows one way only; anything edited
+# the iPhone can open it read-only, and pushes the same tree to the box
+# (~/obsidian-ro) for its agents. Data flows one way only; anything edited
 # on the phone is reverted on the next run. Mac only: the paths, the iCloud
 # container and `stat -f` are all macOS.
 #
@@ -17,6 +18,9 @@ set -euo pipefail
 VAULT_REL="${OBSIDIAN_VAULT_REL:-All/Documents/ObsidianVaults/obsidian}"
 SRC="${OBSIDIAN_VAULT_SRC:-}"
 DST="${OBSIDIAN_VAULT_DST:-$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/obsidian-ro}"
+# No colon: an empty OBSIDIAN_BOX_HOST turns the box push off.
+BOX_HOST="${OBSIDIAN_BOX_HOST-agent-vm-ssh}"
+BOX_DST="${OBSIDIAN_BOX_DST:-obsidian-ro}" # relative to the box user's home
 LOG="$HOME/Library/Logs/obsidian-sync.log"
 LOCK="$HOME/Library/Caches/obsidian-sync.lock"
 SENTINEL="Home.md" # proves the source is really mounted, not an empty stub
@@ -42,10 +46,55 @@ usage() {
 usage: obsidian-sync [-n|--dry-run]
 
 Mirrors the Obsidian vault from Google Drive into the iCloud Obsidian
-container, one way. -n lists what would be transferred and writes nothing.
+container, one way, then pushes the same tree to the box over ssh.
+-n lists what would be transferred and writes nothing.
 
-Environment: OBSIDIAN_VAULT_SRC, OBSIDIAN_VAULT_DST, OBSIDIAN_VAULT_REL.
+Environment: OBSIDIAN_VAULT_SRC, OBSIDIAN_VAULT_DST, OBSIDIAN_VAULT_REL,
+OBSIDIAN_BOX_HOST (default agent-vm-ssh, empty skips the box),
+OBSIDIAN_BOX_DST (default obsidian-ro under the box user's home).
 USAGE
+}
+
+# Second one-way copy, pushed over ssh to the box so its agents can read the
+# vault. Pushing from the mac keeps Google credentials off the box. It runs
+# after the iCloud mirror, so an unreachable box fails the run without
+# leaving the phone stale. Same excludes as the iCloud copy. Reads $SRC and
+# $dry from main.
+# --delete aimed at the box home or a parent would wipe it, and the remote
+# shell expands the path (the mac rsync is openrsync, no protected args). So
+# only a plain relative path below home passes: safe characters, no leading
+# dash (the remote rsync would read it as an option), no . or .. component. Checked before any transfer, so a bad value changes nothing.
+check_box_dst() {
+  local part IFS=/
+  [ -n "$BOX_HOST" ] || return 0
+  case "$BOX_DST" in
+    /* | -* | *[!A-Za-z0-9._/-]*)
+      die "OBSIDIAN_BOX_DST='$BOX_DST' must be a relative path of [A-Za-z0-9._/-] under the box home"
+      ;;
+  esac
+  for part in $BOX_DST; do
+    case "$part" in
+      . | ..) die "OBSIDIAN_BOX_DST='$BOX_DST' must not contain a . or .. component" ;;
+    esac
+  done
+}
+
+push_box() {
+  [ -n "$BOX_HOST" ] || return 0
+  log "box ${dry:+(dry-run) }$BOX_HOST:$BOX_DST"
+  # ServerAlive bounds a dead link and --timeout a box that answers but stops
+  # moving data; ConnectTimeout alone covers neither, and either holds the lock.
+  # shellcheck disable=SC2086 # $dry holds separate flags and must word-split
+  rsync -az --delete --timeout=300 $dry \
+    -e 'ssh -o BatchMode=yes -o ConnectTimeout=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=3' \
+    --exclude '.DS_Store' \
+    --exclude '.trash/' \
+    --exclude '.obsidian/workspace.json' \
+    --exclude '.obsidian/workspace-mobile.json' \
+    --exclude '.obsidian/file-recovery.json' \
+    "$SRC/" "$BOX_HOST:$BOX_DST/" >>"$LOG" 2>&1 ||
+    die "box push to $BOX_HOST failed (iCloud mirror is done), see $LOG - OBSIDIAN_BOX_HOST= skips it"
+  log "box done ${dry:+(dry-run) }$BOX_HOST:$BOX_DST"
 }
 
 # Counting has to use the same exclusions as the transfer, or the floor check
@@ -143,6 +192,7 @@ main() {
   trap release_lock EXIT
   trap 'exit 130' INT
   trap 'exit 143' TERM
+  check_box_dst
   acquire_lock
 
   if [ -z "$SRC" ]; then
@@ -182,6 +232,8 @@ main() {
     --exclude '.obsidian/file-recovery.json' \
     "$SRC/" "$DST/" >>"$LOG" 2>&1 ||
     die "rsync failed, see $LOG"
+
+  push_box
 
   if [ -n "$dry" ]; then
     # Counting the destination here would report the mirror as it already is,

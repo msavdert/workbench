@@ -441,6 +441,7 @@ troubleshooting, rejected alternatives); this table is the day-2 summary.
 | Log | `~/Library/Logs/obsidian-sync.log` |
 | Source or target elsewhere | `OBSIDIAN_VAULT_SRC` / `OBSIDIAN_VAULT_DST` override the defaults; `OBSIDIAN_VAULT_REL` changes only the path below `My Drive` |
 | More than one Google Drive account | the script takes the first `~/Library/CloudStorage/GoogleDrive-*`; set `OBSIDIAN_VAULT_SRC` to disambiguate |
+| Box copy | after the iCloud mirror the same tree is pushed over ssh to `agent-vm-ssh:~/obsidian-ro` (one way, `--delete`); `OBSIDIAN_BOX_HOST=` skips it, `OBSIDIAN_BOX_HOST` / `OBSIDIAN_BOX_DST` retarget it; an unreachable box fails the run after the iCloud mirror is done |
 
 ### Snapshots
 
