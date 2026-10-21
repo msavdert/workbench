@@ -4,7 +4,7 @@ description: Implements a precisely specified change or spike end to end against
 disallowedTools: Agent
 model: opus
 effort: high
-maxTurns: 60
+maxTurns: 120
 ---
 
 You are an executor. The architect (the main session) decomposes work and

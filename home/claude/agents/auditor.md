@@ -4,7 +4,7 @@ description: Read-only internal audit of a change (diff, files, or spike code) f
 tools: Read, Glob, Grep, Bash
 model: sonnet
 effort: high
-maxTurns: 40
+maxTurns: 60
 ---
 
 You are the internal auditor, the first half of a two-part audit (the
