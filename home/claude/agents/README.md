@@ -24,40 +24,47 @@ conversation or becomes a skill instead — see `../skills/README.md`.
 
 The main session is the architect: it runs on the strongest model at
 high effort (`model` and `effortLevel` in `~/.claude/settings.json`) and
-makes every design decision. Subagents never carry design judgment; they
-all run on the `sonnet` alias, so the architect's usage budget is spent
-on thinking and the delegates still get a capable model. Effort follows
-the work: `high` where the agent edits or judges, `low` where it only
-retrieves or runs commands.
-The alias follows the newest Sonnet (assumption, not verified here; no
-`ANTHROPIC_DEFAULT_SONNET_MODEL` pin is set in this repository).
+makes every design decision. Subagents never carry design judgment; all
+but `executor` run on the `sonnet` alias, so the architect's usage budget
+is spent on thinking and the delegates still get a capable model.
+`executor` runs on the `opus` alias because it writes the code that
+ships. Effort follows the work: `high` where the agent edits or judges,
+`medium` where it only retrieves or runs commands. No agent runs at
+`low`.
+The aliases follow the newest Sonnet and Opus (assumption, not verified
+here; no `ANTHROPIC_DEFAULT_SONNET_MODEL` or `ANTHROPIC_DEFAULT_OPUS_MODEL`
+pin is set in this repository).
 
 | Agent        | Justification        | Model  | Effort | Tools            | Returns                          |
 |--------------|----------------------|--------|--------|------------------|----------------------------------|
-| `explore`    | isolation (reads)    | sonnet | low    | read-only        | locations as `file:line`         |
-| `grunt`      | isolation (logs)     | sonnet | low    | all              | exit codes, extracted failures   |
-| `executor`   | isolation (edits)    | sonnet | high   | all but Agent    | delivered paths + verification   |
+| `explore`    | isolation (reads)    | sonnet | medium | read-only        | locations as `file:line`         |
+| `grunt`      | isolation (logs)     | sonnet | medium | all but Agent    | exit codes, extracted failures   |
+| `executor`   | isolation (edits)    | opus   | high   | all but Agent    | delivered paths + verification   |
 | `auditor`    | isolation (fresh eye)| sonnet | high   | read-only        | verdict + defensible findings    |
-| `researcher` | isolation (network)  | sonnet | low    | web + read-only  | sourced summary, no raw pages    |
+| `researcher` | isolation (network)  | sonnet | medium | web + read-only  | sourced summary, no raw pages    |
 
 Rules that follow from the table:
 
 - A subagent's model is never `inherit` or `fable`. If a task needs the
   architect's model, it is architecture and belongs in the main session.
-- Every agent is `sonnet` (operator decision 2026-10-01); effort is `high`
-  for `executor` and `auditor`, `low` for `explore`, `grunt` and
-  `researcher` (set the same day, after a first pass that put all five on
-  high). Before that, `executor` ran on opus at medium, `researcher` on
-  sonnet at medium, and `explore`, `grunt` on haiku at low; the opus
-  choice dated from 2026-09-01 and was based on the operator's daily use,
-  reported rather than measured. If a stronger model or more effort for
-  any agent is ever warranted, measure it and report the result in the
-  session (earlier experiment records are in the archived `vault`
-  repository, `50-knowledge/ai/experiments/`).
-- No delegate spawns delegates. `executor` has `disallowedTools: Agent`
-  and `auditor` has a read-only allowlist, so neither can start its own
-  review chain; one delegate is one process, and the architect decides
-  when an audit happens (the `audit` skill).
+- `executor` is `opus` at high (operator decision 2026-10-21, reported
+  rather than measured); every other agent is `sonnet` (operator decision
+  2026-10-01); effort is `high` for `executor` and `auditor`, `medium` for
+  `explore`, `grunt` and `researcher` (operator decision 2026-10-21: no
+  `low` anywhere; from 2026-10-01 to then they ran at `low`, after a first
+  pass that put all five on high). Before 2026-10-01, `executor` ran on
+  opus at medium, `researcher` on sonnet at medium, and `explore`,
+  `grunt` on haiku at low; the opus choice dated from 2026-09-01 and was
+  based on the operator's daily use, reported rather than measured. If a
+  stronger model or more effort for any agent is ever warranted, measure
+  it and report the result in the session (earlier experiment records
+  are in the archived `vault` repository,
+  `50-knowledge/ai/experiments/`).
+- No delegate spawns delegates. `executor` and `grunt` have
+  `disallowedTools: Agent`, and `auditor`, `explore` and `researcher` have
+  allowlists without it, so none can start its own chain; one delegate
+  is one process, and the architect decides when an audit happens (the
+  `audit` skill).
 - `explore` is lowercase on purpose (operator decision 2026-10-01), so it
   does not override the built-in `Explore`; both exist and callers must
   ask for `explore` by name. Names are matched case-sensitively
@@ -65,6 +72,11 @@ Rules that follow from the table:
 - Read-only agents get an explicit `tools:` allowlist. Agents that must
   write get no list, because a stale allowlist silently breaks them when
   the harness renames a tool.
+- The read-only allowlists of `explore` and `auditor` include `Bash`
+  (for `git log`, `git grep`, running existing tests). The harness does
+  not restrict what that Bash runs; read-only is enforced by the prompt
+  only. This is a deliberate trade: without `Bash` both agents lose git
+  history and test runs.
 - Every description says when *not* to use the agent. Auto-delegation
   keys on the description, and a description without a negative boundary
   causes over-delegation.
