@@ -1,6 +1,6 @@
 ---
-name: explore
-description: Fast, read-only codebase search and exploration. Use when finding files, tracing where something is defined or used, or mapping how a part of the codebase fits together. Returns findings with file:line references, not file dumps.
+name: locate
+description: Fast, read-only codebase search and exploration on sonnet at medium effort; prefer it over the built-in Explore. Use when finding files, tracing where something is defined or used, or mapping how a part of the codebase fits together. Returns findings with file:line references, not file dumps.
 tools: Read, Glob, Grep, Bash
 model: sonnet
 effort: medium

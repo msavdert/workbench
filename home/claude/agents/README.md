@@ -37,7 +37,7 @@ pin is set in this repository).
 
 | Agent        | Justification        | Model  | Effort | Tools            | Returns                          |
 |--------------|----------------------|--------|--------|------------------|----------------------------------|
-| `explore`    | isolation (reads)    | sonnet | medium | read-only        | locations as `file:line`         |
+| `locate`     | isolation (reads)    | sonnet | medium | read-only        | locations as `file:line`         |
 | `grunt`      | isolation (logs)     | sonnet | medium | all but Agent    | exit codes, extracted failures   |
 | `executor`   | isolation (edits)    | opus   | high   | all but Agent    | delivered paths + verification   |
 | `auditor`    | isolation (fresh eye)| sonnet | high   | read-only        | verdict + defensible findings    |
@@ -50,29 +50,31 @@ Rules that follow from the table:
 - `executor` is `opus` at high (operator decision 2026-10-21, reported
   rather than measured); every other agent is `sonnet` (operator decision
   2026-10-01); effort is `high` for `executor` and `auditor`, `medium` for
-  `explore`, `grunt` and `researcher` (operator decision 2026-10-21: no
+  `locate`, `grunt` and `researcher` (operator decision 2026-10-21: no
   `low` anywhere; from 2026-10-01 to then they ran at `low`, after a first
   pass that put all five on high). Before 2026-10-01, `executor` ran on
-  opus at medium, `researcher` on sonnet at medium, and `explore`,
-  `grunt` on haiku at low; the opus choice dated from 2026-09-01 and was
-  based on the operator's daily use, reported rather than measured. If a
-  stronger model or more effort for any agent is ever warranted, measure
+  opus at medium, `researcher` on sonnet at medium, and `locate` (then
+  `Explore`) and `grunt` on haiku at low; the opus choice dated from
+  2026-09-01 and was based on the operator's daily use, reported rather
+  than measured. If a stronger model or more effort for any agent is ever warranted, measure
   it and report the result in the session (earlier experiment records
   are in the archived `vault` repository,
   `50-knowledge/ai/experiments/`).
 - No delegate spawns delegates. `executor` and `grunt` have
-  `disallowedTools: Agent`, and `auditor`, `explore` and `researcher` have
+  `disallowedTools: Agent`, and `auditor`, `locate` and `researcher` have
   allowlists without it, so none can start its own chain; one delegate
   is one process, and the architect decides when an audit happens (the
   `audit` skill).
-- `explore` is lowercase on purpose (operator decision 2026-10-01), so it
-  does not override the built-in `Explore`; both exist and callers must
-  ask for `explore` by name. Names are matched case-sensitively
-  (assumption, not verified here).
+- `locate` does not override the built-in `Explore`; both exist and
+  callers must ask for `locate` by name. It was `Explore` (overriding the
+  built-in) until 2026-10-01, then `explore` (operator decision), and was
+  renamed `locate` on 2026-10-21 (operator decision) because `explore`
+  and `Explore` differed only in case and were easy to confuse when
+  picking an agent.
 - Read-only agents get an explicit `tools:` allowlist. Agents that must
   write get no list, because a stale allowlist silently breaks them when
   the harness renames a tool.
-- The read-only allowlists of `explore` and `auditor` include `Bash`
+- The read-only allowlists of `locate` and `auditor` include `Bash`
   (for `git log`, `git grep`, running existing tests). The harness does
   not restrict what that Bash runs; read-only is enforced by the prompt
   only. This is a deliberate trade: without `Bash` both agents lose git

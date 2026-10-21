@@ -390,6 +390,7 @@ One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
 - 2026-10-21: subagents: `executor` on `opus` at high; explore, grunt, researcher low -> medium (no `low` anywhere); `grunt` loses the Agent tool; stale omp-first audit wording fixed (auditor, glossary).
+  `explore` renamed `locate` (too close to the built-in `Explore`); hook, skills and docs follow.
 - 2026-10-17: hermes (agent gateway) switched to claude-haiku-5-5 on the Anthropic API, effort medium, synthetic.new kept as fallback; ANTHROPIC_API_KEY via env.agent.tpl; live config.yaml edited to match the seed.
 - 2026-10-17: hermes updated v0.21.5 to v0.22.2 for both gateway users (`hermes update`); gateways restarted and active, no repo change needed.
 - 2026-10-16: box offline after `pve` reboot (SDN SNAT hook lost the xtables lock); `sdn-iptables-ensure.service` added on the host, reboot-verified before the post-audit hardening.
