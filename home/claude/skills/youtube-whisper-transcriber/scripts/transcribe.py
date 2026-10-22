@@ -12,6 +12,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -175,6 +176,10 @@ def transcribe_single_video(vid, title, args, model_container):
 
             try:
                 print(f"  transcribing with Whisper ({args.model} on {args.engine_used})", flush=True)
+                # Both engines decode audio by running ffmpeg; use the bundled binary when there is no system one.
+                if shutil.which("ffmpeg") is None:
+                    import static_ffmpeg
+                    static_ffmpeg.add_paths()
                 if args.engine_used == "mlx":
                     import mlx_whisper
                     mlx_model_name = args.mlx_model_mapping.get(args.model, f"mlx-community/whisper-{args.model}-mlx")
@@ -182,8 +187,6 @@ def transcribe_single_video(vid, title, args, model_container):
                     segments = result.get("segments", [])
                 else:
                     if model_container.get("whisper") is None:
-                        import static_ffmpeg
-                        static_ffmpeg.add_paths()
                         import whisper
                         print(f"  loading Whisper model ({args.model}) on CPU...", flush=True)
                         model_container["whisper"] = whisper.load_model(args.model)

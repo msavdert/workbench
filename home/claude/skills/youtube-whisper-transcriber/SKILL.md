@@ -34,6 +34,8 @@ uv run --with static-ffmpeg --with openai-whisper --with mlx-whisper \
   --model turbo
 ```
 
+ffmpeg comes from the system when one is on PATH; otherwise the script uses the binary bundled with `static-ffmpeg`, so keep `--with static-ffmpeg` in the command.
+
 Whole playlist:
 
 ```bash
