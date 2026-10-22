@@ -18,6 +18,14 @@ definition and record is `docs/02-migration.md`.
 
 ## Now
 
+2026-10-22: the `audit` skill's external half is one message instead of an
+omp tool session (operator request): `home/claude/skills/audit/audit-ext.py`,
+a stdlib-only port of perp-lab `ops/audit_ext.py` (ADR 0136 there; measured
+248-348 s a round vs 668-1,003 s with read tools), with `--out-dir` refused
+inside a tracked git tree. agy and omp tool sessions stay as the fallback on
+an omp failure (exit 3). Uncommitted on branch `audit-one-message`, awaiting
+audit and operator approval.
+
 2026-10-16: after a `pve` reboot the box had no internet: the SDN SNAT rule
 for `10.0.0.0/24` was missing because the `vnet0` post-up hook lost the
 xtables lock at boot (no `-w`). Fixed on the host by hand with
