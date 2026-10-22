@@ -1,9 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """External audit in one message: spec, diff and code inline, no tools.
 
-Usage (python3 >= 3.11, standard library only):
+Usage (Python >= 3.11, standard library only; launch it with `uv run`, which picks a
+suitable interpreter even where `python3` is older, e.g. macOS /usr/bin/python3 3.9):
 
-    python3 ~/.claude/skills/audit/audit-ext.py --topic studykit-r3 \
+    uv run ~/.claude/skills/audit/audit-ext.py --topic studykit-r3 \
         --spec <workdir>/spec.md --diff <workdir>/diff.patch \
         --out-dir <workdir-parent> \
         [--prev <workdir>/prev.md] [--file src/x.py] [--file src/y.py:120-260] \
@@ -431,7 +435,7 @@ def parse(argv: list[str] | None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     if sys.version_info < (3, 11):
-        print("audit-ext: needs python3 >= 3.11", file=sys.stderr)
+        print("audit-ext: needs Python >= 3.11; launch it with `uv run`", file=sys.stderr)
         return 2
     args = parse(argv)
     out = run_dir(args)

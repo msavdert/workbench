@@ -35,7 +35,9 @@ Decide from the diff, not from the task name. A "small script" that runs
    internal pass is a claim too; it has returned zero findings on code an
    external audit then found major defects in.
 3. External: one message, no tools, via `audit-ext.py` next to this file
-   (python3 >= 3.11, standard library only). It inlines the spec, the
+   (Python >= 3.11, standard library only, launched with `uv run`: on macOS
+   `python3` is Apple's 3.9; if uv has no Python >= 3.11 yet, the first run
+   downloads one, which needs the network). It inlines the spec, the
    previous findings, the diff and numbered `--file` slices, scans the prompt
    for credential shapes and secret env values, runs omp once and checks
    what came back. A round takes about 4-6 minutes (one answer of 40-50k
@@ -45,7 +47,7 @@ Decide from the diff, not from the task name. A "small script" that runs
    runs in parallel. `<out>` is `<workdir-parent>/audit-<topic>-ext`:
 
    ```
-   Bash(command: "rm -f <out>/launch.log <workdir>/audit-ext.out; setsid nohup sh -c 'python3 ~/.claude/skills/audit/audit-ext.py --topic <topic> --spec <workdir>/spec.md --diff <workdir>/diff.patch [--prev <workdir>/prev.md] [--file path:a-b ...] --out-dir <workdir-parent>; echo \"audit-ext rc=$?\"' > <workdir>/audit-ext.out 2>&1 < /dev/null & echo $! > <workdir>/audit-ext.pid")
+   Bash(command: "rm -f <out>/launch.log <workdir>/audit-ext.out; $(command -v setsid) nohup sh -c 'uv run ~/.claude/skills/audit/audit-ext.py --topic <topic> --spec <workdir>/spec.md --diff <workdir>/diff.patch [--prev <workdir>/prev.md] [--file path:a-b ...] --out-dir <workdir-parent>; echo \"audit-ext rc=$?\"' > <workdir>/audit-ext.out 2>&1 < /dev/null & echo $! > <workdir>/audit-ext.pid")
    Monitor(command: "until grep -q '^audit-ext rc=' <workdir>/audit-ext.out 2>/dev/null || { [ -f <workdir>/audit-ext.pid ] && ! kill -0 $(cat <workdir>/audit-ext.pid) 2>/dev/null; }; do sleep 10; done; tail -3 <workdir>/audit-ext.out; tail -2 <out>/launch.log 2>/dev/null")
    ```
 
@@ -54,7 +56,10 @@ Decide from the diff, not from the task name. A "small script" that runs
    (out of memory, a reboot): not credited, treat it like a killed answer
    below. rc 2 with no launch.log means a bad argument or a refused
    `--out-dir`; the reason is in audit-ext.out.
-   Never wait in the foreground.
+   Never wait in the foreground. `setsid` does not exist on macOS:
+   `$(command -v setsid)` then expands to nothing and the same line runs
+   under plain `nohup`, which is enough because the Monitor watches the
+   pid file and the rc line, not the process group.
 
    `--file` paths are relative to `--repo-root` (default: the git top level
    of the current directory) and must stay inside it. Round 1 sends the

@@ -111,7 +111,7 @@ commands, not description-triggered behaviour. Claude's multi-fleet `audit`,
 delegate from Claude to agy/omp. agy has its own native, internal-subagent
 `audit` skill under `home/agy/skills/audit/` running on Gemini 3.8 Flash (High).
 The Claude `audit` skill's external half is a script inside the skill,
-`home/claude/skills/audit/audit-ext.py` (stdlib-only python3, no project
+`home/claude/skills/audit/audit-ext.py` (stdlib-only, Python >= 3.11 via `uv run`, no project
 imports; reaches the machine through the existing `~/.claude/skills/audit`
 directory link, no install step of its own): one omp message with the spec,
 diff and file slices inline, no tools. Its port source is perp-lab's
