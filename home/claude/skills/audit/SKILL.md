@@ -47,8 +47,8 @@ Decide from the diff, not from the task name. A "small script" that runs
    runs in parallel. `<out>` is `<workdir-parent>/audit-<topic>-ext`:
 
    ```
-   Bash(command: "rm -f <out>/launch.log <workdir>/audit-ext.out; $(command -v setsid) nohup sh -c 'uv run ~/.claude/skills/audit/audit-ext.py --topic <topic> --spec <workdir>/spec.md --diff <workdir>/diff.patch [--prev <workdir>/prev.md] [--file path:a-b ...] --out-dir <workdir-parent>; echo \"audit-ext rc=$?\"' > <workdir>/audit-ext.out 2>&1 < /dev/null & echo $! > <workdir>/audit-ext.pid")
-   Monitor(command: "until grep -q '^audit-ext rc=' <workdir>/audit-ext.out 2>/dev/null || { [ -f <workdir>/audit-ext.pid ] && ! kill -0 $(cat <workdir>/audit-ext.pid) 2>/dev/null; }; do sleep 10; done; tail -3 <workdir>/audit-ext.out; tail -2 <out>/launch.log 2>/dev/null")
+   Bash(command: "rm -f <out>/launch.log <workdir>/audit-ext.out <workdir>/audit-ext.pid; $(command -v setsid) nohup sh -c 'echo $$ > <workdir>/audit-ext.pid; uv run ~/.claude/skills/audit/audit-ext.py --topic <topic> --spec <workdir>/spec.md --diff <workdir>/diff.patch [--prev <workdir>/prev.md] [--file path:a-b ...] --out-dir <workdir-parent>; echo \"audit-ext rc=$?\"' > <workdir>/audit-ext.out 2>&1 < /dev/null &")
+   Monitor(command: "n=0; until grep -q '^audit-ext rc=' <workdir>/audit-ext.out 2>/dev/null || { [ -f <workdir>/audit-ext.pid ] && ! kill -0 $(cat <workdir>/audit-ext.pid) 2>/dev/null; } || { [ ! -f <workdir>/audit-ext.pid ] && [ $n -ge 6 ]; }; do sleep 10; n=$((n+1)); done; tail -3 <workdir>/audit-ext.out; tail -2 <out>/launch.log 2>/dev/null")
    ```
 
    The `audit-ext rc=` line in audit-ext.out is the exit code; a finished
@@ -59,7 +59,14 @@ Decide from the diff, not from the task name. A "small script" that runs
    Never wait in the foreground. `setsid` does not exist on macOS:
    `$(command -v setsid)` then expands to nothing and the same line runs
    under plain `nohup`, which is enough because the Monitor watches the
-   pid file and the rc line, not the process group.
+   pid file and the rc line, not the process group. The inner shell
+   writes its own PID (`echo $$`): `$!` is the PID of `setsid`, which forks
+   and exits at once when it is a process-group leader (the Claude Code
+   Bash tool, perp-lab session 101), so a `$!` pid file reads dead within
+   a second and the Monitor would report a running audit as finished.
+   No pid file after about 60 s means the launch itself failed (missing
+   workdir, setsid or nohup not runnable): the Monitor stops, and
+   audit-ext.out, if it exists, says why.
 
    `--file` paths are relative to `--repo-root` (default: the git top level
    of the current directory) and must stay inside it. Round 1 sends the
