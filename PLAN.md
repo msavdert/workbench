@@ -397,6 +397,7 @@ present). Agent gateway only - savdert has no op access by design.
 One entry per session, two lines at most; details live in docs/ and git
 history. Older entries are condensed; `git log` has the full trail.
 
+- 2026-10-23: `md2docx` added under `home/bin/` (mac): Obsidian note to Word for a Copilot agent's SharePoint knowledge, no tables, size warning.
 - 2026-10-21: subagents: `executor` on `opus` at high; explore, grunt, researcher low -> medium (no `low` anywhere); `grunt` loses the Agent tool; stale omp-first audit wording fixed (auditor, glossary).
   `explore` renamed `locate` (too close to the built-in `Explore`); hook, skills and docs follow.
 - 2026-10-17: hermes (agent gateway) switched to claude-haiku-5-5 on the Anthropic API, effort medium, synthetic.new kept as fallback; ANTHROPIC_API_KEY via env.agent.tpl; live config.yaml edited to match the seed.

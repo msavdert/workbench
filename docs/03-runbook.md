@@ -515,3 +515,28 @@ The script refuses to run rather than mirror a source it cannot trust: it
 checks a sentinel file, that the directory can actually be listed, and that at
 least 500 notes are present. Without those, `rsync --delete` would empty the
 mirror whenever Google Drive is unmounted or unreadable. Do not remove them.
+
+## Obsidian note to Word (mac)
+
+`md2docx` turns vault notes into Word files that a Microsoft 365 Copilot
+agent reads from SharePoint. The note stays the source and the Word file is a
+published copy: edit the note and re-run, never edit the Word file, or the two
+drift apart. Word is the target because Agent Builder does not list `.md` as a
+knowledge file type. The conversion is plain Python (python-docx through
+`uv run --script`), not a model call, so publishing costs no model usage.
+
+It drops what only Obsidian understands (frontmatter, `%% %%` comments,
+`![[embeds]]`, wikilink brackets, callout markers) and the `## Links` and
+`## Related notes` H2 sections (matched without case), which only point at
+other notes. Code in fences and backtick spans is copied unchanged, `%%` and
+underscores included, because runbook commands must stay exact; numbered items
+keep the note's own numbers, so separate lists do not run on. Microsoft's
+retrieval guidance says Copilot does not parse tables in SharePoint content and
+retrieves worse from files over 36,000 characters, so a table becomes one
+`Header: value; ...` bullet per row and both cases print a warning.
+
+| What | How |
+|---|---|
+| Convert one note | `md2docx -n "<Title>" -o <out dir> <note.md>` - `-n` sets the file name and the title |
+| Convert several | `md2docx -o <out dir> a.md b.md` - each file is named after its note |
+| Keep or drop sections | `--keep-section Links`, `--drop-section "<H2 title>"` (repeatable; replaces the default list) |

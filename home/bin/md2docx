@@ -1,0 +1,321 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["python-docx>=1.1"]
+# ///
+"""md2docx [-o OUTDIR] [-n NAME] [--keep-section H] [--drop-section H] NOTE.md...
+
+(home/bin, linked to ~/.local/bin by home/install.sh)
+
+Turns Obsidian notes into Word files for a Microsoft 365 Copilot agent's
+SharePoint knowledge. Markdown stays the source of truth because it is what
+the operator and any LLM edit well; Word is only the published copy, since
+Agent Builder does not list .md as a knowledge file type. Edit the note and
+re-run - never edit the Word copy, or the two drift apart.
+
+Rules come from Microsoft's content-retrieval guidance for agents:
+- Copilot does not parse tables in SharePoint content, so a Markdown table is
+  written as one "Header: value; Header: value" bullet per row, with a warning.
+- Files over 36,000 characters retrieve worse, so the script warns above that.
+
+Obsidian-only syntax is removed: frontmatter, %% comments %%, ![[embeds]],
+[[wikilinks]] (their text is kept), callout markers. Code - fenced blocks and
+`inline spans` - is copied byte for byte, because runbook commands must stay
+exact. H2 sections named in DROP (default: Links, Related notes; matched
+without case) are left out, because they only point at other vault notes.
+Numbered items keep the number written in the note, so every list restarts
+where the note does. No LLM is involved; the conversion is plain code.
+"""
+import argparse
+import re
+import sys
+from pathlib import Path
+
+from docx import Document
+from docx.enum.text import WD_BREAK
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt, RGBColor
+
+FONT = "Calibri"
+MONO = "Consolas"
+MAX_CHARS = 36000
+DEFAULT_DROP = ["Links", "Related notes"]
+
+CODE_SPAN = re.compile(r"(`[^`]+`)")
+FENCE = re.compile(r"^\s*(```|~~~)")
+# Underscore emphasis only at word boundaries, so oracle_home or file_name_x stay intact.
+EMPHASIS = re.compile(r"(\*\*[^*]+\*\*|(?<![\w*])\*[^*\s][^*]*\*(?![\w*])|(?<!\w)_[^_\s][^_]*_(?!\w))")
+BLOCK_START = re.compile(r"^\s*(#{1,6}\s|```|~~~|\||>|[-*+]\s|\d+[.)]\s|[-*_]{3,}\s*$)")
+
+
+def clean_inline(text):
+    """Obsidian and Markdown link syntax to plain text; never called on code."""
+    text = re.sub(r"!\[\[[^\]]*\]\]", "", text)
+    text = re.sub(r"\[\[([^\]|#]+)(?:#[^\]|]*)?\|([^\]]+)\]\]", r"\2", text)
+    text = re.sub(r"\[\[([^\]|#]+)(?:#[^\]]*)?\]\]", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r"\1 (\2)", text)
+    return text.replace("\\|", "|").replace("\\$", "$")
+
+
+def mono(run, size=None):
+    run.font.name = MONO
+    run._element.get_or_add_rPr().get_or_add_rFonts().set(qn("w:eastAsia"), MONO)
+    if size:
+        run.font.size = Pt(size)
+    return run
+
+
+def add_inline(par, text):
+    for seg in CODE_SPAN.split(text):
+        if not seg:
+            continue
+        if seg.startswith("`") and seg.endswith("`") and len(seg) > 1:
+            mono(par.add_run(seg[1:-1]))
+            continue
+        for part in EMPHASIS.split(clean_inline(seg)):
+            if not part:
+                continue
+            if part.startswith("**") and part.endswith("**") and len(part) > 4:
+                par.add_run(part[2:-2]).bold = True
+            elif len(part) > 2 and part[0] in "*_" and part[-1] == part[0] and EMPHASIS.fullmatch(part):
+                par.add_run(part[1:-1]).italic = True
+            else:
+                par.add_run(part)
+
+
+def shade(par, fill="F2F2F2"):
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), fill)
+    par._p.get_or_add_pPr().append(shd)
+
+
+def strip_obsidian(lines):
+    """Drop frontmatter and %% comments %%, but never inside fenced or inline code."""
+    if lines and lines[0].strip() == "---":
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                lines = lines[i + 1:]
+                break
+    out, fence, in_comment = [], None, False
+    for line in lines:
+        m = FENCE.match(line)
+        if fence:
+            out.append(line)
+            if m and m.group(1) == fence:
+                fence = None
+            continue
+        if m and not in_comment:
+            fence = m.group(1)
+            out.append(line)
+            continue
+        kept = []
+        for seg in CODE_SPAN.split(line):
+            if not in_comment and seg.startswith("`") and seg.endswith("`") and len(seg) > 1:
+                kept.append(seg)
+                continue
+            while seg:
+                idx = seg.find("%%")
+                if in_comment:
+                    if idx < 0:
+                        break
+                    seg, in_comment = seg[idx + 2:], False
+                else:
+                    if idx < 0:
+                        kept.append(seg)
+                        break
+                    kept.append(seg[:idx])
+                    seg, in_comment = seg[idx + 2:], True
+        out.append("".join(kept))
+    return out
+
+
+def table_rows(block):
+    def cells(row):
+        row = row.strip()
+        row = row[1:] if row.startswith("|") else row
+        row = row[:-1] if row.endswith("|") and not row.endswith("\\|") else row
+        return [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", row)]
+
+    rows = [cells(r) for r in block]
+    header = rows[0]
+    body = [r for r in rows[1:] if not all(re.fullmatch(r":?-+:?", c) for c in r if c)]
+    return ["; ".join(f"{h}: {v}" for h, v in zip(header, r) if v) for r in body]
+
+
+class Writer:
+    def __init__(self, title):
+        self.d = Document()
+        st = self.d.styles
+        for name, size in (("Normal", 11), ("Heading 1", 18), ("Heading 2", 14), ("Heading 3", 12), ("Heading 4", 11)):
+            st[name].font.name = FONT
+            st[name].font.size = Pt(size)
+            st[name].element.get_or_add_rPr().get_or_add_rFonts().set(qn("w:eastAsia"), FONT)
+            if name.startswith("Heading"):
+                st[name].font.color.rgb = RGBColor(0x1F, 0x3A, 0x5F)
+        self.d.core_properties.title = title
+        self.d.add_heading(title, level=1)
+        self.warnings = []
+
+    def heading(self, level, text):
+        self.d.add_heading(clean_inline(text), level=min(level, 4))
+
+    def para(self, lines):
+        # One paragraph, one line per source line: Obsidian shows a single newline as a line break.
+        par = self.d.add_paragraph()
+        for i, line in enumerate(lines):
+            if i:
+                par.add_run().add_break(WD_BREAK.LINE)
+            add_inline(par, line)
+
+    def bullet(self, text, depth):
+        add_inline(self.d.add_paragraph(style="List Bullet 2" if depth else "List Bullet"), text)
+
+    def numbered(self, number, text, depth):
+        # The note's own number as text: Word's shared List Number instance would continue across lists.
+        par = self.d.add_paragraph()
+        par.paragraph_format.left_indent = Pt(36 if depth else 18)
+        par.paragraph_format.first_line_indent = Pt(-18)
+        par.add_run(f"{number}\t")
+        add_inline(par, text)
+
+    def code(self, lines):
+        par = self.d.add_paragraph()
+        shade(par)
+        par.paragraph_format.space_after = Pt(6)
+        for i, line in enumerate(lines):
+            mono(par.add_run(line), 9)
+            if i < len(lines) - 1:
+                par.runs[-1].add_break(WD_BREAK.LINE)
+
+    def chars(self):
+        return sum(len(p.text) for p in self.d.paragraphs)
+
+    def leftover_wikilink(self):
+        return any("[[" in r.text for p in self.d.paragraphs for r in p.runs if r.font.name != MONO)
+
+
+def convert(src, title, drop):
+    lines = strip_obsidian(src.read_text(encoding="utf-8-sig").split("\n"))
+    drop = {d.casefold() for d in drop}
+    own_titles = {title.casefold(), src.stem.casefold()}
+    w = Writer(title)
+    i, skipping, seen_heading = 0, False, False
+    while i < len(lines):
+        line = lines[i]
+        s = line.strip()
+        # Fences first, so a '#' line inside code is never a heading, even in a dropped section.
+        m = FENCE.match(line)
+        if m:
+            j = i + 1
+            while j < len(lines) and not (FENCE.match(lines[j]) and FENCE.match(lines[j]).group(1) == m.group(1)):
+                j += 1
+            if not skipping:
+                w.code(lines[i + 1:j])
+            i = j + 1
+            continue
+        h = re.match(r"^(#{1,6})\s+(.*)", line)
+        if h:
+            level, text = len(h.group(1)), h.group(2).strip()
+            if level == 1:
+                skipping = False
+            elif level == 2:
+                skipping = text.casefold() in drop
+            first, seen_heading = not seen_heading, True
+            if not skipping and not (level == 1 and first and text.casefold() in own_titles):
+                w.heading(2 if level == 1 else level, text)
+            i += 1
+            continue
+        if skipping:
+            i += 1
+            continue
+        if s.startswith("|"):
+            j = i
+            while j < len(lines) and lines[j].strip().startswith("|"):
+                j += 1
+            rows = table_rows(lines[i:j])
+            for r in rows:
+                w.bullet(r, 0)
+            w.warnings.append(f"table at line {i + 1} written as {len(rows)} bullet(s)")
+            i = j
+            continue
+        if s.startswith(">"):
+            body = re.sub(r"^>\s?", "", s)
+            c = re.match(r"\[!\w+\][-+]?\s*(.*)", body)
+            if c:
+                if c.group(1):
+                    add_inline(w.d.add_paragraph(), f"**{c.group(1)}**")
+                i += 1
+            elif body:
+                lines[i] = body  # strictly shorter, so the re-parse terminates
+            else:
+                i += 1
+            continue
+        b = re.match(r"^(\s*)([-*+]|\d+[.)])\s+(?:\[([ xX])\]\s+)?(.*)", line)
+        if b:
+            depth = 1 if len(b.group(1).replace("\t", "    ")) >= 2 else 0
+            text = b.group(4)
+            if b.group(3) is not None:
+                text = ("[x] " if b.group(3) in "xX" else "[ ] ") + text
+            if b.group(2)[0].isdigit():
+                w.numbered(b.group(2), text, depth)
+            else:
+                w.bullet(text, depth)
+            i += 1
+            continue
+        if not s or re.fullmatch(r"[-*_]{3,}", s) or re.fullmatch(r"!\[\[[^\]]*\]\]", s):
+            i += 1
+            continue
+        par_lines = [s]
+        i += 1
+        while i < len(lines) and lines[i].strip() and not BLOCK_START.match(lines[i]):
+            par_lines.append(lines[i].strip())
+            i += 1
+        w.para(par_lines)
+    n = w.chars()
+    if n > MAX_CHARS:
+        w.warnings.append(f"{n} characters, above the {MAX_CHARS} Copilot guidance: split the note")
+    if w.leftover_wikilink():
+        w.warnings.append("a [[...]] remains outside code")
+    return w, n
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("notes", nargs="+", type=Path)
+    ap.add_argument("-o", "--outdir", type=Path, default=Path.cwd())
+    ap.add_argument("-n", "--name", help="output name and title (one note only); default: note file name")
+    ap.add_argument("--drop-section", action="append", default=None, help="H2 title to leave out (repeatable; replaces the default list)")
+    ap.add_argument("--keep-section", action="append", default=[], help="keep a default-dropped H2")
+    a = ap.parse_args()
+    if a.name and len(a.notes) > 1:
+        ap.error("--name works with one note only")
+    if a.name and ("/" in a.name or a.name in (".", "..")):
+        ap.error("--name is a file name, not a path")
+    stems = [n.stem for n in a.notes]
+    dupes = sorted({s for s in stems if stems.count(s) > 1})
+    if dupes and not a.name:
+        ap.error(f"two notes would write the same file: {', '.join(dupes)}")
+    keep = {k.casefold() for k in a.keep_section}
+    drop = [d for d in (a.drop_section if a.drop_section is not None else DEFAULT_DROP) if d.casefold() not in keep]
+    a.outdir.mkdir(parents=True, exist_ok=True)
+    rc = 0
+    for src in a.notes:
+        if not src.is_file():
+            print(f"md2docx: {src}: not a file", file=sys.stderr)
+            rc = 1
+            continue
+        title = a.name or src.stem
+        w, n = convert(src, title, drop)
+        out = a.outdir / f"{title}.docx"
+        w.d.save(out)
+        print(f"wrote {out} ({n} chars)")
+        for msg in w.warnings:
+            print(f"  warning: {msg}", file=sys.stderr)
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())

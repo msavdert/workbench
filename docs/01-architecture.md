@@ -38,7 +38,7 @@ workbench/
     mise/config.toml  mise/config.mac.toml  mise/config.box.toml  (tasks inline)
     bash/interactive.sh     interactive-only block sourced by the box bashrc; hands off to zsh
     zsh/  starship.toml     rich interactive shell, both profiles
-    git/  op-env/  bin/opwith  bin/obsidian-sync  bin/obsidian-snapshot
+    git/  op-env/  bin/opwith  bin/obsidian-sync  bin/obsidian-snapshot  bin/md2docx
     claude/
       CLAUDE.md  settings.base.json  settings.box.json  settings.mac.json
       statusline.sh  agents/  skills/  hooks/
@@ -69,6 +69,7 @@ workbench/
 | `~/.gitconfig`, `~/.config/git/allowed_signers`, `~/.config/op-env/*`, `~/.local/bin/opwith` | `home/git/`, `home/op-env/`, `home/bin/` | `home/install.sh` |
 | `~/.local/bin/obsidian-sync` (mac only; the mirror it writes under `~/Library/Mobile Documents/iCloud~md~obsidian/` is generated, not owned) | `home/bin/obsidian-sync` | `home/install.sh mac` |
 | `~/.local/bin/obsidian-snapshot` (mac only; the archives it writes to `ObsidianVaults/_Snapshots/` in Google Drive are generated, not owned) | `home/bin/obsidian-snapshot` | `home/install.sh mac` |
+| `~/.local/bin/md2docx` (mac only; the .docx files it writes are generated, not owned) | `home/bin/md2docx` | `home/install.sh mac` |
 | `~/.claude/settings.json` | `home/claude/settings.base.json` + overlay | `home/install.sh` (jq merge) |
 | `~/.claude/statusline.sh` | `home/claude/statusline.sh` | `home/install.sh` |
 | `~/.config/herdr/config.toml`, `~/.gemini/antigravity-cli/statusline.sh`, `~/.omp/agent/*` (per file, except `config.yml`) | `home/herdr/ agy/ omp/` | `home/install.sh` |

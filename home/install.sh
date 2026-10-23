@@ -340,6 +340,7 @@ manifest() {
   if [[ $PROFILE == mac ]]; then
     link bin/obsidian-sync "$HOME/.local/bin/obsidian-sync"
     link bin/obsidian-snapshot "$HOME/.local/bin/obsidian-snapshot"
+    link bin/md2docx "$HOME/.local/bin/md2docx"
   fi
 
   profile_env
